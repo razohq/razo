@@ -1,0 +1,34 @@
+name: 'razo failure analysis'
+description: >-
+  Feeds failed tests' razo-steps.json (produced by the razo Playwright reporter)
+  to Claude and posts a business-level failure analysis as a PR comment.
+branding:
+  icon: 'search'
+  color: 'purple'
+inputs:
+  anthropic-api-key:
+    description: 'Anthropic API key used to call Claude'
+    required: true
+  results-dir:
+    description: 'Directory scanned for razo-steps.json artifacts'
+    required: false
+    default: 'test-results'
+  pr-comment:
+    description: 'Post/update the analysis as a PR comment'
+    required: false
+    default: 'true'
+  model:
+    description: 'Claude model id'
+    required: false
+    default: 'claude-opus-4-8'
+runs:
+  using: 'composite'
+  steps:
+    - name: Analyze failed tests
+      shell: bash
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+      run: |
+        EXTRA=""
+        if [ "${{ inputs.pr-comment }}" = "true" ]; then EXTRA="--pr-comment"; fi
+        npx --yes razo-analyzer "${{ inputs.results-dir }}" --model "${{ inputs.model }}" $EXTRA

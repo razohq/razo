@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Model Exporter</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 2rem auto; }
+    fieldset { margin-bottom: 1rem; }
+    #status { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Model Exporter</h1>
+
+  <label>
+    Filename
+    <input type="text" data-testid="filename" />
+  </label>
+
+  <fieldset>
+    <legend>Format</legend>
+    <select data-testid="format">
+      <option value="">-- choose --</option>
+      <option value="stl">STL</option>
+      <option value="3mf">3MF</option>
+      <option value="obj">OBJ</option>
+    </select>
+  </fieldset>
+
+  <fieldset data-testid="quality">
+    <legend>Quality</legend>
+    <label><input type="radio" name="quality" value="Draft" /> Draft</label>
+    <label><input type="radio" name="quality" value="Standard" /> Standard</label>
+    <label><input type="radio" name="quality" value="Fine" /> Fine</label>
+  </fieldset>
+
+  <label>
+    <input type="checkbox" data-testid="include-supports" />
+    Include supports
+  </label>
+
+  <label>
+    Model file
+    <input type="file" data-testid="model-file" />
+  </label>
+
+  <label>
+    Scale (%)
+    <input type="range" min="10" max="200" value="100" data-testid="scale" />
+    <output data-testid="scale-value">100</output>
+  </label>
+
+  <label>
+    Notes
+    <textarea data-testid="notes"></textarea>
+  </label>
+
+  <fieldset>
+    <legend>Also export as</legend>
+    <select multiple data-testid="extra-formats">
+      <option value="stl">STL</option>
+      <option value="obj">OBJ</option>
+      <option value="step">STEP</option>
+    </select>
+  </fieldset>
+
+  <p>
+    <button type="button" data-testid="export">Export</button>
+    <button type="button" data-testid="upload" disabled>Upload to cloud</button>
+  </p>
+
+  <p id="status" data-testid="status"></p>
+
+  <a href="#help" data-testid="help-link">Help</a>
+  <section id="help" hidden data-testid="help-section">
+    <h2>Help</h2>
+    <p>Pick a filename, a format and a quality, then press Export.</p>
+  </section>
+
+  <h2>Advanced</h2>
+
+  <button type="button" role="switch" aria-checked="false" data-testid="auto-save">
+    Auto-save
+  </button>
+
+  <label>
+    Material
+    <input type="text" role="combobox" aria-expanded="true" data-testid="material" />
+  </label>
+  <ul role="listbox" data-testid="material-options" style="list-style: none">
+    <li role="option" tabindex="0" data-testid="material-option">PLA</li>
+    <li role="option" tabindex="0" data-testid="material-option">PETG</li>
+    <li role="option" tabindex="0" data-testid="material-option">Resin</li>
+  </ul>
+
+  <table data-testid="export-history">
+    <thead>
+      <tr><th>File</th><th>Format</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>mi-llavero</td><td>3MF</td></tr>
+      <tr><td>engranaje-v2</td><td>STL</td></tr>
+    </tbody>
+  </table>
+
+  <button type="button" data-testid="open-confirm">Confirm export…</button>
+  <dialog data-testid="confirm-dialog">
+    <p>Confirm the export?</p>
+    <button type="button" data-testid="confirm-yes">Yes, export</button>
+  </dialog>
+
+  <div role="tablist" data-testid="settings-tabs">
+    <button role="tab" aria-selected="true" data-tab="General">General</button>
+    <button role="tab" aria-selected="false" data-tab="Advanced">Advanced</button>
+  </div>
+
+  <img
+    data-testid="preview"
+    alt="Model preview"
+    width="16"
+    height="16"
+    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+  />
+
+  <label>
+    Deadline
+    <input type="date" data-testid="deadline" />
+  </label>
+
+  <button type="button" aria-describedby="format-tip" data-testid="format-info">
+    What is 3MF?
+  </button>
+  <span id="format-tip" role="tooltip" hidden>3MF keeps colors and materials</span>
+
+  <div
+    contenteditable="true"
+    data-testid="description"
+    style="border: 1px solid #ccc; min-height: 2em"
+  ></div>
+
+  <button type="button" aria-haspopup="menu" data-testid="actions-menu">Actions</button>
+  <ul role="menu" hidden data-testid="actions-menu-list" style="list-style: none">
+    <li role="menuitem" tabindex="0">Duplicate</li>
+    <li role="menuitem" tabindex="0">Archive</li>
+  </ul>
+  <p data-testid="menu-status"></p>
+
+  <!-- Healing: the "old" testid healing-export-v1 no longer exists; the
+       element is only reachable by its accessible name or text. -->
+  <h2>Healing</h2>
+  <button type="button" data-testid="healing-export-v2">Healed export</button>
+
+  <script>
+    const $ = (id) => document.querySelector(`[data-testid="${id}"]`);
+
+    $('export').addEventListener('click', () => {
+      const filename = $('filename').value.trim();
+      const format = $('format').value;
+      const quality = document.querySelector('input[name="quality"]:checked');
+      if (!filename || !format || !quality) {
+        $('status').textContent = 'Error: missing fields';
+        return;
+      }
+      $('status').textContent = `Exported ${filename}.${format} (${quality.value})`;
+    });
+
+    $('help-link').addEventListener('click', () => {
+      $('help-section').hidden = false;
+    });
+
+    $('scale').addEventListener('input', () => {
+      $('scale-value').textContent = $('scale').value;
+    });
+
+    $('auto-save').addEventListener('click', () => {
+      const on = $('auto-save').getAttribute('aria-checked') === 'true';
+      $('auto-save').setAttribute('aria-checked', String(!on));
+    });
+
+    document.querySelectorAll('[data-testid="material-options"] [role="option"]').forEach((option) => {
+      option.addEventListener('click', () => {
+        $('material').value = option.textContent.trim();
+      });
+    });
+
+    $('open-confirm').addEventListener('click', () => $('confirm-dialog').showModal());
+
+    $('format-info').addEventListener('mouseenter', () => {
+      document.getElementById('format-tip').hidden = false;
+    });
+    $('format-info').addEventListener('mouseleave', () => {
+      document.getElementById('format-tip').hidden = true;
+    });
+
+    document.querySelectorAll('[data-testid="settings-tabs"] [role="tab"]').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        document
+          .querySelectorAll('[data-testid="settings-tabs"] [role="tab"]')
+          .forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
+      });
+    });
+
+    $('actions-menu').addEventListener('click', () => {
+      $('actions-menu-list').hidden = !$('actions-menu-list').hidden;
+    });
+    document.querySelectorAll('[data-testid="actions-menu-list"] [role="menuitem"]').forEach((item) => {
+      item.addEventListener('click', () => {
+        $('menu-status').textContent = `Action: ${item.textContent.trim()}`;
+        $('actions-menu-list').hidden = true;
+      });
+    });
+  </script>
+</body>
+</html>

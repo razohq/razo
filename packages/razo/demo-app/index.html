@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Profile Settings</title>
+</head>
+<body>
+  <h1>Profile Settings</h1>
+
+  <!-- No element declares data-testid by hand: the plugin generates it
+       from data-component. -->
+  <label>
+    Nickname
+    <input type="text" data-component="NicknameField" />
+  </label>
+
+  <label>
+    <input type="checkbox" data-component="NewsletterOptIn" />
+    Subscribe to newsletter
+  </label>
+
+  <button type="button" data-component="SaveButton">Save</button>
+
+  <!-- A manual testid always wins over the generated one. -->
+  <p data-component="StatusMessage" data-testid="legacy-status"></p>
+
+  <script>
+    document.querySelector('[data-component="SaveButton"]').addEventListener('click', () => {
+      const nickname = document.querySelector('[data-component="NicknameField"]').value.trim();
+      document.querySelector('[data-component="StatusMessage"]').textContent = nickname
+        ? `Saved profile for ${nickname}`
+        : 'Error: nickname is required';
+    });
+  </script>
+</body>
+</html>

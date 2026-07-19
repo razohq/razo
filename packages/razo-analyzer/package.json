@@ -1,0 +1,64 @@
+{
+  "name": "@razohq/razo-analyzer",
+  "version": "0.1.0",
+  "description": "AI failure analysis for razo test artifacts: feeds ai-steps.json to Claude and returns which business action failed, a root-cause hypothesis, and a suggested fix.",
+  "license": "MIT",
+  "author": "Mitchell Lombardo <razohq@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/razohq/razo.git",
+    "directory": "packages/razo-analyzer"
+  },
+  "bugs": "https://github.com/razohq/razo/issues",
+  "homepage": "https://github.com/razohq/razo/tree/main/packages/razo-analyzer#readme",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "razo-analyze": "./dist/cli.js",
+    "razo-analyzer": "./dist/cli.js",
+    "razo-upload": "./dist/upload-cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "action.yml",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "playwright",
+    "testing",
+    "ai",
+    "failure-analysis",
+    "test-reporting",
+    "claude",
+    "razo"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
+    "openai": "^6.48.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
