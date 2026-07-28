@@ -62,7 +62,7 @@ test('a role-located control composes with within', async ({ page }) => {
   await yes.click();
 
   const events = emittedEvents();
-  expect(events[1].sentence).toBe('Click button "Yes, export"');
+  expect(events[1].sentence).toBe('Click button "Yes, export" in dialog "Confirm export"');
   expect(events[1].selector).toBe(
     '[data-testid="confirm-dialog"] role=button[name="Yes, export"]',
   );

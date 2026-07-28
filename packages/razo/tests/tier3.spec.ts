@@ -25,8 +25,8 @@ test('a control scoped within a dialog narrates normally and chains its selector
   const events = emittedEvents();
   expect(events.map((e) => e.sentence)).toEqual([
     'Click button "Confirm export"',
-    'Assert button "Yes, export" is visible',
-    'Click button "Yes, export"',
+    'Assert button "Yes, export" is visible in dialog "Confirm export"',
+    'Click button "Yes, export" in dialog "Confirm export"',
   ]);
   // The scoped control's StepEvent carries the full selector chain.
   expect(events[2].selector).toBe(
