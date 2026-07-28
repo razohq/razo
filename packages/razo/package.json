@@ -1,6 +1,6 @@
 {
   "name": "@razohq/razo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Playwright UI controls with human names that narrate every action twice: a readable test.step() sentence and a structured StepEvent JSON artifact built for AI failure analysis.",
   "license": "MIT",
   "type": "commonjs",
