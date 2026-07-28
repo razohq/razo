@@ -268,7 +268,11 @@ export abstract class Control {
       detail: options.detail,
       expected: options.expected,
     };
-    const sentence = options.as ?? SENTENCES[action](context);
+    const baseSentence = SENTENCES[action](context);
+    const scoped = this.parent
+      ? `${baseSentence} in ${this.parent.controlType} "${this.parent.name}"`
+      : baseSentence;
+    const sentence = options.as ?? scoped;
     const base = {
       action,
       controlType: this.controlType,

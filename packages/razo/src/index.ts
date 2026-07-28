@@ -18,6 +18,7 @@ export { TextArea } from './controls/TextArea';
 export { Switch } from './controls/Switch';
 export { Combobox } from './controls/Combobox';
 export { Table } from './controls/Table';
+export { TableRow, Cell } from './controls/TableRow';
 export { Dialog } from './controls/Dialog';
 export { Tabs } from './controls/Tabs';
 export { Image } from './controls/Image';

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { Control } from '../src/controls/Control';
+import { Control, type ControlOptions } from '../src/controls/Control';
 import { AI_STEP_ATTACHMENT, type StepEvent } from '../src/reporting/events';
 import { DEMO_URL } from '../fixtures/demoUrl';
 
@@ -7,8 +7,8 @@ import { DEMO_URL } from '../fixtures/demoUrl';
 class ProbeControl extends Control {
   protected readonly controlType = 'button';
 
-  constructor(page: Page, testId: string, name: string) {
-    super(page, testId, name);
+  constructor(page: Page, testId: string, name: string, options?: ControlOptions) {
+    super(page, testId, name, options);
   }
 
   async succeed() {
@@ -78,4 +78,22 @@ test('the sentence can be overridden for business-level narration', async ({ pag
 
 test('an anonymous control is rejected', async ({ page }) => {
   expect(() => new ProbeControl(page, 'export', '  ')).toThrow(/needs a human-readable name/);
+});
+
+test('a control within a parent appends the parent context to the sentence', async ({ page }) => {
+  const parent = new ProbeControl(page, 'export', 'Export');
+  const child = new ProbeControl(page, 'confirm', 'Confirm', { within: parent });
+  await child.succeed(); // emits a 'click' step
+
+  const [event] = emittedEvents();
+  expect(event.sentence).toBe('Click button "Confirm" in button "Export"');
+});
+
+test('an explicit `as` overrides the auto within-context entirely', async ({ page }) => {
+  const parent = new ProbeControl(page, 'export', 'Export');
+  const child = new ProbeControl(page, 'confirm', 'Confirm', { within: parent });
+  await child.businessOverride(); // step('click', { as: 'Confirm the export' })
+
+  const [event] = emittedEvents();
+  expect(event.sentence).toBe('Confirm the export');
 });
