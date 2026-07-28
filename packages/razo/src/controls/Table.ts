@@ -12,6 +12,10 @@ type RowCtor<TRow extends TableRow> = new (
 /** Row assertions plus row access. Subclass with a bound `rowClass` for typed rows. */
 export class Table<TRow extends TableRow = TableRow> extends Control {
   protected readonly controlType = 'table';
+  // Unsound path: `new Table<CustomRow>(...)` with an explicit type arg but
+  // WITHOUT overriding `rowClass` in a subclass type-checks fine, yet `rowClass`
+  // stays the base `TableRow` at runtime — custom fields are `undefined`. Always
+  // bind a custom row type by overriding `rowClass` in a subclass.
   protected rowClass: RowCtor<TRow> = TableRow as RowCtor<TRow>;
 
   private rowsLocator(): Locator {
@@ -23,6 +27,8 @@ export class Table<TRow extends TableRow = TableRow> extends Control {
   }
 
   /** A row by cell text, or by 0-based index. */
+  // Note: a string always searches by cell text, a number always selects by
+  // 0-based index — a number-like string (e.g. "3") searches text, not index.
   row(textOrIndex: string | number): TRow {
     if (typeof textOrIndex === 'number') {
       return this.makeRow(this.rowsLocator().nth(textOrIndex), `row #${textOrIndex}`);

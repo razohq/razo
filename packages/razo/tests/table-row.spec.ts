@@ -39,7 +39,8 @@ test('a row helper button is scoped to that row and narrates the row context', a
 
 test('the same helper on another row targets that row (disabled → fails there)', async ({ page }) => {
   await page.setContent(TABLE);
-  await expect(rowFor(page, 'base.3mf').button('Delete').click()).rejects.toThrow();
+  await expect(rowFor(page, 'base.3mf').button('Delete').click())
+    .rejects.toThrow(/not enabled|disabled|Timeout/i);
 });
 
 test('cell(index) asserts the nth cell text, scoped to the row', async ({ page }) => {
@@ -72,6 +73,29 @@ test('Table.rows() returns all rows', async ({ page }) => {
   const rows = await new Table(page, 'exports', 'Exports').rows();
   expect(rows).toHaveLength(2);
   await rows[1].cell(0).expectText('base.3mf');
+});
+
+test('input and checkbox helpers scope to the row and narrate row context', async ({ page }) => {
+  await page.setContent(`
+    <table data-testid="cart">
+      <tbody>
+        <tr>
+          <td>Widget</td>
+          <td><input aria-label="Qty" value="1"></td>
+          <td><input type="checkbox" aria-label="Select"></td>
+        </tr>
+      </tbody>
+    </table>`);
+  const locator = page.getByTestId('cart').locator('tbody tr').filter({ hasText: 'Widget' }).first();
+  const row = new TableRow(page, { locator }, 'Widget');
+
+  await row.input('Qty').fill('3');
+  await row.checkbox('Select').check();
+
+  const events = emittedEvents();
+  expect(events.some((e) => e.sentence.includes('in row "Widget"'))).toBe(true);
+  expect(events.some((e) => e.action === 'fill' && e.status === 'passed')).toBe(true);
+  expect(events.some((e) => e.action === 'check' && e.status === 'passed')).toBe(true);
 });
 
 test('a Table<TRow> subclass returns the custom row type', async ({ page }) => {

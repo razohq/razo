@@ -31,7 +31,7 @@ export class TableRow extends Control {
   }
 
   cell(index: number): Cell {
-    return new Cell(this.page, { css: `td:nth-child(${index + 1})` }, `cell #${index}`, {
+    return new Cell(this.page, { css: `:scope > td:nth-child(${index + 1})` }, `cell #${index}`, {
       within: this,
     });
   }
