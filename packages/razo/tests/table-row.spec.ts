@@ -1,5 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import { TableRow } from '../src/controls/TableRow';
+import { Table } from '../src/controls/Table';
+import { Button } from '../src/controls/Button';
+import { Label } from '../src/controls/Label';
 import { AI_STEP_ATTACHMENT, type StepEvent } from '../src/reporting/events';
 
 function emittedEvents(): StepEvent[] {
@@ -46,4 +49,41 @@ test('cell(index) asserts the nth cell text, scoped to the row', async ({ page }
   const [event] = emittedEvents();
   expect(event.status).toBe('passed');
   expect(event.sentence).toContain('in row "mi-llavero.3mf"');
+});
+
+test('Table.row(text) returns a usable TableRow', async ({ page }) => {
+  await page.setContent(TABLE);
+  const table = new Table(page, 'exports', 'Exports');
+  await table.row('mi-llavero.3mf').button('Delete').click();
+
+  const [event] = emittedEvents();
+  expect(event.sentence).toBe('Click button "Delete" in row "mi-llavero.3mf"');
+});
+
+test('Table.row(index) targets the 0-based row', async ({ page }) => {
+  await page.setContent(TABLE);
+  const table = new Table(page, 'exports', 'Exports');
+  await table.row(0).cell(0).expectText('mi-llavero.3mf');
+  expect(emittedEvents()[0].status).toBe('passed');
+});
+
+test('Table.rows() returns all rows', async ({ page }) => {
+  await page.setContent(TABLE);
+  const rows = await new Table(page, 'exports', 'Exports').rows();
+  expect(rows).toHaveLength(2);
+  await rows[1].cell(0).expectText('base.3mf');
+});
+
+test('a Table<TRow> subclass returns the custom row type', async ({ page }) => {
+  class ExportRow extends TableRow {
+    delete = new Button(this.page, { role: 'button', name: 'Delete' }, 'Delete', { within: this });
+    file = new Label(this.page, { css: 'td:nth-child(1)' }, 'File', { within: this });
+  }
+  class ExportsTable extends Table<ExportRow> {
+    protected rowClass = ExportRow;
+  }
+  await page.setContent(TABLE);
+  const row = new ExportsTable(page, 'exports', 'Exports').row('mi-llavero.3mf');
+  await row.file.expectText('mi-llavero.3mf'); // typed field access
+  expect(emittedEvents()[0].sentence).toContain('in row "mi-llavero.3mf"');
 });
