@@ -9,13 +9,21 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
+# Pin the consumer's Playwright to the repo's version so the browser CI already
+# installed (and cached) matches — an unpinned install can resolve a newer
+# Playwright whose browser build was never downloaded.
+PW_VERSION="$(node -p "require('$ROOT/node_modules/@playwright/test/package.json').version")"
+
 cd "$ROOT/packages/razo"
 npm run build > /dev/null
 TARBALL="$(npm pack --pack-destination "$WORKDIR" | tail -1)"
 
 cd "$WORKDIR"
 npm init -y > /dev/null
-npm install --no-audit --no-fund -D "./$TARBALL" @playwright/test typescript @types/node > /dev/null
+npm install --no-audit --no-fund -D "./$TARBALL" "@playwright/test@$PW_VERSION" typescript @types/node > /dev/null
+
+# Ensure the matching browser is present (no-op when already cached).
+npx playwright install chromium > /dev/null
 
 cat > playwright.config.ts <<'EOF'
 import { defineConfig } from '@playwright/test';
