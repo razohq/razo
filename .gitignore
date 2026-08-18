@@ -4,3 +4,6 @@ test-results/
 playwright-report/
 *.tgz
 .DS_Store
+
+# Planning docs stay local: they are working notes, not part of the package.
+docs/superpowers/
