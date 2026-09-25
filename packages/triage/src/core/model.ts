@@ -31,8 +31,12 @@ export interface TestResult {
   durationMs: number;
   workerIndex?: number;
   error?: TestError;
-  /** Controls the test drove, e.g. `button "Place order"`, from razo's StepEvents. */
+  /** Controls the test drove, e.g. `button "Place order"`, derived from `controls`. */
   touchedComponents?: string[];
+  /** The same controls with their selector, so suspects can match testids and role names in diffs. */
+  controls?: TouchedControl[];
+  /** Steps whose primary locator stopped resolving and healed to another. Evidence for stale-test, never a confidence boost. */
+  healedLocators?: Array<{ from: string; to: string }>;
   traceUrl?: string;
 }
 
@@ -40,6 +44,12 @@ export interface Attempt {
   status: TestStatus;
   durationMs: number;
   error?: TestError;
+}
+
+export interface TouchedControl {
+  controlType: string;
+  name: string;
+  selector: string;
 }
 
 export interface TestError {

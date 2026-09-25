@@ -10,3 +10,4 @@ export {
   testHistories, shaRange, stableBefore, retryFlip, sameShaFlips, isFailing,
   type TestHistory, type TestOutcome,
 } from './core/history';
+export { needlesFor, changedLines, findSuspects, commitsInRange, type SuspectInput } from './core/suspects';
