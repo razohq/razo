@@ -75,3 +75,14 @@ test('review 4: a mixed cluster takes its range from a test that has one, not fr
   assert.ok(item.classification.evidence.some((e) => e.kind === 'history' && /1 regression/.test(e.description)));
   assert.ok(item.classification.evidence.some((e) => e.kind === 'history' && e.description.includes(`before ${sha(5).slice(0, 7)}`)));
 });
+
+test('since: only failures at or after the window start form clusters, but history still sees the lookback', async () => {
+  const runs = await new RazoSource(DEMO).fetchRuns(new Date(0));
+  const [green, red] = runs;
+  const afterRed = new Date(Date.parse(red.finishedAt) + 1);
+  assert.deepEqual(await analyzeWindow(runs, demoCode(), undefined, { since: afterRed }), []);
+  const items = await analyzeWindow(runs, demoCode(), undefined, { since: new Date(red.startedAt) });
+  assert.equal(items.length, 2);
+  const order = items.find((i) => i.cluster.failures[0].testId.endsWith('placing the order confirms it'));
+  assert.equal(order.cluster.lastGreenSha, green.sha, 'the green run before the window still feeds the range');
+});

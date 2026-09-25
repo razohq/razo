@@ -15,6 +15,8 @@ export interface TriageItem {
 export interface AnalyzeOptions {
   /** Branch whose runs define green and red. Default: main. */
   baseBranch?: string;
+  /** Start of the triage window: only failures in runs finished at or after it form clusters. History uses every run. */
+  since?: Date;
 }
 
 /** Controls driven by the cluster's tests, across every run in the window. */
@@ -37,14 +39,17 @@ export async function analyzeWindow(
   rules: RulesConfig = DEFAULT_RULES,
   options: AnalyzeOptions = {},
 ): Promise<TriageItem[]> {
-  const clusters = clusterFailures(runs);
+  const inWindow = options.since
+    ? runs.filter((run) => Date.parse(run.finishedAt) >= options.since!.getTime())
+    : runs;
+  const clusters = clusterFailures(inWindow);
   const histories = testHistories(runs);
   const items: TriageItem[] = [];
   for (const cluster of clusters) {
     // Each test has its own range; the cluster shows the first complete one and
     // its suspects come from the union of every complete range.
     const ranges = failingTestIds(cluster).map((id) =>
-      shaRange(histories.get(id) ?? { testId: id, file: '', outcomes: [] }, options),
+      shaRange(histories.get(id) ?? { testId: id, file: '', outcomes: [] }, { baseBranch: options.baseBranch }),
     );
     const complete = ranges.filter((r) => r.lastGreenSha && r.firstRedSha);
     const range = complete[0] ?? ranges.find((r) => r.firstRedSha) ?? {};
