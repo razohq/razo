@@ -17,6 +17,8 @@ export interface AnalyzeOptions {
   baseBranch?: string;
   /** Start of the triage window: only failures in runs finished at or after it form clusters. History uses every run. */
   since?: Date;
+  /** End of the window: runs finished after it are left out entirely, so a replay of an old morning sees what it saw then. */
+  until?: Date;
 }
 
 /** Controls driven by the cluster's tests, across every run in the window. */
@@ -39,11 +41,14 @@ export async function analyzeWindow(
   rules: RulesConfig = DEFAULT_RULES,
   options: AnalyzeOptions = {},
 ): Promise<TriageItem[]> {
-  const inWindow = options.since
-    ? runs.filter((run) => Date.parse(run.finishedAt) >= options.since!.getTime())
+  const known = options.until
+    ? runs.filter((run) => Date.parse(run.finishedAt) <= options.until!.getTime())
     : runs;
+  const inWindow = options.since
+    ? known.filter((run) => Date.parse(run.finishedAt) >= options.since!.getTime())
+    : known;
   const clusters = clusterFailures(inWindow);
-  const histories = testHistories(runs);
+  const histories = testHistories(known);
   const items: TriageItem[] = [];
   for (const cluster of clusters) {
     // Each test has its own range; the cluster shows the first complete one and

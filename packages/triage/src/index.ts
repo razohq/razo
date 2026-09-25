@@ -37,3 +37,4 @@ export { pullGithubArtifacts, DEFAULT_ARTIFACT_PREFIX, type PullOptions, type Pu
 export { parseConfig, type TriageConfig, type PluginRef, type PullConfig } from './config/schema';
 export { loadConfig } from './config/load';
 export { instantiate, builtinPlugins, type Adapters } from './config/registry';
+export { parseDuration, runTriage, runPull, type RunOptions, type RunResult, type PullCommandOptions } from './commands';
