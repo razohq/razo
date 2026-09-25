@@ -109,24 +109,23 @@ Each kit in `contract/` is a function from an adapter factory to a list of runne
 - `docs/superpowers/` and `.superpowers/` are local planning notes and are gitignored. Do not reference them from shipped code or READMEs.
 - README examples in `packages/razo/README.md` and the root README are the public contract for sentences and the `StepEvent` shape. Update them when the grammar or the JSON changes.
 
-## Triage matutino (`packages/triage`)
+## Morning triage (`packages/triage`)
 
-Antes de trabajar en este paquete, leé `packages/triage/DESIGN.md`. Es la fuente de verdad del diseño.
+Before working in this package, read `packages/triage/DESIGN.md`. It is the source of truth for the design.
 
-### Reglas que no se rompen
+### Rules that never break
 
-- `src/core/` solo importa desde `src/core/` y `src/ports/`. Nunca importa adaptadores, Jira, Slack, GitHub ni código interno de razo.
-- El acceso a datos de razo pasa únicamente por la interfaz `ResultSource` (adaptador `src/adapters/razo-source/`).
-- Agrupar, clasificar y buscar commits sospechosos es determinístico. El LLM solo se usa en `src/llm/`, sobre un brief ya calculado.
-- El LLM no puede cambiar una categoría con confianza `high` de las reglas ni subir la confianza a `high` sin evidencia determinística.
-- Ningún código escribe en un tracker externo sin una acción aprobada registrada en `triage_actions`.
-- Los secretos se leen de variables de entorno. Nunca se hardcodean ni se loguean.
+- `src/core/` imports only from `src/core/` and `src/ports/`. It never imports adapters, external services or razo internals.
+- Access to razo data goes exclusively through the `ResultSource` interface (adapter `src/adapters/razo-source/`).
+- Grouping, classifying and finding suspect commits is deterministic. This package calls no model: assisted diagnosis, trackers and interactive notifications live in razo-cloud and consume `TriageItem[]` without changing what the rules decided with `high` confidence.
+- This package only reads external systems. It never writes to a tracker or a chat.
+- Secrets come from environment variables. They are never hardcoded or logged.
 
-### Forma de trabajo
+### Way of working
 
-- Tests primero para reglas de clasificación, clustering y commits sospechosos, usando fixtures reales de Playwright en `test/fixtures/`.
-- Los tests unitarios no usan red. Las integraciones se prueban con el kit de contrato y adaptadores falsos.
-- Todo adaptador nuevo debe pasar el kit de tests de contrato de su tipo en `test/contract/`.
-- Umbrales de reglas en la config, nunca como números mágicos en el código.
-- Trabajar una fase de `DESIGN.md` a la vez. Al terminar una fase, actualizar `DESIGN.md` con las decisiones tomadas y marcar la fase como completa.
-- Ante una decisión de diseño no cubierta por `DESIGN.md`, proponer opciones y esperar aprobación antes de implementar.
+- Tests first for classification rules, clustering and suspect commits, using the real Playwright fixtures under `packages/triage/fixtures/`.
+- Unit tests never touch the network. Integrations are tested with the contract kit, fake adapters and an injected `fetch` that replays recorded responses.
+- Every new adapter must pass the contract test kit of its kind, exported from `@razohq/triage/contract`.
+- Rule thresholds live in the config, never as magic numbers in the code.
+- Work one phase of `DESIGN.md` at a time. When a phase ends, update `DESIGN.md` with the decisions taken and mark the phase complete.
+- Everything that gets pushed is in English: code, comments, tests, docs and commit messages.
