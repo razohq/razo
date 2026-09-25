@@ -24,3 +24,6 @@ export {
 } from './core/classify';
 export { analyzeWindow, type TriageItem, type AnalyzeOptions } from './core/pipeline';
 export { buildReport, type ReportInput } from './core/report';
+export {
+  MarkdownNotifier, markdownNotifierPlugin, renderMarkdown, readReports, type MarkdownNotifierConfig,
+} from './adapters/markdown-notifier';
