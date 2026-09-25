@@ -1,0 +1,82 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { parseConfig, loadConfig, instantiate, DEFAULT_RULES, RazoSource, MarkdownNotifier, CommitsJsonCodeContext } from '../dist/index.js';
+
+const minimal = {
+  source: { plugin: 'razo-source', config: { dataDir: './.razo' } },
+  code: { plugin: 'commits-json', config: { path: './commits.json' } },
+};
+
+test('defaults: baseBranch main, DEFAULT_RULES, no notifiers', () => {
+  const cfg = parseConfig(minimal, {});
+  assert.equal(cfg.baseBranch, 'main');
+  assert.deepEqual(cfg.rules, DEFAULT_RULES);
+  assert.deepEqual(cfg.notifiers, []);
+  assert.equal(cfg.pull, undefined);
+});
+
+test('rules are deep-merged over the defaults and unknown keys are errors', () => {
+  const cfg = parseConfig({ ...minimal, rules: { env: { minFiles: 8 } } }, {});
+  assert.equal(cfg.rules.env.minFiles, 8);
+  assert.equal(cfg.rules.env.windowMinutes, 10);
+  assert.deepEqual(cfg.rules.flaky, DEFAULT_RULES.flaky);
+  assert.throws(() => parseConfig({ ...minimal, rules: { env: { minfiles: 8 } } }, {}), /rules\.env\.minfiles/);
+});
+
+test('${VAR} expands from the environment anywhere in a string', () => {
+  const cfg = parseConfig({ ...minimal, pull: { repo: 'o/r', token: 'tok-${GITHUB_TOKEN}-x' } }, { GITHUB_TOKEN: 'abc' });
+  assert.equal(cfg.pull.token, 'tok-abc-x');
+});
+
+test('an unset environment variable is an error naming it', () => {
+  assert.throws(() => parseConfig({ ...minimal, pull: { repo: 'o/r', token: '${NOPE_TOKEN}' } }, {}), /NOPE_TOKEN/);
+});
+
+test('missing source or code is an actionable error', () => {
+  assert.throws(() => parseConfig({ code: minimal.code }, {}), /source/);
+  assert.throws(() => parseConfig({ source: minimal.source }, {}), /code/);
+  assert.throws(() => parseConfig({ ...minimal, notifiers: 'markdown' }, {}), /notifiers/);
+});
+
+test('loadConfig reads YAML', () => {
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'triage-cfg-')), 'triage.config.yaml');
+  fs.writeFileSync(file, `
+baseBranch: release
+source:
+  plugin: razo-source
+  config: { dataDir: ./.razo }
+code:
+  plugin: commits-json
+  config: { path: ./commits.json }
+notifiers:
+  - plugin: markdown
+    config: { outDir: ./out }
+  - plugin: slack
+    enabled: false
+    config: { webhookUrl: "\${SLACK}" }
+`);
+  const cfg = loadConfig(file, { SLACK: 'x' });
+  assert.equal(cfg.baseBranch, 'release');
+  assert.equal(cfg.notifiers.length, 2);
+  assert.throws(() => loadConfig('/nope/triage.config.yaml', {}), /\/nope\/triage\.config\.yaml/);
+});
+
+test('instantiate builds the adapters through the registry and skips disabled notifiers', () => {
+  const cfg = parseConfig({
+    ...minimal,
+    notifiers: [{ plugin: 'markdown', config: { outDir: './out' } }, { plugin: 'slack', enabled: false, config: {} }],
+  }, {});
+  const built = instantiate(cfg);
+  assert.ok(built.source instanceof RazoSource);
+  assert.ok(built.code instanceof CommitsJsonCodeContext);
+  assert.equal(built.notifiers.length, 1);
+  assert.ok(built.notifiers[0] instanceof MarkdownNotifier);
+});
+
+test('an unknown plugin, or one of the wrong kind, is an error naming it', () => {
+  assert.throws(() => instantiate(parseConfig({ ...minimal, code: { plugin: 'nope', config: {} } }, {})), /nope/);
+  assert.throws(() => instantiate(parseConfig({ ...minimal, code: { plugin: 'markdown', config: { outDir: 'x' } } }, {})), /markdown.*code|code.*markdown/);
+});

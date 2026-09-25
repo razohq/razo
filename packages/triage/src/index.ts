@@ -34,3 +34,6 @@ export {
 export { CommitsJsonCodeContext, commitsJsonCodePlugin, type CommitsJsonConfig } from './adapters/commits-json';
 export { reportsFromZip } from './collectors/unzip';
 export { pullGithubArtifacts, DEFAULT_ARTIFACT_PREFIX, type PullOptions, type PullSummary } from './collectors/github-artifacts';
+export { parseConfig, type TriageConfig, type PluginRef, type PullConfig } from './config/schema';
+export { loadConfig } from './config/load';
+export { instantiate, builtinPlugins, type Adapters } from './config/registry';
