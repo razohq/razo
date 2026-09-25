@@ -32,3 +32,5 @@ export {
   type FetchLike, type FetchResponseLike, type GitHubApiOptions, type GitHubConfig,
 } from './adapters/github';
 export { CommitsJsonCodeContext, commitsJsonCodePlugin, type CommitsJsonConfig } from './adapters/commits-json';
+export { reportsFromZip } from './collectors/unzip';
+export { pullGithubArtifacts, DEFAULT_ARTIFACT_PREFIX, type PullOptions, type PullSummary } from './collectors/github-artifacts';
