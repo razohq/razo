@@ -50,3 +50,36 @@ describe('cloud-examples', () => {
     for (const run of runs) assert.equal(run.results.filter((r) => r.status === 'failed').length, 1, run.id);
   });
 });
+
+describe('razo-demo-pr-1', () => {
+  const dir = path.join(FIXTURES, 'razo-demo-pr-1');
+  test('has a green base run on main and a red PR run with the two expected failures', async () => {
+    const runs = await new RazoSource(dir).fetchRuns(new Date(0));
+    assert.equal(runs.length, 2);
+    const [green, red] = runs;
+    assert.equal(green.branch, 'main');
+    assert.equal(green.results.filter((r) => r.status !== 'passed').length, 0);
+    assert.equal(red.branch, 'main', 'the PR head is captured as a main run: it is what merging would have made red');
+    assert.deepEqual(
+      red.results.filter((r) => r.status === 'failed').map((r) => r.title).sort(),
+      ['placing the order confirms it', 'the cart lists both items'],
+    );
+    assert.notEqual(green.sha, red.sha);
+    const order = red.results.find((r) => r.title === 'placing the order confirms it');
+    assert.ok(order.touchedComponents.includes('button "Place order"'));
+    assert.ok(order.controls.some((c) => c.selector === '[data-testid="place-order"]'));
+  });
+  test('commits.json starts at the green sha, ends at the red sha and carries the checkout-page patch', async () => {
+    const commits = JSON.parse(fs.readFileSync(path.join(dir, 'commits.json'), 'utf8'));
+    const [green, red] = await new RazoSource(dir).fetchRuns(new Date(0));
+    // Topological order, as git walks it. Author dates are not monotonic here: the PR
+    // commit was authored before the merge-base commit, which is normal after a rebase.
+    assert.equal(commits[0].sha, green.sha);
+    assert.equal(commits[commits.length - 1].sha, red.sha);
+    for (const c of commits) assert.ok(!Number.isNaN(Date.parse(c.date)), c.sha);
+    const change = commits.find((c) => c.files.some((f) => f.filename === 'tests/checkout-page.ts'));
+    assert.ok(change, 'the commit touching checkout-page.ts');
+    assert.match(change.files.find((f) => f.filename === 'tests/checkout-page.ts').patch, /place-order/);
+  });
+});
+

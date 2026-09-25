@@ -1,0 +1,37 @@
+{
+  "test": "an invalid coupon shows an inline error",
+  "file": "tests/checkout.spec.ts",
+  "status": "passed",
+  "durationMs": 93,
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Coupon",
+      "sentence": "Type \"NOPE123\" into field \"Coupon\"",
+      "detail": "NOPE123",
+      "selector": "[data-testid=\"coupon\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:39.136Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Apply coupon",
+      "sentence": "Click button \"Apply coupon\"",
+      "selector": "[data-testid=\"apply-coupon\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:39.170Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Discount",
+      "sentence": "Assert label \"Discount\" has text \"Invalid coupon\"",
+      "expected": "Invalid coupon",
+      "selector": "[data-testid=\"discount\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:39.172Z"
+    }
+  ]
+}

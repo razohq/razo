@@ -1,0 +1,21 @@
+{
+  "test": "the cart lists both items",
+  "file": "tests/checkout.spec.ts",
+  "status": "failed",
+  "durationMs": 5084,
+  "error": "Error: expect(locator).toHaveCount(expected) failed\n\nLocator:  getByTestId('items').locator('tbody tr')\nExpected: 2\nReceived: 1\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveCount\" with timeout 5000ms\n  - waiting for getByTestId('items').locator('tbody tr')\n    14 × locator resolved to 1 element\n       - unexpected value \"1\"\n",
+  "steps": [
+    {
+      "action": "assert-row-count",
+      "controlType": "table",
+      "name": "Cart items",
+      "sentence": "Assert table \"Cart items\" has 2 rows",
+      "expected": "2",
+      "actual": "1",
+      "selector": "[data-testid=\"items\"]",
+      "status": "failed",
+      "error": "expect(locator).toHaveCount(expected) failed\n\nLocator:  getByTestId('items').locator('tbody tr')\nExpected: 2\nReceived: 1\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveCount\" with timeout 5000ms\n  - waiting for getByTestId('items').locator('tbody tr')\n    14 × locator resolved to 1 element\n       - unexpected value \"1\"\n",
+      "timestamp": "2026-09-25T01:52:45.756Z"
+    }
+  ]
+}

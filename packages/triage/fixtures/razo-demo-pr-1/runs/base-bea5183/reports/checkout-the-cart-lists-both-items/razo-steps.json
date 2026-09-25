@@ -1,0 +1,28 @@
+{
+  "test": "the cart lists both items",
+  "file": "tests/checkout.spec.ts",
+  "status": "passed",
+  "durationMs": 58,
+  "steps": [
+    {
+      "action": "assert-row-count",
+      "controlType": "table",
+      "name": "Cart items",
+      "sentence": "Assert table \"Cart items\" has 2 rows",
+      "expected": "2",
+      "selector": "[data-testid=\"items\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:39.234Z"
+    },
+    {
+      "action": "assert-row-contains",
+      "controlType": "table",
+      "name": "Cart items",
+      "sentence": "Assert table \"Cart items\" has a row containing \"Keyboard\"",
+      "expected": "Keyboard",
+      "selector": "[data-testid=\"items\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:39.237Z"
+    }
+  ]
+}

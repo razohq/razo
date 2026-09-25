@@ -51,3 +51,19 @@ test('runs are ordered by startedAt before grouping, whatever order they arrive 
 test('no failures, no clusters', () => {
   assert.deepEqual(clusterFailures([seed.runs[0]]), []);
 });
+
+// --- real fixture ---
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { RazoSource } from '../dist/index.js';
+
+test('the razo-demo red run yields two clusters, one per failing test', async () => {
+  const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../fixtures/razo-demo-pr-1');
+  const runs = await new RazoSource(dir).fetchRuns(new Date(0));
+  const clusters = clusterFailures(runs);
+  assert.equal(clusters.length, 2);
+  assert.deepEqual(clusters.flatMap(failingTestIds).sort(), [
+    'tests/checkout.spec.ts::placing the order confirms it',
+    'tests/checkout.spec.ts::the cart lists both items',
+  ]);
+});

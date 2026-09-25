@@ -140,3 +140,35 @@ test('needles match on token boundaries, so "order" does not match "reorder"', a
   });
   assert.deepEqual(result.suspects, []);
 });
+
+// --- real fixture ---
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { RazoSource, testHistories, shaRange } from '../dist/index.js';
+
+test('razo-demo: the express-checkout commit is the suspect for the Place order test', async () => {
+  const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../fixtures/razo-demo-pr-1');
+  const runs = await new RazoSource(dir).fetchRuns(new Date(0));
+  const code = new MemoryCodeContext(JSON.parse(fs.readFileSync(path.join(dir, 'commits.json'), 'utf8')));
+  const checkout = runs[1].results.find((r) => r.title === 'placing the order confirms it');
+  const range = shaRange(testHistories(runs).get(checkout.testId));
+  assert.deepEqual(range, { lastGreenSha: runs[0].sha, firstRedSha: runs[1].sha });
+  const commits = await commitsInRange(code, range);
+  assert.equal(commits.length, 3);
+  const { suspects, unevaluable } = await findSuspects({ controls: checkout.controls, commits, changedFiles: (sha) => code.changedFiles(sha) });
+  assert.equal(suspects.length, 1);
+  assert.match(suspects[0].message, /Express checkout/);
+  assert.deepEqual(suspects[0].overlappingComponents, ['button "Place order"']);
+  assert.deepEqual(unevaluable, []);
+});
+
+test('razo-demo: the cart test has no suspect, its table testid is untouched by the diff', async () => {
+  const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../fixtures/razo-demo-pr-1');
+  const runs = await new RazoSource(dir).fetchRuns(new Date(0));
+  const code = new MemoryCodeContext(JSON.parse(fs.readFileSync(path.join(dir, 'commits.json'), 'utf8')));
+  const cart = runs[1].results.find((r) => r.title === 'the cart lists both items');
+  const commits = await commitsInRange(code, shaRange(testHistories(runs).get(cart.testId)));
+  const { suspects } = await findSuspects({ controls: cart.controls, commits, changedFiles: (sha) => code.changedFiles(sha) });
+  assert.deepEqual(suspects, []);
+});
