@@ -27,3 +27,8 @@ export { buildReport, type ReportInput } from './core/report';
 export {
   MarkdownNotifier, markdownNotifierPlugin, renderMarkdown, readReports, type MarkdownNotifierConfig,
 } from './adapters/markdown-notifier';
+export {
+  GitHubApi, GitHubApiError, GitHubCodeContext, githubCodePlugin, githubConfigSchema,
+  type FetchLike, type FetchResponseLike, type GitHubApiOptions, type GitHubConfig,
+} from './adapters/github';
+export { CommitsJsonCodeContext, commitsJsonCodePlugin, type CommitsJsonConfig } from './adapters/commits-json';
