@@ -515,18 +515,33 @@ Anonimización: sólo hace falta si alguna vez se toman datos de un proyecto aje
 - Puerto `TriageStore`, su kit de contrato y el adaptador `sqlite`; estados de cluster, novedad y días abiertos.
 - Diagnóstico LLM con regla de credibilidad.
 - Notificador Slack.
+- Reintentos de workflow como evidencia de flaky: el recolector guarda `run_attempt` en `run.json` y, cuando el mismo SHA tiene más de un intento de workflow, `classify` suma evidencia `retry` al cluster. Hoy `/actions/runs` lista sólo el último intento; hace falta pedir los anteriores por `/actions/runs/{id}/attempts/{n}`.
 - **Hecho cuando:** dos días consecutivos no repiten como "nuevo" un cluster ya visto.
 
-### Phase 3 — Local memory
-- `TriageStore` port, its contract kit and the `sqlite` adapter; cluster states, novelty and days open.
-- Workflow re-runs as flaky evidence: the collector stores `run_attempt` in `run.json` and, when the same SHA has more than one workflow attempt, `classify` adds `retry` evidence to the cluster. Today `/actions/runs` lists only the latest attempt; earlier ones have to be fetched through `/actions/runs/{id}/attempts/{n}`.
-- **Done when:** two consecutive days do not repeat an already seen cluster as "new".
+#### Endurecimiento (menores diferidos de las revisiones de la Fase 2)
 
-### Phase 4 — Public SDK
-- Documentation of the plugin contract and a template plugin.
-- A second adapter of each kind implemented against the interface only, outside the monorepo, as proof of the SDK.
-- Streaming download of large artifacts: today the collector loads the whole zip into memory before filtering its entries; with traces and videos from a large suite the archive has to be read in parts and only the `razo-steps.json` entries extracted.
-- **Done when:** an external adapter works with no changes in `core/`.
+Cada uno con su test rojo primero:
+
+1. `suspects`: el match de nombre de archivo para "no evaluable" es por substring, y `-` y `_` cuentan como límite de token en `containsToken`; `order` puntúa `data-testid="order-row"` y `src/reorder.ts` queda como no evaluable para `Order`.
+2. `suspects`: el match de agujas distingue mayúsculas; `Place order` no matchea `<button>place order</button>`.
+3. `anonymize-fixture`: un step con nombre vacío intercala el reemplazo entre cada carácter del texto.
+4. `github-artifacts`: toma el primer artefacto no vencido; con uploads fragmentados o reintentos de workflow pueden mezclarse. Preferir el nombre exacto `<prefijo><run_id>-<run_attempt>` y, si no, fusionar todos los candidatos.
+5. `config/registry`: busca plugins sólo por nombre; un futuro tracker `github` chocaría con el plugin de código `github`. Buscar por nombre y kind.
+6. `markdown-notifier`: la firma va en un span de un backtick; una firma con backticks lo rompe. Usar bloque cercado o una tirada de N+1 backticks.
+7. `cli`: acepta flags desconocidos en silencio (`--sinc 24h` corre con la ventana por defecto). Rechazarlos con código 2.
+8. `commands`: `totals.tests` cuenta todas las corridas del lookback, no sólo las de la ventana.
+9. `github/api`: los 403 de rate limit y los 401 no muestran `x-ratelimit-reset` ni `Retry-After` en el mensaje.
+10. Tests que faltan: la rama de zip sin reportes en el recolector y la paginación de `compare` cuando una página trae menos de lo pedido pero `total_commits` es mayor.
+
+### Fase 4 — Tracker con aprobación
+- Adaptador Jira: búsqueda por firma, borradores, creación y comentario tras aprobación.
+- **Hecho cuando:** no existe ningún camino de código que escriba en el tracker sin una acción aprobada registrada en `triage_actions`.
+
+### Fase 5 — SDK público
+- Documentación del contrato de plugins y plugin plantilla.
+- Segundo tracker (Linear o GitHub Issues) implementado solo contra la interfaz.
+- Descarga en streaming de artefactos grandes: hoy el recolector carga el zip entero en memoria antes de filtrar sus entradas; con traces y videos de una suite grande hace falta leer el archivo por partes y extraer sólo los `razo-steps.json`.
+- **Hecho cuando:** el segundo tracker funciona sin cambios en `core/`.
 
 ## 12. Metrics
 
