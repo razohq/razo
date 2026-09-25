@@ -7,7 +7,7 @@ export type { Notifier } from './ports/notifier';
 export type { AdapterOf, ConfigSchema, PluginKind, TriagePlugin } from './ports/plugin';
 export { clusterFailures, failingTestIds } from './core/cluster';
 export {
-  testHistories, shaRange, stableBefore, retryFlip, sameShaFlips, isFailing, DEFAULT_BASE_BRANCH,
+  testHistories, shaRange, stableBefore, retryFlip, sameShaFlips, isFailing, onBaseBranch, DEFAULT_BASE_BRANCH,
   type TestHistory, type TestOutcome, type HistoryOptions,
 } from './core/history';
 export {
@@ -18,3 +18,8 @@ export {
   RazoSource, razoSourcePlugin, readRuns, writeRun, toTestRun, SOURCE_NAME,
   type RazoSourceConfig, type RunManifest, type RazoReport, type RazoStep, type StoredReport, type StoredRun,
 } from './adapters/razo-source';
+export {
+  classify, DEFAULT_RULES, isEnvironmentSignature, isLocatorSignature,
+  type Classification, type ClassifyInput, type RulesConfig,
+} from './core/classify';
+export { analyzeWindow, type TriageItem, type AnalyzeOptions } from './core/pipeline';

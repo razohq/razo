@@ -27,7 +27,7 @@ export interface HistoryOptions {
 }
 
 /** The history restricted to the base branch. */
-function onBase(history: TestHistory, options: HistoryOptions): TestHistory {
+export function onBaseBranch(history: TestHistory, options: HistoryOptions = {}): TestHistory {
   const baseBranch = options.baseBranch ?? DEFAULT_BASE_BRANCH;
   return { ...history, outcomes: history.outcomes.filter((o) => o.branch === baseBranch) };
 }
@@ -75,7 +75,7 @@ function streakStart(history: TestHistory): number {
  * sha before the current streak, first failing sha of it.
  */
 export function shaRange(history: TestHistory, options: HistoryOptions = {}): { lastGreenSha?: string; firstRedSha?: string } {
-  const base = onBase(history, options);
+  const base = onBaseBranch(history, options);
   const start = streakStart(base);
   if (start === -1) return {};
   const range: { lastGreenSha?: string; firstRedSha?: string } = { firstRedSha: base.outcomes[start].sha };
@@ -92,7 +92,7 @@ export function shaRange(history: TestHistory, options: HistoryOptions = {}): { 
 
 /** True when the `n` base-branch outcomes right before the current failing streak exist and all passed. */
 export function stableBefore(history: TestHistory, n: number, options: HistoryOptions = {}): boolean {
-  const base = onBase(history, options);
+  const base = onBaseBranch(history, options);
   const start = streakStart(base);
   if (start === -1 || start < n) return false;
   return base.outcomes.slice(start - n, start).every((o) => o.status === 'passed');
