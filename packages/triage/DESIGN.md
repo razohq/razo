@@ -410,12 +410,12 @@ packages/triage/
     core/
       model.ts            section 5
       signature.ts        errorSignature(), clusterIdOf()
-      cluster.ts          clusterFailures(): failed attempts grouped by signature
-      history.ts          testHistories(), shaRange(), stableBefore(), retryFlip(), sameShaFlips(); base branch
+      cluster.ts          clusterFailures(): intentos fallidos agrupados por firma
+      history.ts          testHistories(), shaRange(), stableBefore(), retryFlip(), sameShaFlips(); rama base
       suspects.ts         needlesFor(), findSuspects() → { suspects, unevaluable }, commitsInRange()
-      classify.ts         DEFAULT_RULES, classify(): section 6 rules and mixed-cluster resolution
-      pipeline.ts         analyzeWindow(): cluster → history → suspects → classify, window [since, until]
-      report.ts           buildReport(): TriageReport with verdicts and proposed actions
+      classify.ts         DEFAULT_RULES, classify(): reglas de la sección 6 y resolución de clusters mixtos
+      pipeline.ts         analyzeWindow(): cluster → history → suspects → classify
+      report.ts           (Fase 2b)
     ports/
       result-source.ts
       code-context.ts
@@ -431,35 +431,27 @@ packages/triage/
       issue-tracker.ts
       notifier.ts
       plugin.ts
-    fakes/                in-memory adapters and their plugins
-    config/
-      schema.ts           TriageConfig, parseConfig() with ${VAR} expansion and threshold merging
-      load.ts             loadConfig(): YAML
-      registry.ts         builtinPlugins, instantiate()
+    fakes/                adaptadores en memoria y sus plugins
+    llm/                  (Fase 3)
+    config/               (Fase 2b)
     adapters/
       razo-source/        layout.ts (readRuns, writeRun), map.ts (toTestRun), index.ts (RazoSource, plugin)
-      github/             api.ts (GitHubApi, injectable fetch), code-context.ts, index.ts (github plugin)
-      commits-json/       network-free CodeContext over a commits.json like the fixtures carry
-      markdown-notifier/  render.ts, index.ts (writes .md and .json; readReports)
-    collectors/
-      unzip.ts            reportsFromZip()
-      github-artifacts.ts pullGithubArtifacts(): triage pull
-    commands.ts           runTriage(), runPull(), parseDuration()
-    cli.ts                triage run | triage pull
+      github/             (Fase 2b)
+      markdown-notifier/  (Fase 2b)
+    cli.ts                (Fase 2b)
   scripts/
-    capture-run.mjs       razo test-results → one run in the layout (--synthetic for generated ones)
-    capture-razo-demo.mjs regenerates fixtures/razo-demo-pr-1 from the local razo-demo clone
-    anonymize-fixture.mjs only for third-party data
-  fixtures/               real and synthetic scenarios, see fixtures/README.md
-    generator/            Playwright project that produces the two synthetic scenarios
+    capture-run.mjs       test-results de razo → una corrida del layout (--synthetic para los generados)
+    capture-razo-demo.mjs regenera fixtures/razo-demo-pr-1 desde el clon local de razo-demo
+    anonymize-fixture.mjs sólo para datos de terceros
+  fixtures/               escenarios reales y sintéticos, ver fixtures/README.md
+    generator/            proyecto Playwright que produce los dos escenarios sintéticos
   test/
     signature.test.mjs
-    contract.test.mjs     runs every kit against its fake and proves the kit catches broken adapters
-    razo-source.test.mjs  mapping, layout and the ResultSource kit against RazoSource
-    fixtures.test.mjs     every scenario loads and keeps the invariants; synthetic only where it belongs
-    cluster / history / suspects / classify / pipeline / report .test.mjs
+    contract.test.mjs     corre cada kit contra su fake y prueba que el kit detecta adaptadores rotos
+    razo-source.test.mjs  mapeo, layout y kit de ResultSource contra RazoSource
+    fixtures.test.mjs     cada escenario carga y respeta las invariantes; synthetic sólo donde corresponde
+    cluster / history / suspects / classify / pipeline .test.mjs
     anonymize.test.mjs
-    markdown-notifier / github-api / github-code-context / commits-json / github-artifacts / config / cli .test.mjs
 ```
 
 Monorepo conventions: tsup, `tsc --noEmit`, `node --test` against `dist/`, no new runtime dependencies.
