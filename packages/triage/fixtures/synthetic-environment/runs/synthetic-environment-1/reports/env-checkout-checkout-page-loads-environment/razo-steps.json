@@ -1,0 +1,8 @@
+{
+  "test": "checkout page loads @environment",
+  "file": "tests/env-checkout.spec.ts",
+  "status": "failed",
+  "durationMs": 1106,
+  "error": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:65531/checkout\nCall log:\n  - navigating to \"http://127.0.0.1:65531/checkout\", waiting until \"load\"\n",
+  "steps": []
+}

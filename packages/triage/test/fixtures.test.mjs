@@ -83,3 +83,22 @@ describe('razo-demo-pr-1', () => {
   });
 });
 
+describe('synthetic-flaky', () => {
+  test('one test fails on its first attempt and passes on retry', async () => {
+    const [run] = await new RazoSource(path.join(FIXTURES, 'synthetic-flaky')).fetchRuns(new Date(0));
+    const flaky = run.results.find((r) => r.attempts.length > 1);
+    assert.ok(flaky, 'a retried test');
+    assert.deepEqual(flaky.attempts.map((a) => a.status), ['failed', 'passed']);
+    assert.equal(flaky.status, 'passed');
+    assert.ok(flaky.attempts[0].error.signature.length > 0);
+  });
+});
+
+describe('synthetic-environment', () => {
+  test('at least five spec files fail with a connection error', async () => {
+    const [run] = await new RazoSource(path.join(FIXTURES, 'synthetic-environment')).fetchRuns(new Date(0));
+    const failedFiles = new Set(run.results.filter((r) => r.status !== 'passed').map((r) => r.file));
+    assert.ok(failedFiles.size >= 5, `${failedFiles.size} files`);
+    for (const r of run.results.filter((r) => r.error)) assert.match(r.error.message, /ERR_CONNECTION_REFUSED|ECONNREFUSED/);
+  });
+});

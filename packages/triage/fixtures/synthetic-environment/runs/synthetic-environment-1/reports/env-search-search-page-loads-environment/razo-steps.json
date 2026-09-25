@@ -1,0 +1,8 @@
+{
+  "test": "search page loads @environment",
+  "file": "tests/env-search.spec.ts",
+  "status": "failed",
+  "durationMs": 1115,
+  "error": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:65531/search\nCall log:\n  - navigating to \"http://127.0.0.1:65531/search\", waiting until \"load\"\n",
+  "steps": []
+}
