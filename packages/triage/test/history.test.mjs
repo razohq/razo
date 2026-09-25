@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { testHistories, shaRange, stableBefore, retryFlip, sameShaFlips, isFailing } from '../dist/index.js';
+import { testHistories, shaRange, stableBefore, retryFlip, sameShaFlips, isFailing, DEFAULT_BASE_BRANCH } from '../dist/index.js';
 import { seed } from '../dist/contract.js';
 
 const CHECKOUT = 'tests/checkout.spec.ts::placing the order confirms it';
@@ -8,7 +8,7 @@ const CART = 'tests/cart.spec.ts::the cart lists both items';
 const [GREEN, RED] = [seed.runs[0].sha, seed.runs[1].sha];
 
 const outcome = (sha, status, attempts = [{ status, durationMs: 1 }]) =>
-  ({ runId: sha + status, sha, finishedAt: '2026-01-01T00:00:00Z', status, attempts });
+  ({ runId: sha + status, sha, branch: 'main', finishedAt: '2026-01-01T00:00:00Z', status, attempts });
 const history = (...outcomes) => ({ testId: 't', file: 'f', outcomes });
 
 test('histories are per testId, ascending by run start', () => {
@@ -63,4 +63,52 @@ test('sameShaFlips counts alternations without a sha change inside the lookback'
   const h = history(outcome('a', 'passed'), outcome('a', 'failed'), outcome('a', 'passed'), outcome('b', 'failed'), outcome('b', 'failed'));
   assert.equal(sameShaFlips(h, 10), 2);
   assert.equal(sameShaFlips(h, 2), 0);
+});
+
+// --- baseBranch ---
+const branchRun = (id, sha, branch, status, day) => ({
+  id, sha, branch, source: 's', startedAt: `2026-01-${day}T00:00:00Z`, finishedAt: `2026-01-${day}T00:05:00Z`,
+  results: [{ testId: 'f::t', title: 't', file: 'f', status, durationMs: 1, attempts: [{ status, durationMs: 1 }] }],
+});
+const interleaved = [
+  branchRun('m1', 'a', 'main', 'passed', '01'),
+  branchRun('p1', 'p', 'feat/x', 'failed', '02'),
+  branchRun('m2', 'b', 'main', 'passed', '03'),
+  branchRun('p2', 'q', 'feat/x', 'passed', '04'),
+  branchRun('m3', 'c', 'main', 'passed', '05'),
+  branchRun('m4', 'd', 'main', 'failed', '06'),
+  branchRun('p3', 'r', 'feat/y', 'passed', '07'),
+];
+
+test('outcomes carry their branch', () => {
+  const h = testHistories(interleaved).get('f::t');
+  assert.deepEqual(h.outcomes.map((o) => o.branch), ['main', 'feat/x', 'main', 'feat/x', 'main', 'main', 'feat/y']);
+});
+
+test('shaRange ignores PR runs interleaved with main: a green PR run after a red main does not end the streak', () => {
+  const h = testHistories(interleaved).get('f::t');
+  assert.deepEqual(shaRange(h), { lastGreenSha: 'c', firstRedSha: 'd' });
+});
+
+test('stableBefore counts only base-branch runs', () => {
+  const h = testHistories(interleaved).get('f::t');
+  assert.equal(stableBefore(h, 3), true, 'm1, m2, m3 passed on main; the failing PR run in between does not count');
+  assert.equal(stableBefore(h, 4), false);
+});
+
+test('baseBranch is configurable and defaults to main', () => {
+  const h = testHistories(interleaved).get('f::t');
+  assert.deepEqual(shaRange(h, { baseBranch: 'feat/x' }), {}, 'on feat/x the last run passed');
+  assert.deepEqual(shaRange(h, { baseBranch: 'main' }), shaRange(h));
+  assert.deepEqual(shaRange(h, { baseBranch: 'release' }), {}, 'no runs on that branch, no range');
+  assert.equal(DEFAULT_BASE_BRANCH, 'main');
+});
+
+test('sameShaFlips keeps seeing every branch', () => {
+  const runs = [
+    branchRun('p1', 's', 'feat/x', 'passed', '01'),
+    branchRun('p2', 's', 'feat/x', 'failed', '02'),
+    branchRun('p3', 's', 'feat/x', 'passed', '03'),
+  ];
+  assert.equal(sameShaFlips(testHistories(runs).get('f::t'), 10), 2);
 });

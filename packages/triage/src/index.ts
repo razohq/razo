@@ -7,7 +7,10 @@ export type { Notifier } from './ports/notifier';
 export type { AdapterOf, ConfigSchema, PluginKind, TriagePlugin } from './ports/plugin';
 export { clusterFailures, failingTestIds } from './core/cluster';
 export {
-  testHistories, shaRange, stableBefore, retryFlip, sameShaFlips, isFailing,
-  type TestHistory, type TestOutcome,
+  testHistories, shaRange, stableBefore, retryFlip, sameShaFlips, isFailing, DEFAULT_BASE_BRANCH,
+  type TestHistory, type TestOutcome, type HistoryOptions,
 } from './core/history';
-export { needlesFor, changedLines, findSuspects, commitsInRange, type SuspectInput } from './core/suspects';
+export {
+  needlesFor, changedLines, findSuspects, commitsInRange,
+  type SuspectInput, type SuspectSearch, type UnevaluableFile,
+} from './core/suspects';

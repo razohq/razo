@@ -216,9 +216,26 @@ Se evalúan en este orden; la primera que aplica define la categoría. Todos los
 5. **unknown**
    - No rule applies, or there is not enough history.
 
-### Base branch
+### Rama base
 
-`lastGreenSha`, `firstRedSha` and the prior stability (`regression.stableRuns`) are computed only from runs of `baseBranch` (default `main`). PR runs interleave with the base branch's, and if they counted, a green PR run would close a red streak that `main` never saw. Same-SHA alternations (`flaky`) do look at every branch: one commit that passes and fails is flaky on any branch.
+`lastGreenSha`, `firstRedSha` y la estabilidad previa (`regression.stableRuns`) se calculan sólo con corridas de `baseBranch` (default `main`). Las corridas de PR se intercalan con las de la rama base y, si contaran, una corrida verde de un PR cerraría una racha roja que `main` nunca vio. Las alternancias con el mismo SHA (`flaky`) sí miran todas las ramas: un mismo commit que pasa y falla es flaky en cualquier rama.
+
+### Clusters con tests de historias distintas
+
+Un cluster agrupa por firma, y varios tests pueden compartirla con historias diferentes. `classify` evalúa las reglas por test y resuelve así:
+
+- **Unanimidad:** todos los tests dan la misma categoría → esa categoría, con la confianza más baja entre ellos.
+- **Sin unanimidad:** la categoría de la mayoría, con la confianza un nivel por debajo de la más baja de esa mayoría (`high` → `medium`, `medium` → `low`), y la mezcla como evidencia de tipo `history`: qué tests dieron qué categoría.
+- **Empate:** `unknown` con confianza `low`, con la mezcla como evidencia.
+
+### Commits sospechosos
+
+- Rango: `lastGreenSha..firstRedSha` vía `CodeContext.commitsBetween`.
+- Puntuación: cantidad de componentes superpuestos entre los `controls` del test y los archivos del commit. La lógica de referencia es `matchControlsToDiff` de razo-cloud (repo privado); `core/suspects.ts` la reimplementa sobre `ChangedFile.patch` sin importar nada de razo-cloud, con estas reglas:
+  - Las agujas de un control son su nombre y los valores entre comillas de su selector (testid, nombre de rol). Se descartan las de menos de 4 caracteres y las genéricas (`btn`, `button`, `input`, `row`, `item`, `text`…): convertirían cualquier commit en sospechoso.
+  - Una aguja matchea sólo como token entero en una línea `+`/`-`: `order` no matchea `reorder`.
+  - Un archivo sin patch (binario o truncado) o borrado cuyo nombre lleva el de un componente del test se marca como **no evaluable** y va a la evidencia del veredicto, sin puntaje. Un archivo sin patch que no nombra nada se ignora.
+- Se reportan como máximo 3 commits por cluster.
 
 ### Clusters whose tests have different histories
 
@@ -292,8 +309,8 @@ export interface CodeContext {
 
 export interface ChangedFile {
   filename: string;
-  patch?: string;   // unified diff; absent for binary or truncated entries
-  status?: 'added' | 'modified' | 'removed' | 'renamed';  // as the VCS reports it; removed never scores
+  patch?: string;   // diff unificado; ausente en binarios o entradas truncadas
+  status?: 'added' | 'modified' | 'removed' | 'renamed';  // como lo informa el VCS; removed nunca puntúa
 }
 
 export interface IssueTracker {   // port and contract kit in the engine; the real adapters live in razo-cloud
@@ -345,7 +362,7 @@ The `store` kind exists in the type from Phase 3 on; Phase 1 implements the othe
 ```yaml
 # triage.config.yaml
 schedule: "0 7 * * 1-5"
-baseBranch: main   # branch whose runs define green and red; see section 6
+baseBranch: main   # rama cuyas corridas definen verde y rojo; ver sección 6
 
 source:
   plugin: razo-source

@@ -154,4 +154,6 @@ export interface Commit {
 export interface ChangedFile {
   filename: string;
   patch?: string;
+  /** As the VCS reports it; `removed` files are never scored as suspects, only flagged. */
+  status?: 'added' | 'modified' | 'removed' | 'renamed';
 }
