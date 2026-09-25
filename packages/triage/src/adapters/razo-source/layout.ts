@@ -137,7 +137,11 @@ export function writeRun(
   fs.mkdirSync(path.join(runDir, 'reports'), { recursive: true });
   fs.writeFileSync(path.join(runDir, 'run.json'), JSON.stringify(manifest, null, 2) + '\n');
   for (const { report, retry } of reports) {
-    const base = `${slug(path.basename(report.file).replace(/\.(spec|test)\.[cm]?[jt]s$/, ''))}-${slug(report.test)}`;
+    // Same shape Playwright uses: file, title, project, retry.
+    const base = [path.basename(report.file).replace(/\.(spec|test)\.[cm]?[jt]s$/, ''), report.test, report.project]
+      .filter((part): part is string => !!part)
+      .map(slug)
+      .join('-');
     const dir = path.join(runDir, 'reports', retry > 0 ? `${base}-retry${retry}` : base);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, 'razo-steps.json'), JSON.stringify(report, null, 2) + '\n');

@@ -195,8 +195,8 @@ export type ProposedAction =
 Se evalúan en este orden; la primera que aplica define la categoría. Todos los umbrales son configurables. **Los umbrales de `flaky` y `environment` son provisionales** hasta calibrarlos con datos reales de corridas nocturnas.
 
 1. **environment**
-   - Within a window of `env.windowMinutes` (default 10) that includes at least one of the cluster's runs, at least `env.minFiles` distinct files (default 5) fail with network, navigation-timeout or 5xx signatures. A 4xx during navigation is the app answering, not the environment failing: it is never an environment signature.
-   - Confidence `high` when there are no new commits in the range; `medium` otherwise.
+   - En una ventana de `env.windowMinutes` (default 10) que incluya alguna corrida del cluster, al menos `env.minFiles` archivos distintos (default 5) fallan con firmas de red, timeout de navegación o 5xx. Un 4xx durante la navegación es la app respondiendo, no el entorno fallando: nunca es firma de entorno.
+   - Confianza `high` si además no hay commits nuevos en el rango; `medium` en otro caso.
 
 2. **flaky**
    - On the same SHA, the test has at least one `passed` and one `failed` attempt (passing on retry counts).
@@ -485,7 +485,7 @@ Deviations from the original design, with their reason:
 
 `triage pull --from github-artifacts` materializa ese layout de forma incremental, con caché por `runId`, leyendo los workflow runs de GitHub (`head_sha`, `head_branch`, `run_started_at`, `updated_at`) y descargando el artefacto de `test-results`. `--from razo-cloud` se agrega después sin tocar el plugin, cuando exista un endpoint de lectura. El plugin pasa el kit de `ResultSource` con una factory que escribe la seed en un directorio temporal; los recolectores se prueban con respuestas HTTP grabadas.
 
-Mapeo a `TestResult`: `testId` es `file::title`, más `::project` cuando el reporte lo trae. Si el reporte trae `retry` o `project`, se usan; si no, `retry` se reconstruye desde el sufijo `-retryN` de la carpeta y `project` queda ausente. Los intentos se ordenan por `retry`; el estado final es el de la N más alta. El reporter de razo no se modifica en la rama de la Fase 2. El error es el del reporte o el del último step fallido, con `signature` de `errorSignature`. `touchedComponents` son los `controlType "name"` distintos de los steps. `healedLocators` recoge los `healed` de los steps. `traceUrl` apunta al `ciUrl` de la corrida.
+Mapeo a `TestResult`: `testId` es `file::title`, más `::project` cuando el reporte lo trae. El error es el del reporte, si no el del último step fallido, y si no un mensaje derivado del test (`<status> without error message: <file> › <title>`), nunca un "unknown error" compartido que agruparía fallas sin relación. Dos reportes con el mismo índice de reintento para un test son una corrida corrupta y se rechazan nombrando ambos archivos. Si el reporte trae `retry` o `project`, se usan; si no, `retry` se reconstruye desde el sufijo `-retryN` de la carpeta y `project` queda ausente. Los intentos se ordenan por `retry`; el estado final es el de la N más alta. El reporter de razo no se modifica en la rama de la Fase 2. El error es el del reporte o el del último step fallido, con `signature` de `errorSignature`. `touchedComponents` son los `controlType "name"` distintos de los steps. `healedLocators` recoge los `healed` de los steps. `traceUrl` apunta al `ciUrl` de la corrida.
 
 **Fixtures reales**, en `packages/triage/fixtures/<escenario>/` con el layout de `dataDir` más un `commits.json` con diffs reales para `MemoryCodeContext`:
 

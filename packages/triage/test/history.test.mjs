@@ -45,6 +45,12 @@ test('a trailing skipped outcome does not hide the streak', () => {
   assert.deepEqual(shaRange(h), { lastGreenSha: 'a', firstRedSha: 'b' });
 });
 
+test('a skipped outcome right before the streak does not break stableBefore', () => {
+  const h = history(outcome('a', 'passed'), outcome('b', 'passed'), outcome('c', 'passed'), outcome('d', 'skipped'), outcome('e', 'failed'));
+  assert.equal(stableBefore(h, 3), true);
+  assert.equal(shaRange(h).lastGreenSha, 'c');
+});
+
 test('stableBefore needs n passed outcomes right before the streak', () => {
   const h = history(outcome('a', 'passed'), outcome('b', 'passed'), outcome('c', 'passed'), outcome('d', 'failed'));
   assert.equal(stableBefore(h, 3), true);

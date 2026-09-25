@@ -90,7 +90,7 @@ export async function findSuspects(input: SuspectInput, max = 3): Promise<Suspec
   if (needles.length === 0 || input.commits.length === 0) return { suspects: [], unevaluable: [] };
 
   const suspects: SuspectCommit[] = [];
-  const unevaluable: UnevaluableFile[] = [];
+  const unevaluable = new Map<string, UnevaluableFile>();
   for (const commit of input.commits) {
     const files = await input.changedFiles(commit.sha);
     const lines: string[] = [];
@@ -98,7 +98,12 @@ export async function findSuspects(input: SuspectInput, max = 3): Promise<Suspec
       const blocked = file.status === 'removed' ? 'removed' : !file.patch ? 'no patch' : null;
       if (blocked) {
         const components = needles.filter((n) => fileNamesControl(file.filename, n.needles)).map((n) => describe(n.control));
-        if (components.length > 0) unevaluable.push({ sha: commit.sha, filename: file.filename, components, reason: blocked });
+        if (components.length > 0) {
+          const key = `${commit.sha}\u0000${file.filename}`;
+          const known = unevaluable.get(key);
+          if (known) known.components = [...new Set([...known.components, ...components])];
+          else unevaluable.set(key, { sha: commit.sha, filename: file.filename, components, reason: blocked });
+        }
         continue;
       }
       lines.push(...changedLines(file.patch!));
@@ -123,7 +128,7 @@ export async function findSuspects(input: SuspectInput, max = 3): Promise<Suspec
     suspects: suspects
       .sort((a, b) => b.score - a.score || (dateOf.get(b.sha) ?? '').localeCompare(dateOf.get(a.sha) ?? ''))
       .slice(0, max),
-    unevaluable,
+    unevaluable: [...unevaluable.values()].slice(0, max),
   };
 }
 

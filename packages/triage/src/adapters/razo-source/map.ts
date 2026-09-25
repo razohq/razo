@@ -11,10 +11,15 @@ function toStatus(raw: string): TestStatus {
   return (STATUSES.has(raw) ? raw : 'failed') as TestStatus;
 }
 
+/**
+ * The report's error, else the last failed step's, else a message derived
+ * from the test itself: a shared "unknown error" would cluster unrelated
+ * failures together.
+ */
 function errorOf(report: RazoReport, status: TestStatus): TestError | undefined {
   if (!FAILING.has(status)) return undefined;
   const lastFailedStep = [...(report.steps ?? [])].reverse().find((s) => s.status === 'failed' && s.error);
-  const message = report.error ?? lastFailedStep?.error ?? `${status} without error message`;
+  const message = report.error || lastFailedStep?.error || `${status} without error message: ${report.file} › ${report.test}`;
   return { message, signature: errorSignature(message) };
 }
 
@@ -28,12 +33,16 @@ function toAttempt(report: RazoReport): Attempt {
 
 const testKey = (r: RazoReport) => `${r.file}::${r.test}${r.project ? `::${r.project}` : ''}`;
 
-/** Every retry of one test, in retry order. */
-function groupByTest(reports: StoredReport[]): Map<string, StoredReport[]> {
+/** Every retry of one test, in retry order. Two reports with the same retry index are a corrupt run. */
+function groupByTest(runId: string, reports: StoredReport[]): Map<string, StoredReport[]> {
   const groups = new Map<string, StoredReport[]>();
   for (const stored of reports) {
     const key = testKey(stored.report);
     const group = groups.get(key) ?? [];
+    const twin = group.find((g) => g.retry === stored.retry);
+    if (twin) {
+      throw new Error(`${runId}: duplicate retry ${stored.retry} for test ${key}: ${twin.relPath} and ${stored.relPath}`);
+    }
     group.push(stored);
     groups.set(key, group);
   }
@@ -69,7 +78,7 @@ function healedOf(reports: RazoReport[]): Array<{ from: string; to: string }> | 
 
 export function toTestRun(manifest: RunManifest, reports: StoredReport[]): TestRun {
   const results: TestResult[] = [];
-  for (const [testId, group] of groupByTest(reports)) {
+  for (const [testId, group] of groupByTest(manifest.id, reports)) {
     const attempts = group.map((s) => toAttempt(s.report));
     const final = attempts[attempts.length - 1];
     const first = group[0].report;

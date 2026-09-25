@@ -216,6 +216,14 @@ test('review 2: an outage a week earlier does not make a lone later failure envi
   assert.equal(still.category, 'environment');
 });
 
+test('4xx during navigation is not an environment signature; goto timeouts and connection errors are', () => {
+  assert.equal(isEnvironmentSignature(errorSignature('page.goto: 404 Not Found at http://localhost:3000/missing')), false);
+  assert.equal(isEnvironmentSignature(errorSignature('Error: response status 403 while navigating to http://localhost:3000/admin')), false);
+  assert.equal(isEnvironmentSignature(errorSignature('page.goto: Timeout 30000ms exceeded.')), true);
+  assert.equal(isEnvironmentSignature(errorSignature('page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/')), true);
+  assert.equal(isEnvironmentSignature(errorSignature('page.goto: net::ERR_NAME_NOT_RESOLVED at http://api.internal/')), true);
+});
+
 test('review 2: a bare 5xx-looking number is not an environment signature', () => {
   assert.equal(isEnvironmentSignature(errorSignature('expected total 3, got 512')), false);
   assert.equal(isEnvironmentSignature(errorSignature('request failed with status 502')), true);

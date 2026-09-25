@@ -90,12 +90,16 @@ export function shaRange(history: TestHistory, options: HistoryOptions = {}): { 
   return range;
 }
 
-/** True when the `n` base-branch outcomes right before the current failing streak exist and all passed. */
+/**
+ * True when the `n` base-branch outcomes right before the current failing
+ * streak exist and all passed. Skipped outcomes are transparent here too.
+ */
 export function stableBefore(history: TestHistory, n: number, options: HistoryOptions = {}): boolean {
   const base = onBaseBranch(history, options);
-  const start = streakStart(base);
+  const active = { ...base, outcomes: base.outcomes.filter((o) => o.status !== 'skipped') };
+  const start = streakStart(active);
   if (start === -1 || start < n) return false;
-  return base.outcomes.slice(start - n, start).every((o) => o.status === 'passed');
+  return active.outcomes.slice(start - n, start).every((o) => o.status === 'passed');
 }
 
 /** An outcome that failed and passed within the same run (same sha): the strongest flaky signal. */

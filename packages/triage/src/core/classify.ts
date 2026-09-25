@@ -40,12 +40,16 @@ export interface Classification {
   evidence: Evidence[];
 }
 
-// A 5xx only counts next to a word that makes it a status: a bare "512" is an assertion value.
-const ENVIRONMENT = /econnrefused|econnreset|enotfound|etimedout|err_connection|err_name_not_resolved|net::err_|socket hang up|fetch failed|navigating to|page\.goto|\b(?:status|http|response|code)\s*:?\s*5\d\d\b|service unavailable|bad gateway|gateway timeout/;
+// Connection failures, navigation timeouts and 5xx. A 5xx only counts next to a
+// word that makes it a status: a bare "512" is an assertion value. A 4xx is the
+// app answering, not the environment failing, so it vetoes the whole match.
+const ENVIRONMENT = /econnrefused|econnreset|enotfound|etimedout|err_connection|err_name_not_resolved|net::err_|socket hang up|fetch failed|page\.goto: timeout|exceeded navigating|\b(?:status|http|response|code)\s*:?\s*5\d\d\b|service unavailable|bad gateway|gateway timeout/;
+const CLIENT_ERROR = /\b(?:status|http|response|code)?\s*:?\s*4\d\d\b/;
 // Includes razo's own healing failure ("locator drift … no longer resolves"), the strongest stale-test signal it emits.
 const LOCATOR = /waiting for |not found|strict mode|resolved to \d+ elements|tobevisible|tobehidden|not visible|hidden|element is not attached|detached|intercepts pointer events|locator\.|locator drift|no longer resolves/;
 
-export const isEnvironmentSignature = (signature: string): boolean => ENVIRONMENT.test(signature);
+export const isEnvironmentSignature = (signature: string): boolean =>
+  ENVIRONMENT.test(signature) && !CLIENT_ERROR.test(signature);
 export const isLocatorSignature = (signature: string): boolean => LOCATOR.test(signature);
 
 const short = (sha: string) => sha.slice(0, 7);

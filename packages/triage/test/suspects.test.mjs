@@ -4,7 +4,7 @@ import { needlesFor, changedLines, findSuspects, commitsInRange } from '../dist/
 import { MemoryCodeContext } from '../dist/fakes.js';
 import { seed } from '../dist/contract.js';
 
-test('needles are the name and the quoted parts of the selector, 3+ chars only', () => {
+test('needles are the name and the quoted parts of the selector, 4+ chars only', () => {
   assert.deepEqual(needlesFor({ controlType: 'button', name: 'Place order', selector: '[data-testid="place-order"]' }), ['Place order', 'place-order']);
   assert.deepEqual(needlesFor({ controlType: 'button', name: 'OK', selector: 'role=button[name="OK"]' }), []);
   assert.deepEqual(needlesFor({ controlType: 'link', name: 'Help', selector: "text='Help me'" }), ['Help', 'Help me']);
@@ -119,6 +119,18 @@ test('a file without a patch that matches nothing is simply skipped', async () =
     changedFiles: async () => [{ filename: 'assets/logo.png' }],
   });
   assert.deepEqual(result, { suspects: [], unevaluable: [] });
+});
+
+test('unevaluable files are deduplicated per commit and file, with components merged, and capped like suspects', async () => {
+  const controls = [placeOrder, { controlType: 'field', name: 'Order note', selector: '[data-testid="placeorder"]' }];
+  const commits = ['a', 'b', 'c', 'd', 'e'].map((l, i) => commit(l, String(i + 1).padStart(2, '0')));
+  const { unevaluable } = await findSuspects({
+    controls, commits,
+    changedFiles: async () => [{ filename: 'src/PlaceOrder.tsx' }, { filename: 'src/PlaceOrder.tsx' }],
+  });
+  assert.equal(unevaluable.length, 3, 'capped at max');
+  assert.equal(new Set(unevaluable.map((u) => `${u.sha}:${u.filename}`)).size, 3, 'no duplicates');
+  assert.deepEqual(unevaluable[0].components, ['button "Place order"', 'field "Order note"']);
 });
 
 test('a generic needle like "btn" never turns unrelated commits into suspects', async () => {

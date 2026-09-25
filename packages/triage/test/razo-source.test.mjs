@@ -64,6 +64,18 @@ describe('layout', () => {
     assert.equal(byDir['a-t-retry7'], 1, 'the report field wins over the directory name');
   });
 
+  test('writeRun puts the project in the directory name so two projects of one test do not collide', () => {
+    const dir = tmp();
+    writeRun(dir, manifest, [
+      { retry: 0, report: report({ test: 'pays', project: 'chromium' }) },
+      { retry: 0, report: report({ test: 'pays', project: 'firefox' }) },
+      { retry: 1, report: report({ test: 'pays', project: 'firefox' }) },
+    ]);
+    const dirs = fs.readdirSync(path.join(dir, 'runs', 'run-9', 'reports')).sort();
+    assert.deepEqual(dirs, ['a-pays-chromium', 'a-pays-firefox', 'a-pays-firefox-retry1']);
+    assert.equal(readRuns(dir)[0].reports.length, 3);
+  });
+
   test('a synthetic manifest round-trips its flag', () => {
     const dir = tmp();
     writeRun(dir, { ...manifest, synthetic: true }, [{ retry: 0, report: report({}) }]);
@@ -116,10 +128,26 @@ describe('mapping', () => {
     assert.equal(fromStep.results[0].error.signature, errorSignature(NOT_FOUND));
   });
 
-  test('a failing report with no error text still yields a signed error', () => {
-    const run = toTestRun(manifest, [stored(0, 'a', report({ status: 'timedOut', durationMs: 30000 }))]);
-    assert.equal(run.results[0].error.message, 'timedOut without error message');
-    assert.equal(run.results[0].error.signature, errorSignature('timedOut without error message'));
+  test('a failing report with no error text gets a signature derived from the test, not a shared one', () => {
+    const a = toTestRun(manifest, [stored(0, 'a', report({ test: 'one', status: 'timedOut', durationMs: 30000 }))]);
+    const b = toTestRun(manifest, [stored(0, 'b', report({ test: 'two', status: 'timedOut', durationMs: 30000 }))]);
+    assert.equal(a.results[0].error.message, 'timedOut without error message: tests/a.spec.ts › one');
+    assert.equal(a.results[0].error.signature, errorSignature(a.results[0].error.message));
+    assert.notEqual(a.results[0].error.signature, b.results[0].error.signature);
+  });
+
+  test('an empty error string falls back to the last failed step, then to the test-derived message', () => {
+    const fromStep = toTestRun(manifest, [stored(0, 'a', report({ status: 'failed', error: '', steps: [step({ status: 'failed', error: NOT_FOUND })] }))]);
+    assert.equal(fromStep.results[0].error.message, NOT_FOUND);
+    const derived = toTestRun(manifest, [stored(0, 'a', report({ status: 'failed', error: '', steps: [] }))]);
+    assert.match(derived.results[0].error.message, /^failed without error message: tests\/a\.spec\.ts › t$/);
+  });
+
+  test('two reports with the same retry index for one test are rejected naming both files', () => {
+    assert.throws(
+      () => toTestRun(manifest, [stored(0, 'reports/x/razo-steps.json', report({})), stored(0, 'reports/y/razo-steps.json', report({}))]),
+      /run-9.*retry 0.*reports\/x\/razo-steps\.json.*reports\/y\/razo-steps\.json/s,
+    );
   });
 
   test('an unknown status string maps to failed rather than crashing', () => {
