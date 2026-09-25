@@ -369,14 +369,14 @@ source:
   config:
     dataDir: ./.razo
 
-pull:                # triage pull: GitHub Actions artifacts → dataDir
+pull:                # triage pull: artefactos de GitHub Actions → dataDir
   repo: owner/repo
   token: ${GITHUB_TOKEN}
-  workflow: e2e.yml  # optional
-  branch: main       # optional
+  workflow: e2e.yml  # opcional
+  branch: main       # opcional
 
 code:
-  plugin: github     # or commits-json { path } to run without network
+  plugin: github     # o commits-json { path } para correr sin red
   config:
     repo: owner/repo
     token: ${GITHUB_TOKEN}
@@ -393,11 +393,9 @@ rules:
   state: { resolveAfterRuns: 3 }
 ```
 
-The `tracker` and `llm` sections and the interactive notifiers are razo-cloud extensions; the engine only accepts keys it does not know when a registered plugin claims them.
+El token de GitHub necesita dos permisos de lectura sobre el repositorio: **Actions: read** (listar corridas, listar y descargar artefactos) y **Contents: read** (comparar commits y leer sus diffs). Se referencia desde la config como `${GITHUB_TOKEN}`; una variable no definida es un error, nunca una cadena vacía. El README del paquete tiene la guía completa.
 
-The GitHub token needs two read permissions on the repository: **Actions: read** (list runs, list and download artifacts) and **Contents: read** (compare commits and read their diffs). It is referenced from the config as `${GITHUB_TOKEN}`; an unset variable is an error, never an empty string. The package README has the full guide.
-
-## 10. Package structure
+## 11. Estructura del paquete
 
 ```
 packages/triage/
@@ -414,8 +412,8 @@ packages/triage/
       history.ts          testHistories(), shaRange(), stableBefore(), retryFlip(), sameShaFlips(); rama base
       suspects.ts         needlesFor(), findSuspects() → { suspects, unevaluable }, commitsInRange()
       classify.ts         DEFAULT_RULES, classify(): reglas de la sección 6 y resolución de clusters mixtos
-      pipeline.ts         analyzeWindow(): cluster → history → suspects → classify
-      report.ts           (Fase 2b)
+      pipeline.ts         analyzeWindow(): cluster → history → suspects → classify, ventana [since, until]
+      report.ts           buildReport(): TriageReport con veredictos y acciones propuestas
     ports/
       result-source.ts
       code-context.ts
@@ -433,12 +431,20 @@ packages/triage/
       plugin.ts
     fakes/                adaptadores en memoria y sus plugins
     llm/                  (Fase 3)
-    config/               (Fase 2b)
+    config/
+      schema.ts           TriageConfig, parseConfig() con expansión de ${VAR} y merge de umbrales
+      load.ts             loadConfig(): YAML
+      registry.ts         builtinPlugins, instantiate()
     adapters/
       razo-source/        layout.ts (readRuns, writeRun), map.ts (toTestRun), index.ts (RazoSource, plugin)
-      github/             (Fase 2b)
-      markdown-notifier/  (Fase 2b)
-    cli.ts                (Fase 2b)
+      github/             api.ts (GitHubApi, fetch inyectable), code-context.ts, index.ts (plugin github)
+      commits-json/       CodeContext sin red sobre un commits.json como el de los fixtures
+      markdown-notifier/  render.ts, index.ts (escribe .md y .json; readReports)
+    collectors/
+      unzip.ts            reportsFromZip()
+      github-artifacts.ts pullGithubArtifacts(): triage pull
+    commands.ts           runTriage(), runPull(), parseDuration()
+    cli.ts                triage run | triage pull
   scripts/
     capture-run.mjs       test-results de razo → una corrida del layout (--synthetic para los generados)
     capture-razo-demo.mjs regenera fixtures/razo-demo-pr-1 desde el clon local de razo-demo
@@ -450,8 +456,9 @@ packages/triage/
     contract.test.mjs     corre cada kit contra su fake y prueba que el kit detecta adaptadores rotos
     razo-source.test.mjs  mapeo, layout y kit de ResultSource contra RazoSource
     fixtures.test.mjs     cada escenario carga y respeta las invariantes; synthetic sólo donde corresponde
-    cluster / history / suspects / classify / pipeline .test.mjs
+    cluster / history / suspects / classify / pipeline / report .test.mjs
     anonymize.test.mjs
+    markdown-notifier / github-api / github-code-context / commits-json / github-artifacts / config / cli .test.mjs
 ```
 
 Monorepo conventions: tsup, `tsc --noEmit`, `node --test` against `dist/`, no new runtime dependencies.
@@ -471,6 +478,7 @@ Deviations from the original design, with their reason:
 - `cluster`, `history`, `suspects` y `classify` con tests basados en fixtures reales de Playwright.
 - CLI `triage pull` que materializa corridas históricas y `triage run` que genera el reporte en Markdown.
 - **Hecho cuando:** el reporte se genera sobre una corrida nocturna real y las categorías coinciden con el criterio manual en la mayoría de los clusters.
+- ✅ 2026-09-25: `triage pull` y `triage run` corren sobre los artefactos reales de razo-demo (cuatro corridas del PR #2, todas verdes: reporte sin fallas). Las categorías se contrastarán con el criterio manual cuando haya corridas nocturnas acumuladas.
 
 #### Diseño aprobado el 2026-09-24
 
