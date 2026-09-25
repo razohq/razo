@@ -1,0 +1,96 @@
+{
+  "test": "export a 3MF model",
+  "file": "tests/demo.spec.ts",
+  "status": "passed",
+  "durationMs": 255,
+  "steps": [
+    {
+      "action": "assert-visible",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Assert button \"Export\" is visible",
+      "expected": "visible",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.576Z"
+    },
+    {
+      "action": "assert-disabled",
+      "controlType": "button",
+      "name": "Upload to cloud",
+      "sentence": "Assert button \"Upload to cloud\" is disabled",
+      "expected": "disabled",
+      "selector": "[data-testid=\"upload\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.583Z"
+    },
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Type \"mi-llavero\" into field \"Filename\"",
+      "detail": "mi-llavero",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.594Z"
+    },
+    {
+      "action": "choose",
+      "controlType": "select",
+      "name": "Format",
+      "sentence": "Choose \"3MF\" in select \"Format\"",
+      "detail": "3MF",
+      "selector": "[data-testid=\"format\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.601Z"
+    },
+    {
+      "action": "select",
+      "controlType": "radio group",
+      "name": "Quality",
+      "sentence": "Select option \"Standard\" in radio group \"Quality\"",
+      "detail": "Standard",
+      "selector": "[data-testid=\"quality\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.645Z"
+    },
+    {
+      "action": "check",
+      "controlType": "checkbox",
+      "name": "Include supports",
+      "sentence": "Check checkbox \"Include supports\"",
+      "selector": "[data-testid=\"include-supports\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.676Z"
+    },
+    {
+      "action": "assert-checked",
+      "controlType": "checkbox",
+      "name": "Include supports",
+      "sentence": "Assert checkbox \"Include supports\" is checked",
+      "expected": "checked",
+      "selector": "[data-testid=\"include-supports\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.679Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Confirm the export",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.709Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Export status",
+      "sentence": "Assert label \"Export status\" has text \"Exported mi-llavero.3mf (Standard)\"",
+      "expected": "Exported mi-llavero.3mf (Standard)",
+      "selector": "[data-testid=\"status\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.713Z"
+    }
+  ]
+}

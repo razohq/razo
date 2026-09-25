@@ -1,0 +1,50 @@
+{
+  "test": "export a model without choosing quality",
+  "file": "tests/demo.spec.ts",
+  "status": "failed",
+  "durationMs": 3205,
+  "error": "Error: expect(locator).toHaveText(expected) failed\n\nLocator:  getByTestId('status')\nExpected: \"Exported mi-llavero.3mf (Standard)\"\nReceived: \"Error: missing fields\"\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toHaveText\" with timeout 3000ms\n  - waiting for getByTestId('status')\n    10 × locator resolved to <p id=\"status\" data-testid=\"status\">Error: missing fields</p>\n       - unexpected value \"Error: missing fields\"\n",
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Type \"mi-llavero\" into field \"Filename\"",
+      "detail": "mi-llavero",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.644Z"
+    },
+    {
+      "action": "choose",
+      "controlType": "select",
+      "name": "Format",
+      "sentence": "Choose \"3MF\" in select \"Format\"",
+      "detail": "3MF",
+      "selector": "[data-testid=\"format\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.652Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Click button \"Export\"",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.694Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Export status",
+      "sentence": "Assert label \"Export status\" has text \"Exported mi-llavero.3mf (Standard)\"",
+      "expected": "Exported mi-llavero.3mf (Standard)",
+      "actual": "Error: missing fields",
+      "selector": "[data-testid=\"status\"]",
+      "status": "failed",
+      "error": "expect(locator).toHaveText(expected) failed\n\nLocator:  getByTestId('status')\nExpected: \"Exported mi-llavero.3mf (Standard)\"\nReceived: \"Error: missing fields\"\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toHaveText\" with timeout 3000ms\n  - waiting for getByTestId('status')\n    10 × locator resolved to <p id=\"status\" data-testid=\"status\">Error: missing fields</p>\n       - unexpected value \"Error: missing fields\"\n",
+      "timestamp": "2026-09-25T01:49:00.715Z"
+    }
+  ]
+}

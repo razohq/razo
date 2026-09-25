@@ -1,0 +1,18 @@
+{
+  "test": "cell(index) asserts the nth cell text, scoped to the row",
+  "file": "tests/table-row.spec.ts",
+  "status": "passed",
+  "durationMs": 66,
+  "steps": [
+    {
+      "action": "assert-text",
+      "controlType": "cell",
+      "name": "cell #0",
+      "sentence": "Assert cell \"cell #0\" has text \"mi-llavero.3mf\" in row \"mi-llavero.3mf\"",
+      "expected": "mi-llavero.3mf",
+      "selector": "getByTestId('exports').locator('tbody tr').filter({ hasText: 'mi-llavero.3mf' }).first() css=:scope > td:nth-child(1)",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:10.718Z"
+    }
+  ]
+}

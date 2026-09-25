@@ -1,0 +1,36 @@
+{
+  "test": "a control scoped within a dialog narrates normally and chains its selector",
+  "file": "tests/tier3.spec.ts",
+  "status": "passed",
+  "durationMs": 137,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Confirm export",
+      "sentence": "Click button \"Confirm export\"",
+      "selector": "[data-testid=\"open-confirm\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.803Z"
+    },
+    {
+      "action": "assert-visible",
+      "controlType": "button",
+      "name": "Yes, export",
+      "sentence": "Assert button \"Yes, export\" is visible in dialog \"Confirm export\"",
+      "expected": "visible",
+      "selector": "[data-testid=\"confirm-dialog\"] [data-testid=\"confirm-yes\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.806Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Yes, export",
+      "sentence": "Click button \"Yes, export\" in dialog \"Confirm export\"",
+      "selector": "[data-testid=\"confirm-dialog\"] [data-testid=\"confirm-yes\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.838Z"
+    }
+  ]
+}

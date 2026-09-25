@@ -1,0 +1,98 @@
+{
+  "test": "file input, slider, textarea and multi-select narrate their actions",
+  "file": "tests/extended-controls.spec.ts",
+  "status": "passed",
+  "durationMs": 143,
+  "steps": [
+    {
+      "action": "attach",
+      "controlType": "file input",
+      "name": "Model file",
+      "sentence": "Attach \"keychain.stl\" to file input \"Model file\"",
+      "detail": "keychain.stl",
+      "selector": "[data-testid=\"model-file\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.864Z"
+    },
+    {
+      "action": "assert-value",
+      "controlType": "file input",
+      "name": "Model file",
+      "sentence": "Assert file input \"Model file\" has value \"keychain.stl\"",
+      "expected": "keychain.stl",
+      "selector": "[data-testid=\"model-file\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.878Z"
+    },
+    {
+      "action": "set",
+      "controlType": "slider",
+      "name": "Scale",
+      "sentence": "Set slider \"Scale\" to \"150\"",
+      "detail": "150",
+      "selector": "[data-testid=\"scale\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.887Z"
+    },
+    {
+      "action": "assert-value",
+      "controlType": "slider",
+      "name": "Scale",
+      "sentence": "Assert slider \"Scale\" has value \"150\"",
+      "expected": "150",
+      "selector": "[data-testid=\"scale\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.891Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Scale value",
+      "sentence": "Assert label \"Scale value\" has text \"150\"",
+      "expected": "150",
+      "selector": "[data-testid=\"scale-value\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.894Z"
+    },
+    {
+      "action": "fill",
+      "controlType": "text area",
+      "name": "Notes",
+      "sentence": "Type \"two-color print\" into text area \"Notes\"",
+      "detail": "two-color print",
+      "selector": "[data-testid=\"notes\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.899Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "text area",
+      "name": "Notes",
+      "sentence": "Assert text area \"Notes\" has text \"two-color print\"",
+      "expected": "two-color print",
+      "selector": "[data-testid=\"notes\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.902Z"
+    },
+    {
+      "action": "choose-many",
+      "controlType": "select",
+      "name": "Also export as",
+      "sentence": "Choose options \"STL, STEP\" in select \"Also export as\"",
+      "detail": "STL, STEP",
+      "selector": "[data-testid=\"extra-formats\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.907Z"
+    },
+    {
+      "action": "assert-href",
+      "controlType": "link",
+      "name": "Help",
+      "sentence": "Assert link \"Help\" points to \"#help\"",
+      "expected": "#help",
+      "selector": "[data-testid=\"help-link\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.909Z"
+    }
+  ]
+}

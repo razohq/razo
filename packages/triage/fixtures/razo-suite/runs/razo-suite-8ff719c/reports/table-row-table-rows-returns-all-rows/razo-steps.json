@@ -1,0 +1,18 @@
+{
+  "test": "Table.rows() returns all rows",
+  "file": "tests/table-row.spec.ts",
+  "status": "passed",
+  "durationMs": 59,
+  "steps": [
+    {
+      "action": "assert-text",
+      "controlType": "cell",
+      "name": "cell #0",
+      "sentence": "Assert cell \"cell #0\" has text \"base.3mf\" in row \"row #1\"",
+      "expected": "base.3mf",
+      "selector": "getByTestId('exports').locator('tbody tr').nth(1) css=:scope > td:nth-child(1)",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:10.934Z"
+    }
+  ]
+}

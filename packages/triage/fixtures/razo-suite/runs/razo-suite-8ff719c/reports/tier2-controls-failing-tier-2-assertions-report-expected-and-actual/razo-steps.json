@@ -1,0 +1,32 @@
+{
+  "test": "failing tier-2 assertions report expected and actual",
+  "file": "tests/tier2-controls.spec.ts",
+  "status": "passed",
+  "durationMs": 6098,
+  "steps": [
+    {
+      "action": "assert-active-tab",
+      "controlType": "tabs",
+      "name": "Settings",
+      "sentence": "Assert tabs \"Settings\" has active tab \"Advanced\"",
+      "expected": "Advanced",
+      "actual": "General",
+      "selector": "[data-testid=\"settings-tabs\"]",
+      "status": "failed",
+      "error": "expect(locator).toHaveAttribute(expected) failed\n\nLocator:  getByTestId('settings-tabs').getByRole('tab', { name: 'Advanced' })\nExpected: \"true\"\nReceived: \"false\"\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toHaveAttribute\" with timeout 3000ms\n  - waiting for getByTestId('settings-tabs').getByRole('tab', { name: 'Advanced' })\n    10 × locator resolved to <button role=\"tab\" data-tab=\"Advanced\" aria-selected=\"false\">Advanced</button>\n       - unexpected value \"false\"\n",
+      "timestamp": "2026-09-25T01:49:14.716Z"
+    },
+    {
+      "action": "assert-row-count",
+      "controlType": "table",
+      "name": "Export history",
+      "sentence": "Assert table \"Export history\" has 5 rows",
+      "expected": "5",
+      "actual": "2",
+      "selector": "[data-testid=\"export-history\"]",
+      "status": "failed",
+      "error": "expect(locator).toHaveCount(expected) failed\n\nLocator:  getByTestId('export-history').locator('tbody tr')\nExpected: 5\nReceived: 2\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toHaveCount\" with timeout 3000ms\n  - waiting for getByTestId('export-history').locator('tbody tr')\n    10 × locator resolved to 2 elements\n       - unexpected value \"2\"\n",
+      "timestamp": "2026-09-25T01:49:17.728Z"
+    }
+  ]
+}

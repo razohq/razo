@@ -1,0 +1,18 @@
+{
+  "test": "RAZO_HEALING=off fails without healing or candidates",
+  "file": "tests/healing.spec.ts",
+  "status": "passed",
+  "durationMs": 5082,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Healed export",
+      "sentence": "Click button \"Healed export\"",
+      "selector": "[data-testid=\"healing-export-v1\"]",
+      "status": "failed",
+      "error": "locator.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for getByTestId('healing-export-v1')\n",
+      "timestamp": "2026-09-25T01:49:07.987Z"
+    }
+  ]
+}

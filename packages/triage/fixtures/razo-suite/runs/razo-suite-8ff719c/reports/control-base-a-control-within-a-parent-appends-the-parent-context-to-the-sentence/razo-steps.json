@@ -1,0 +1,17 @@
+{
+  "test": "a control within a parent appends the parent context to the sentence",
+  "file": "tests/control-base.spec.ts",
+  "status": "passed",
+  "durationMs": 88,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Confirm",
+      "sentence": "Click button \"Confirm\" in button \"Export\"",
+      "selector": "[data-testid=\"export\"] [data-testid=\"confirm\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.438Z"
+    }
+  ]
+}

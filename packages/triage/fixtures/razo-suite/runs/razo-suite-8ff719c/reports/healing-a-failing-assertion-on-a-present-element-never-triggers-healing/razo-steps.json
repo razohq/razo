@@ -1,0 +1,20 @@
+{
+  "test": "a failing assertion on a present element never triggers healing",
+  "file": "tests/healing.spec.ts",
+  "status": "passed",
+  "durationMs": 3093,
+  "steps": [
+    {
+      "action": "assert-disabled",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Assert button \"Export\" is disabled",
+      "expected": "disabled",
+      "actual": "enabled",
+      "selector": "[data-testid=\"export\"]",
+      "status": "failed",
+      "error": "expect(locator).toBeDisabled() failed\n\nLocator:  getByTestId('export')\nExpected: disabled\nReceived: enabled\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toBeDisabled\" with timeout 3000ms\n  - waiting for getByTestId('export')\n    10 × locator resolved to <button type=\"button\" data-testid=\"export\">Export</button>\n       - unexpected value \"enabled\"\n",
+      "timestamp": "2026-09-25T01:49:08.958Z"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "test": "submit is rejected because the button is hidden",
+  "file": "hidden-button.spec.ts",
+  "status": "failed",
+  "durationMs": 3405,
+  "error": "TimeoutError: locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for getByTestId('submit')\n    - locator resolved to <button data-testid=\"submit\">Submit</button>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    6 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n",
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Email",
+      "sentence": "Type \"demo@razo.ar\" into field \"Email\"",
+      "detail": "demo@razo.ar",
+      "selector": "[data-testid=\"email\"]",
+      "status": "passed",
+      "timestamp": "2026-07-28T02:08:04.060Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Submit",
+      "sentence": "Click button \"Submit\"",
+      "selector": "[data-testid=\"submit\"]",
+      "status": "failed",
+      "error": "locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for getByTestId('submit')\n    - locator resolved to <button data-testid=\"submit\">Submit</button>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    6 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n",
+      "timestamp": "2026-07-28T02:08:07.072Z"
+    }
+  ]
+}

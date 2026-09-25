@@ -1,0 +1,26 @@
+{
+  "test": "a role-located control composes with within",
+  "file": "tests/locators.spec.ts",
+  "status": "passed",
+  "durationMs": 123,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Confirm export",
+      "sentence": "Click button \"Confirm export\"",
+      "selector": "[data-testid=\"open-confirm\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:08.276Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Yes, export",
+      "sentence": "Click button \"Yes, export\" in dialog \"Confirm export\"",
+      "selector": "[data-testid=\"confirm-dialog\"] role=button[name=\"Yes, export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:08.308Z"
+    }
+  ]
+}

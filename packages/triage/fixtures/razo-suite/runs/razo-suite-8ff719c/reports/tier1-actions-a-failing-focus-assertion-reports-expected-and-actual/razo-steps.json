@@ -1,0 +1,20 @@
+{
+  "test": "a failing focus assertion reports expected and actual",
+  "file": "tests/tier1-actions.spec.ts",
+  "status": "passed",
+  "durationMs": 3116,
+  "steps": [
+    {
+      "action": "assert-focused",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Assert button \"Export\" is focused",
+      "expected": "focused",
+      "actual": "not focused",
+      "selector": "[data-testid=\"export\"]",
+      "status": "failed",
+      "error": "expect(locator).toBeFocused() failed\n\nLocator:  getByTestId('export')\nExpected: focused\nReceived: inactive\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toBeFocused\" with timeout 3000ms\n  - waiting for getByTestId('export')\n    10 × locator resolved to <button type=\"button\" data-testid=\"export\">Export</button>\n       - unexpected value \"inactive\"\n",
+      "timestamp": "2026-09-25T01:49:14.502Z"
+    }
+  ]
+}

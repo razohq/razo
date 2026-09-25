@@ -1,0 +1,18 @@
+{
+  "test": "Table.row(index) targets the 0-based row",
+  "file": "tests/table-row.spec.ts",
+  "status": "passed",
+  "durationMs": 60,
+  "steps": [
+    {
+      "action": "assert-text",
+      "controlType": "cell",
+      "name": "cell #0",
+      "sentence": "Assert cell \"cell #0\" has text \"mi-llavero.3mf\" in row \"row #0\"",
+      "expected": "mi-llavero.3mf",
+      "selector": "getByTestId('exports').locator('tbody tr').first() css=:scope > td:nth-child(1)",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:10.870Z"
+    }
+  ]
+}

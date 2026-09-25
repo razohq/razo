@@ -1,0 +1,17 @@
+{
+  "test": "the sentence can be overridden for business-level narration",
+  "file": "tests/control-base.spec.ts",
+  "status": "passed",
+  "durationMs": 96,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Confirm the export",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.382Z"
+    }
+  ]
+}

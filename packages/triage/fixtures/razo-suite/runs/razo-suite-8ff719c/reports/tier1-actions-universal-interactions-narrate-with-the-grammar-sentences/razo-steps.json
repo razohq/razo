@@ -1,0 +1,73 @@
+{
+  "test": "universal interactions narrate with the grammar sentences",
+  "file": "tests/tier1-actions.spec.ts",
+  "status": "passed",
+  "durationMs": 331,
+  "steps": [
+    {
+      "action": "hover",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Hover over button \"Export\"",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.235Z"
+    },
+    {
+      "action": "focus",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Focus field \"Filename\"",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.240Z"
+    },
+    {
+      "action": "press",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Press \"Enter\" on field \"Filename\"",
+      "detail": "Enter",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.245Z"
+    },
+    {
+      "action": "double-click",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Double-click button \"Export\"",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.271Z"
+    },
+    {
+      "action": "right-click",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Right-click button \"Export\"",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.311Z"
+    },
+    {
+      "action": "scroll-to",
+      "controlType": "link",
+      "name": "Help",
+      "sentence": "Scroll to link \"Help\"",
+      "selector": "[data-testid=\"help-link\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.352Z"
+    },
+    {
+      "action": "drag",
+      "controlType": "file input",
+      "name": "Model file",
+      "sentence": "Drag file input \"Model file\" onto button \"Export\"",
+      "detail": "button \"Export\"",
+      "selector": "[data-testid=\"model-file\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.454Z"
+    }
+  ]
+}
