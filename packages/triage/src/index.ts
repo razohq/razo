@@ -6,3 +6,7 @@ export type { IssueTracker } from './ports/issue-tracker';
 export type { Notifier } from './ports/notifier';
 export type { AdapterOf, ConfigSchema, PluginKind, TriagePlugin } from './ports/plugin';
 export { clusterFailures, failingTestIds } from './core/cluster';
+export {
+  testHistories, shaRange, stableBefore, retryFlip, sameShaFlips, isFailing,
+  type TestHistory, type TestOutcome,
+} from './core/history';
