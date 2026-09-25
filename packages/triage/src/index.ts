@@ -14,3 +14,7 @@ export {
   needlesFor, changedLines, findSuspects, commitsInRange,
   type SuspectInput, type SuspectSearch, type UnevaluableFile,
 } from './core/suspects';
+export {
+  RazoSource, razoSourcePlugin, readRuns, writeRun, toTestRun, SOURCE_NAME,
+  type RazoSourceConfig, type RunManifest, type RazoReport, type RazoStep, type StoredReport, type StoredRun,
+} from './adapters/razo-source';
