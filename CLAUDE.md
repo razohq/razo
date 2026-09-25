@@ -119,17 +119,17 @@ Before working in this package, read `packages/triage/DESIGN.md`. It is the sour
 
 ### Rules that never break
 
-- `src/core/` imports only from `src/core/` and `src/ports/`. It never imports adapters, external services or razo internals.
-- Access to razo data goes exclusively through the `ResultSource` interface (adapter `src/adapters/razo-source/`).
-- Grouping, classifying and finding suspect commits is deterministic. This package calls no model: assisted diagnosis, trackers and interactive notifications live in razo-cloud and consume `TriageItem[]` without changing what the rules decided with `high` confidence.
-- This package only reads external systems. It never writes to a tracker or a chat.
-- Secrets come from environment variables. They are never hardcoded or logged.
+- `src/core/` solo importa desde `src/core/` y `src/ports/`. Nunca importa adaptadores, servicios externos ni código interno de razo.
+- El acceso a datos de razo pasa únicamente por la interfaz `ResultSource` (adaptador `src/adapters/razo-source/`).
+- Agrupar, clasificar y buscar commits sospechosos es determinístico. Este paquete no llama a ningún modelo: el diagnóstico asistido, los trackers y las notificaciones interactivas viven en razo-cloud y consumen `TriageItem[]` sin cambiar lo que las reglas decidieron con confianza `high`.
+- Este paquete sólo lee sistemas externos. Nunca escribe en un tracker ni en un chat.
+- Los secretos se leen de variables de entorno. Nunca se hardcodean ni se loguean.
 
 ### Way of working
 
-- Tests first for classification rules, clustering and suspect commits, using the real Playwright fixtures under `packages/triage/fixtures/`.
-- Unit tests never touch the network. Integrations are tested with the contract kit, fake adapters and an injected `fetch` that replays recorded responses.
-- Every new adapter must pass the contract test kit of its kind, exported from `@razohq/triage/contract`.
-- Rule thresholds live in the config, never as magic numbers in the code.
-- Work one phase of `DESIGN.md` at a time. When a phase ends, update `DESIGN.md` with the decisions taken and mark the phase complete.
-- Everything that gets pushed is in English: code, comments, tests, docs and commit messages.
+- Tests primero para reglas de clasificación, clustering y commits sospechosos, usando los fixtures reales de Playwright en `packages/triage/fixtures/`.
+- Los tests unitarios no usan red. Las integraciones se prueban con el kit de contrato, adaptadores falsos y un `fetch` inyectado que reproduce respuestas grabadas.
+- Todo adaptador nuevo debe pasar el kit de tests de contrato de su kind, exportado desde `@razohq/triage/contract`.
+- Umbrales de reglas en la config, nunca como números mágicos en el código.
+- Trabajar una fase de `DESIGN.md` a la vez. Al terminar una fase, actualizar `DESIGN.md` con las decisiones tomadas y marcar la fase como completa.
+- Ante una decisión de diseño no cubierta por `DESIGN.md`, proponer opciones y esperar aprobación antes de implementar.

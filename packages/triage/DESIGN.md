@@ -1,8 +1,10 @@
-# Morning triage — Design document for the open engine
+# Triage matutino — Documento de diseño del motor abierto
 
 Package: `@razohq/triage` (location: `packages/triage`)
 
-This document covers the open engine: the contracts, the deterministic core, the local and GitHub adapters, the Markdown report and the local SQLite store. Model-assisted diagnosis, interactive notifications, issue trackers, the Postgres store and the collector that reads from razo-cloud live in razo-cloud and are designed in their own document; they consume this engine through its ports and its canonical model.
+Este documento cubre el motor abierto: los contratos, el core determinista, los adaptadores locales y de GitHub, el reporte en Markdown y el store SQLite local. El diagnóstico asistido por modelos, las notificaciones interactivas, los trackers de tickets, el store Postgres y el recolector desde razo-cloud viven en razo-cloud y se diseñan en su propio documento; consumen este motor a través de sus puertos y su modelo canónico.
+
+## 1. Objetivo
 
 ## 1. Goal
 
@@ -12,35 +14,36 @@ The user should be able to finish the daily triage in a few minutes by reading t
 
 ## 2. Scope
 
-Included:
+- Resultados de Playwright narrados por razo, leídos desde los artefactos `razo-steps.json` de CI.
+- Contexto de código desde el sistema de control de versiones (GitHub primero).
+- Clustering, clasificación y commits sospechosos, todo determinista.
+- Reporte en Markdown y JSON.
+- Memoria local de clusters y acciones (store SQLite).
+- Integraciones extensibles mediante adaptadores (plugins) con kits de contrato.
 
-- Playwright results narrated by razo, read from the `razo-steps.json` artifacts of CI.
-- Code context from the version control system (GitHub first).
-- Clustering, classification and suspect commits, all deterministic.
-- A report in Markdown and JSON.
-- Local memory of clusters and actions (SQLite store).
-- Integrations extensible through adapters (plugins) with contract kits.
+Fuera de alcance de este documento (viven en razo-cloud):
 
-Out of scope for this document (they live in razo-cloud):
+- Diagnóstico asistido por modelos sobre un resumen ya calculado.
+- Notificaciones interactivas y ejecución de acciones aprobadas.
+- Trackers de tickets (búsqueda de duplicados, creación y comentario con aprobación). El puerto `IssueTracker` y su kit de contrato sí son parte del motor; los adaptadores reales no.
+- Store Postgres y recolector de corridas desde razo-cloud.
+
+Fuera de alcance en general:
+
+- Otros frameworks de test (Cypress, JUnit, etc.). La interfaz `ResultSource` lo permite a futuro, pero no se implementa.
+- Arreglar tests o mergear cambios automáticamente.
+- Cualquier escritura en sistemas externos: este motor sólo lee.
 
 - Model-assisted diagnosis over an already computed summary.
 - Interactive notifications and execution of approved actions.
 - Issue trackers (duplicate search, creation and comments with approval). The `IssueTracker` port and its contract kit are part of the engine; the real adapters are not.
 - Postgres store and the collector that reads runs from razo-cloud.
 
-Out of scope in general:
-
-- Other test frameworks (Cypress, JUnit, etc.). The `ResultSource` interface allows them later, but none is implemented.
-- Fixing tests or merging changes automatically.
-- Any write to an external system: this engine only reads.
-
-## 3. Principles
-
-1. **Deterministic.** Grouping, classifying and finding suspects is done with rules and data. Any model-assisted interpretation stays outside the engine and only consumes an already computed summary; it can never raise a confidence nor change a `high`-confidence category decided by the rules.
-2. **The core knows no integrations.** `core/` uses only the canonical model and the `ports/` interfaces. It never imports adapters, external services or razo internals.
-3. **Evidence always visible.** Every verdict shows SHAs, commits, signature and confidence level. A verdict without evidence is not reported as reliable.
-4. **Read-only.** The engine reads runs and code, and writes reports and its own local memory. Any write to an external system requires human approval and lives outside this document.
-5. **Better "I don't know" than a confident mistake.** Under ambiguity the category is `unknown` or the confidence is `low`.
+1. **Determinístico.** Agrupar, clasificar y buscar sospechosos se hace con reglas y datos. Cualquier interpretación asistida por modelos queda fuera del motor y sólo consume un resumen ya calculado; nunca puede subir una confianza ni cambiar una categoría `high` de las reglas.
+2. **El núcleo no conoce integraciones.** `core/` solo usa el modelo canónico y las interfaces de `ports/`. Nunca importa adaptadores, servicios externos ni código interno de razo.
+3. **Evidencia siempre visible.** Todo veredicto muestra SHA, commits, firma y nivel de confianza. Un veredicto sin evidencia no se reporta como confiable.
+4. **Solo lectura.** El motor lee corridas y código y escribe reportes y su propia memoria local. Toda escritura en un sistema externo requiere aprobación humana y vive fuera de este documento.
+5. **Mejor "no sé" que un error confiado.** Ante ambigüedad, la categoría es `unknown` o la confianza es `low`.
 
 ## 4. Pipeline
 
@@ -48,18 +51,18 @@ Out of scope in general:
 trigger → collect → cluster → history → suspects → classify → report → feedback
 ```
 
-| Stage | Responsibility |
+| Etapa | Responsabilidad |
 |---|---|
-| trigger | Cron or manual command. Defines the window (since the last triage). |
+| trigger | Cron o comando manual. Define la ventana (desde el último triage). |
 | collect | `ResultSource.fetchRuns(since)` → `TestRun[]` |
-| cluster | Groups failed attempts by signature → `Cluster[]` |
-| history | Per test: SHA range on the base branch, prior stability and alternations |
-| suspects | Commits between the last green SHA and the first red SHA, scored by touched components |
-| classify | Applies the rules of section 6 → category + confidence + evidence |
-| report | Builds the `TriageReport` and sends it through every `Notifier` |
-| feedback | Records the user's actions in the store and updates the clusters' state |
+| cluster | Agrupa los intentos fallidos por firma → `Cluster[]` |
+| history | Por test, rango de SHAs en la rama base, estabilidad previa y alternancias |
+| suspects | Commits entre último SHA verde y primer SHA rojo, puntuados por componentes tocados |
+| classify | Aplica las reglas de la sección 6 → categoría + confianza + evidencia |
+| report | Arma `TriageReport` y lo envía por cada `Notifier` |
+| feedback | Registra acciones del usuario en el store y actualiza el estado de los clusters |
 
-Every stage is deterministic. The stages razo-cloud adds on the outside (assisted diagnosis, trackers, interactive actions) sit between `classify` and `report`, consume `TriageItem[]`, and never change what the rules decided with `high` confidence.
+Todas las etapas son deterministas. Las etapas que razo-cloud agrega por fuera (diagnóstico asistido, trackers, acciones interactivas) se insertan entre `classify` y `report` consumiendo `TriageItem[]`, y nunca modifican lo que las reglas decidieron con confianza `high`.
 
 ## 5. Canonical data model
 
@@ -157,8 +160,8 @@ export interface Verdict {
   summary: string;
   nextStep: string;
   evidence: Evidence[];
-  origin: 'rules' | 'llm';      // 'llm' is produced by razo-cloud over this same model; the engine only emits 'rules'
-  disagreement?: string;        // recorded by razo-cloud when its diagnosis contradicts the rules
+  origin: 'rules' | 'llm';      // 'llm' lo produce razo-cloud sobre este mismo modelo; el motor sólo emite 'rules'
+  disagreement?: string;        // registrado por razo-cloud cuando su diagnóstico contradice a las reglas
 }
 
 export interface IssueRef {
@@ -237,26 +240,9 @@ Un cluster agrupa por firma, y varios tests pueden compartirla con historias dif
   - Un archivo sin patch (binario o truncado) o borrado cuyo nombre lleva el de un componente del test se marca como **no evaluable** y va a la evidencia del veredicto, sin puntaje. Un archivo sin patch que no nombra nada se ignora.
 - Se reportan como máximo 3 commits por cluster.
 
-### Clusters whose tests have different histories
+## 7. Estado y memoria
 
-A cluster groups by signature, and several tests may share it with different histories. `classify` evaluates the rules per test and resolves like this:
-
-- **Unanimity:** every test yields the same category → that category, with the lowest confidence among them.
-- **No unanimity:** the majority's category, with the confidence one level below the lowest of that majority (`high` → `medium`, `medium` → `low`), and the mix as `history` evidence: which tests yielded which category.
-- **Tie:** `unknown` with `low` confidence, with the mix as evidence.
-
-### Suspect commits
-
-- Range: `lastGreenSha..firstRedSha` through `CodeContext.commitsBetween`.
-- Score: number of overlapping components between the test's `controls` and the commit's files. The reference logic is `matchControlsToDiff` in razo-cloud (private repo); `core/suspects.ts` reimplements it over `ChangedFile.patch` without importing anything from razo-cloud, with these rules:
-  - A control's needles are its name and the quoted values of its selector (testid, role name). Needles shorter than 4 characters and generic ones (`btn`, `button`, `input`, `row`, `item`, `text`…) are dropped: they would turn every commit into a suspect.
-  - A needle matches only as a whole token on a `+`/`-` line: `order` does not match `reorder`.
-  - A file without a patch (binary or truncated) or a removed file whose name carries a component of the test is marked **unevaluable** and goes into the verdict's evidence, without a score. A file without a patch that names nothing is ignored.
-- At most 3 commits are reported per cluster.
-
-## 7. State and memory
-
-Persistence is one more port, `TriageStore`. The core does not know which database is behind it; it only asks for and stores the canonical model. The razo package persists nothing, so the triage store is its own.
+La persistencia es un puerto más, `TriageStore`. El core no sabe qué base hay detrás; sólo pide y guarda el modelo canónico. El paquete razo no persiste nada, así que el store del triage es propio.
 
 ```ts
 export interface TriageRunRecord {
@@ -285,9 +271,7 @@ export interface TriageStore {
 }
 ```
 
-Adapter: `sqlite` (Phase 3), a local file with no server, to run the triage from CI or from a development machine. Other stores are implemented against the interface only; the core does not change.
-
-The `store` contract kit is added in Phase 3 together with the first adapter. It verifies, at minimum, that `saveClusters` followed by `loadClusters` returns what was saved, that `lastTriageAt` is `null` on an empty store and advances with each `recordRun`, and that `actionsFor` returns the actions in order.
+Adaptador: `sqlite` (Fase 3), un archivo local, sin servidor, para correr el triage desde CI o desde una máquina de desarrollo. Otros stores se implementan sólo contra la interfaz; el core no cambia.
 
 State rules:
 
@@ -295,7 +279,11 @@ State rules:
 - A cluster with no failures for `state.resolveAfterRuns` runs (default 3) becomes `resolved`.
 - A test marked `flaky` `flaky.quarantineSuggestAfter` times (default 3) produces the suggested action `quarantine`.
 
-## 8. Integrations (ports)
+- Un cluster en estado `ignored` o `flaky` no se reporta como nuevo; aparece en una sección compacta.
+- Un cluster sin fallas durante `state.resolveAfterRuns` corridas (default 3) pasa a `resolved`.
+- Un test marcado `flaky` `flaky.quarantineSuggestAfter` veces (default 3) genera la acción sugerida `quarantine`.
+
+## 8. Integraciones (puertos)
 
 ```ts
 export interface ResultSource {
@@ -313,7 +301,7 @@ export interface ChangedFile {
   status?: 'added' | 'modified' | 'removed' | 'renamed';  // como lo informa el VCS; removed nunca puntúa
 }
 
-export interface IssueTracker {   // port and contract kit in the engine; the real adapters live in razo-cloud
+export interface IssueTracker {   // puerto y kit de contrato en el motor; los adaptadores reales viven en razo-cloud
   findBySignature(signature: string): Promise<IssueRef[]>;
   create(draft: IssueDraft): Promise<IssueRef>;               // requires approval
   comment(issue: IssueRef, body: string): Promise<void>;      // requires approval
@@ -343,7 +331,7 @@ export interface ConfigSchema<Config> {
 }
 
 export interface TriagePlugin<Kind extends PluginKind, Config> {
-  name: string;                                   // kebab-case, e.g. 'github'
+  name: string;                                   // kebab-case, ej. 'github'
   kind: Kind;
   configSchema: ConfigSchema<Config>;
   create(config: Config): AdapterOf[Kind];        // ResultSource | CodeContext | IssueTracker | Notifier | TriageStore
@@ -357,7 +345,7 @@ The `store` kind exists in the type from Phase 3 on; Phase 1 implements the othe
 - Secrets are read from environment variables referenced in the config, never in plain text.
 - Deduplication in trackers: the signature is stored on the ticket (label or field) so `findBySignature` is exact.
 
-## 9. Configuration
+## 9. Configuración
 
 ```yaml
 # triage.config.yaml
@@ -393,14 +381,16 @@ rules:
   state: { resolveAfterRuns: 3 }
 ```
 
+Las secciones `tracker`, `llm` y los notificadores interactivos son extensiones de razo-cloud; el motor ignora claves que no conoce sólo si un plugin registrado las reclama.
+
 El token de GitHub necesita dos permisos de lectura sobre el repositorio: **Actions: read** (listar corridas, listar y descargar artefactos) y **Contents: read** (comparar commits y leer sus diffs). Se referencia desde la config como `${GITHUB_TOKEN}`; una variable no definida es un error, nunca una cadena vacía. El README del paquete tiene la guía completa.
 
-## 11. Estructura del paquete
+## 10. Estructura del paquete
 
 ```
 packages/triage/
   DESIGN.md
-  package.json            private until Phase 4; entries: ., ./contract, ./fakes
+  package.json            privado hasta la Fase 4; entradas: ., ./contract, ./fakes
   src/
     index.ts              model, ports, TriagePlugin, errorSignature, clusterIdOf
     contract.ts           entry @razohq/triage/contract
@@ -430,7 +420,6 @@ packages/triage/
       notifier.ts
       plugin.ts
     fakes/                adaptadores en memoria y sus plugins
-    llm/                  (Fase 3)
     config/
       schema.ts           TriageConfig, parseConfig() con expansión de ${VAR} y merge de umbrales
       load.ts             loadConfig(): YAML
@@ -461,7 +450,9 @@ packages/triage/
     markdown-notifier / github-api / github-code-context / commits-json / github-artifacts / config / cli .test.mjs
 ```
 
-Monorepo conventions: tsup, `tsc --noEmit`, `node --test` against `dist/`, no new runtime dependencies.
+Convenciones del monorepo: tsup, `tsc --noEmit`, `node --test` contra `dist/`, sin dependencias de runtime nuevas.
+
+## 11. Fases
 
 ## 11. Phases
 
@@ -491,7 +482,7 @@ Deviations from the original design, with their reason:
 <dataDir>/runs/<runId>/reports/**/razo-steps.json
 ```
 
-`triage pull --from github-artifacts` materializa ese layout de forma incremental, con caché por `runId`, leyendo los workflow runs de GitHub (`head_sha`, `head_branch`, `run_started_at`, `updated_at`) y descargando el artefacto de `test-results`. `--from razo-cloud` se agrega después sin tocar el plugin, cuando exista un endpoint de lectura. El plugin pasa el kit de `ResultSource` con una factory que escribe la seed en un directorio temporal; los recolectores se prueban con respuestas HTTP grabadas.
+`triage pull` materializa ese layout de forma incremental, con caché por `runId`, leyendo los workflow runs de GitHub (`head_sha`, `head_branch`, `run_started_at`, `updated_at`) y descargando el artefacto de `test-results`. Otros recolectores se agregan sin tocar el plugin. El plugin pasa el kit de `ResultSource` con una factory que escribe la seed en un directorio temporal; los recolectores se prueban con respuestas HTTP grabadas.
 
 Mapeo a `TestResult`: `testId` es `file::title`, más `::project` cuando el reporte lo trae. El error es el del reporte, si no el del último step fallido, y si no un mensaje derivado del test (`<status> without error message: <file> › <title>`), nunca un "unknown error" compartido que agruparía fallas sin relación. Dos reportes con el mismo índice de reintento para un test son una corrida corrupta y se rechazan nombrando ambos archivos. Si el reporte trae `retry` o `project`, se usan; si no, `retry` se reconstruye desde el sufijo `-retryN` de la carpeta y `project` queda ausente. Los intentos se ordenan por `retry`; el estado final es el de la N más alta. El reporter de razo no se modifica en la rama de la Fase 2. El error es el del reporte o el del último step fallido, con `signature` de `errorSignature`. `touchedComponents` son los `controlType "name"` distintos de los steps. `healedLocators` recoge los `healed` de los steps. `traceUrl` apunta al `ciUrl` de la corrida.
 
@@ -511,10 +502,8 @@ Anonimización: sólo hace falta si alguna vez se toman datos de un proyecto aje
 - razo: agregar `retry` y `project` al `AiTestReport` que escribe el reporter y el project al nombre de carpeta. Aditivo; la Fase 2 funciona sin él reconstruyendo `retry` desde el nombre de carpeta.
 - razo-demo: subir `test-results` como artefacto en cada corrida con `if: always()`, nombre por corrida y retención explícita, para que exista historia real que `triage pull` pueda leer.
 
-### Fase 3 — Memoria y notificación
+### Fase 3 — Memoria local
 - Puerto `TriageStore`, su kit de contrato y el adaptador `sqlite`; estados de cluster, novedad y días abiertos.
-- Diagnóstico LLM con regla de credibilidad.
-- Notificador Slack.
 - Reintentos de workflow como evidencia de flaky: el recolector guarda `run_attempt` en `run.json` y, cuando el mismo SHA tiene más de un intento de workflow, `classify` suma evidencia `retry` al cluster. Hoy `/actions/runs` lista sólo el último intento; hace falta pedir los anteriores por `/actions/runs/{id}/attempts/{n}`.
 - **Hecho cuando:** dos días consecutivos no repiten como "nuevo" un cluster ya visto.
 
@@ -533,23 +522,19 @@ Cada uno con su test rojo primero:
 9. `github/api`: los 403 de rate limit y los 401 no muestran `x-ratelimit-reset` ni `Retry-After` en el mensaje.
 10. Tests que faltan: la rama de zip sin reportes en el recolector y la paginación de `compare` cuando una página trae menos de lo pedido pero `total_commits` es mayor.
 
-### Fase 4 — Tracker con aprobación
-- Adaptador Jira: búsqueda por firma, borradores, creación y comentario tras aprobación.
-- **Hecho cuando:** no existe ningún camino de código que escriba en el tracker sin una acción aprobada registrada en `triage_actions`.
-
-### Fase 5 — SDK público
+### Fase 4 — SDK público
 - Documentación del contrato de plugins y plugin plantilla.
-- Segundo tracker (Linear o GitHub Issues) implementado solo contra la interfaz.
+- Un segundo adaptador de cada kind implementado sólo contra la interfaz, fuera del monorepo, como prueba del SDK.
 - Descarga en streaming de artefactos grandes: hoy el recolector carga el zip entero en memoria antes de filtrar sus entradas; con traces y videos de una suite grande hace falta leer el archivo por partes y extraer sólo los `razo-steps.json`.
-- **Hecho cuando:** el segundo tracker funciona sin cambios en `core/`.
+- **Hecho cuando:** un adaptador externo funciona sin cambios en `core/`.
 
-## 12. Metrics
+## 12. Métricas
 
-- Daily time spent on triage.
-- Percentage of verdicts accepted unchanged.
-- False-regression rate (`regression` clusters that turned out not to be). The main credibility metric.
+- Tiempo diario dedicado al triage.
+- Porcentaje de veredictos aceptados sin cambio.
+- Tasa de falsas regresiones (clusters `regression` que resultaron no serlo). Es la métrica principal de credibilidad.
 
-## 13. Open decisions
+## 13. Decisiones abiertas
 
-- Criteria for extracting the triage as a product independent of razo.
-- When to publish `@razohq/triage` to npm: at the close of Phase 4, with the SDK documented.
+- Criterio para extraer el triage como producto independiente de razo.
+- Cuándo publicar `@razohq/triage` en npm: al cerrar la Fase 4, con el SDK documentado.
