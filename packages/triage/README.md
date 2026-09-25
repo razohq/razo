@@ -50,7 +50,7 @@ pull:
   artifactPrefix: razo-test-results-   # optional, this is the default
 code:
   plugin: github
-  config: { repo: razohq/razo-demo, token: ${GITHUB_TOKEN} }
+  config: { repo: razohq/razo-demo, token: "${GITHUB_TOKEN}" }   # quoted: inside { } a bare ${ } is not YAML
 notifiers:
   - plugin: markdown
     config: { outDir: ./triage-reports }

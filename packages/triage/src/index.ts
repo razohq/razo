@@ -38,3 +38,4 @@ export { parseConfig, type TriageConfig, type PluginRef, type PullConfig } from 
 export { loadConfig } from './config/load';
 export { instantiate, builtinPlugins, type Adapters } from './config/registry';
 export { parseDuration, runTriage, runPull, type RunOptions, type RunResult, type PullCommandOptions } from './commands';
+export { MAX_REPORT_BYTES } from './collectors/unzip';

@@ -51,3 +51,11 @@ test('two sends in the same second do not overwrite each other', async () => {
   await notifier.send({ ...seed.report, generatedAt: '2026-09-24T07:00:00.500Z' });
   assert.equal(fs.readdirSync(dir).filter((f) => f.endsWith('.json')).length, 2);
 });
+
+test('review 2b-7: readReports keeps send order across many sends in one second and across seconds', async () => {
+  const dir = tmp();
+  const notifier = new MarkdownNotifier(dir);
+  for (let i = 0; i < 11; i++) await notifier.send({ ...seed.report, generatedAt: '2026-09-24T07:00:00Z', totals: { ...seed.report.totals, tests: i } });
+  await notifier.send({ ...seed.report, generatedAt: '2026-09-24T07:00:01Z', totals: { ...seed.report.totals, tests: 11 } });
+  assert.deepEqual(readReports(dir).map((r) => r.totals.tests), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+});

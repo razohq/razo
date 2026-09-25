@@ -38,3 +38,7 @@ test('getBinary returns a Buffer and follows redirects', async () => {
   assert.ok(Buffer.isBuffer(buf));
   assert.deepEqual([...buf], [1, 2, 3]);
 });
+
+test('review 2b-3: GitHubApi refuses an empty token', () => {
+  assert.throws(() => new GitHubApi({ token: '' }), /token/);
+});

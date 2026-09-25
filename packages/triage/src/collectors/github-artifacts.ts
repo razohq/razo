@@ -40,7 +40,12 @@ export interface PullOptions {
 
 export interface PullSummary {
   pulled: string[];
-  skipped: Array<{ runId: string; reason: 'exists' | 'no artifact' | 'expired' | 'not completed' }>;
+  skipped: Array<{
+    runId: string;
+    reason: 'exists' | 'no artifact' | 'expired' | 'not completed' | 'error';
+    /** For `error`: what went wrong with this run; the others still pull. */
+    detail?: string;
+  }>;
 }
 
 export const DEFAULT_ARTIFACT_PREFIX = 'razo-test-results-';
@@ -65,13 +70,26 @@ export async function pullGithubArtifacts(options: PullOptions): Promise<PullSum
   const summary: PullSummary = { pulled: [], skipped: [] };
   for (const run of runs) {
     const runId = `gh-${run.id}-${run.run_attempt}`;
+    try {
+      await pullOne(run, runId);
+    } catch (error) {
+      // One broken run (expired between listing and download, a corrupt archive, a null branch) never aborts the morning.
+      summary.skipped.push({ runId, reason: 'error', detail: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  return summary;
+
+  async function pullOne(run: WorkflowRun, runId: string): Promise<void> {
     if (fs.existsSync(path.join(dataDir, 'runs', runId))) {
       summary.skipped.push({ runId, reason: 'exists' });
-      continue;
+      return;
     }
     if (run.status !== 'completed') {
       summary.skipped.push({ runId, reason: 'not completed' });
-      continue;
+      return;
+    }
+    for (const key of ['head_sha', 'head_branch', 'run_started_at', 'updated_at', 'html_url'] as const) {
+      if (typeof run[key] !== 'string' || run[key].length === 0) throw new Error(`workflow run ${run.id} has no ${key}`);
     }
     const artifacts = await api.getAll<Artifact>(
       `/repos/${repo}/actions/runs/${run.id}/artifacts`,
@@ -80,18 +98,18 @@ export async function pullGithubArtifacts(options: PullOptions): Promise<PullSum
     const candidates = artifacts.filter((a) => a.name.startsWith(prefix));
     if (candidates.length === 0) {
       summary.skipped.push({ runId, reason: 'no artifact' });
-      continue;
+      return;
     }
     const artifact = candidates.find((a) => !a.expired);
     if (!artifact) {
       summary.skipped.push({ runId, reason: 'expired' });
-      continue;
+      return;
     }
     const reports = reportsFromZip(await api.getBinary(`/repos/${repo}/actions/artifacts/${artifact.id}/zip`));
     if (reports.length === 0) {
       // razo writes one report per test, so an archive without any is not razo's.
       summary.skipped.push({ runId, reason: 'no artifact' });
-      continue;
+      return;
     }
     const manifest: RunManifest = {
       id: runId,
@@ -107,5 +125,4 @@ export async function pullGithubArtifacts(options: PullOptions): Promise<PullSum
     summary.pulled.push(runId);
     log(`pulled ${runId} (${reports.length} report(s), ${run.head_branch} @ ${run.head_sha.slice(0, 7)})`);
   }
-  return summary;
 }

@@ -33,6 +33,7 @@ function fakeActions({ runs, artifacts, zips }) {
     if (/\/actions\/artifacts\/\d+\/zip$/.test(u.pathname)) {
       const id = Number(u.pathname.match(/artifacts\/(\d+)/)[1]);
       const zip = zips[id];
+      if (!zip) return { ok: false, status: 404, headers: { get: () => null }, json: async () => ({ message: 'Not Found' }), arrayBuffer: async () => new ArrayBuffer(0) };
       return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({}), arrayBuffer: async () => zip.buffer.slice(zip.byteOffset, zip.byteOffset + zip.byteLength) };
     }
     if (/\/actions\/(workflows\/[^/]+\/)?runs$/.test(u.pathname)) {
@@ -114,4 +115,38 @@ test('branch and workflow narrow the listing', async () => {
   await pullGithubArtifacts({ api: new GitHubApi({ token: 't', fetch }), repo: 'o/r', dataDir, since: new Date(0), branch: 'main', workflow: 'e2e.yml' });
   assert.ok(calls[0].includes('/actions/workflows/e2e.yml/runs'));
   assert.ok(calls[0].includes('branch=main'));
+});
+
+test('review 2b-5: one bad run is skipped with its error and the others still pull', async () => {
+  const dataDir = tmp();
+  const good = zipOf({ 'checkout-pays/razo-steps.json': report('pays', 'passed') });
+  const bad = zipOf({ 'checkout-pays/razo-steps.json': '{"test": "pays", "fi' });
+  const { fetch } = fakeActions({
+    runs: [RUN(1), RUN(2), RUN(3, { head_branch: null }), RUN(4)],
+    artifacts: {
+      1: [{ id: 501, name: 'razo-test-results-1-1', expired: false }],
+      2: [{ id: 502, name: 'razo-test-results-2-1', expired: false }],
+      3: [{ id: 503, name: 'razo-test-results-3-1', expired: false }],
+      4: [{ id: 504, name: 'razo-test-results-4-1', expired: false }],
+    },
+    zips: { 501: bad, 503: good, 504: good },
+  });
+  const summary = await pullGithubArtifacts({ api: new GitHubApi({ token: 't', fetch }), repo: 'o/r', dataDir, since: new Date(0) });
+  assert.deepEqual(summary.pulled, ['gh-4-1']);
+  assert.deepEqual(summary.skipped.map((s) => [s.runId, s.reason]), [['gh-1-1', 'error'], ['gh-2-1', 'error'], ['gh-3-1', 'error']]);
+  assert.match(summary.skipped[0].detail, /JSON|razo-steps/);
+  assert.match(summary.skipped[1].detail, /404|zip/);
+  assert.match(summary.skipped[2].detail, /head_branch/);
+  assert.deepEqual(readRuns(dataDir).map((r) => r.manifest.id), ['gh-4-1']);
+});
+
+test('review 2b-6: entries that are not reports, or reports over the size cap, are never inflated', () => {
+  const big = 'x'.repeat(50_000);
+  const zip = zipOf({
+    'checkout-pays/razo-steps.json': report('pays', 'passed'),
+    'checkout-pays/trace.zip': big,
+    'checkout-huge/razo-steps.json': { ...report('huge', 'passed'), padding: big },
+  });
+  const found = reportsFromZip(zip, { maxEntryBytes: 10_000 });
+  assert.deepEqual(found.map((f) => f.report.test), ['pays']);
 });

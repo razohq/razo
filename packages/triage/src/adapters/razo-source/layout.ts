@@ -103,7 +103,8 @@ export function readRuns(dataDir: string): StoredRun[] {
   if (!fs.existsSync(runsDir)) return [];
   const runs: StoredRun[] = [];
   for (const entry of fs.readdirSync(runsDir, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
+    // A `.tmp-*` directory is a run whose write never finished: not a run.
+    if (!entry.isDirectory() || entry.name.startsWith(TMP_PREFIX)) continue;
     const runDir = path.join(runsDir, entry.name);
     const manifest = readManifest(runDir);
     const reports = walkReports(path.join(runDir, 'reports')).map(({ file, relPath }) => {
@@ -127,24 +128,44 @@ export function readRuns(dataDir: string): StoredRun[] {
 const slug = (text: string) =>
   text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
 
-/** Writes one run in the layout. Used by fixture scripts and by collectors. Returns the run directory. */
+const TMP_PREFIX = '.tmp-';
+
+/**
+ * Writes one run in the layout, atomically: everything goes to
+ * `runs/.tmp-<id>` and is renamed into place at the end, so a crash midway
+ * never leaves a half run that would break every later read. Replaces an
+ * existing run of the same id. Returns the run directory.
+ */
 export function writeRun(
   dataDir: string,
   manifest: RunManifest,
   reports: Array<{ report: RazoReport; retry: number }>,
 ): string {
-  const runDir = path.join(dataDir, 'runs', manifest.id);
-  fs.mkdirSync(path.join(runDir, 'reports'), { recursive: true });
-  fs.writeFileSync(path.join(runDir, 'run.json'), JSON.stringify(manifest, null, 2) + '\n');
-  for (const { report, retry } of reports) {
-    // Same shape Playwright uses: file, title, project, retry.
-    const base = [path.basename(report.file).replace(/\.(spec|test)\.[cm]?[jt]s$/, ''), report.test, report.project]
-      .filter((part): part is string => !!part)
-      .map(slug)
-      .join('-');
-    const dir = path.join(runDir, 'reports', retry > 0 ? `${base}-retry${retry}` : base);
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'razo-steps.json'), JSON.stringify(report, null, 2) + '\n');
+  const runsDir = path.join(dataDir, 'runs');
+  const runDir = path.join(runsDir, manifest.id);
+  const tmpDir = path.join(runsDir, `${TMP_PREFIX}${manifest.id}`);
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  fs.mkdirSync(path.join(tmpDir, 'reports'), { recursive: true });
+  try {
+    fs.writeFileSync(path.join(tmpDir, 'run.json'), JSON.stringify(manifest, null, 2) + '\n');
+    for (const { report, retry } of reports) {
+      if (typeof report?.file !== 'string' || typeof report.test !== 'string') {
+        throw new Error(`${manifest.id}: a report has no string "file" and "test"`);
+      }
+      // Same shape Playwright uses: file, title, project, retry.
+      const base = [path.basename(report.file).replace(/\.(spec|test)\.[cm]?[jt]s$/, ''), report.test, report.project]
+        .filter((part): part is string => !!part)
+        .map(slug)
+        .join('-');
+      const dir = path.join(tmpDir, 'reports', retry > 0 ? `${base}-retry${retry}` : base);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, 'razo-steps.json'), JSON.stringify(report, null, 2) + '\n');
+    }
+    fs.rmSync(runDir, { recursive: true, force: true });
+    fs.renameSync(tmpDir, runDir);
+  } catch (error) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    throw error;
   }
   return runDir;
 }

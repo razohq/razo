@@ -80,3 +80,19 @@ test('an unknown plugin, or one of the wrong kind, is an error naming it', () =>
   assert.throws(() => instantiate(parseConfig({ ...minimal, code: { plugin: 'nope', config: {} } }, {})), /nope/);
   assert.throws(() => instantiate(parseConfig({ ...minimal, code: { plugin: 'markdown', config: { outDir: 'x' } } }, {})), /markdown.*code|code.*markdown/);
 });
+
+test('review 2b-2: the README config snippet parses and expands', () => {
+  const readme = fs.readFileSync(path.resolve(path.dirname(new URL(import.meta.url).pathname), '../README.md'), 'utf8');
+  const yaml = readme.match(/```yaml\n([\s\S]*?)```/)[1];
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'triage-readme-')), 'triage.config.yaml');
+  fs.writeFileSync(file, yaml);
+  const cfg = loadConfig(file, { GITHUB_TOKEN: 'ghp_test' });
+  assert.equal(cfg.pull.token, 'ghp_test');
+  assert.equal(cfg.pull.repo, 'razohq/razo-demo');
+  assert.equal(cfg.code.config.token, 'ghp_test');
+});
+
+test('review 2b-3: an empty or malformed pull token or repo is rejected', () => {
+  assert.throws(() => parseConfig({ ...minimal, pull: { repo: 'o/r', token: '${GITHUB_TOKEN}' } }, { GITHUB_TOKEN: '' }), /token/);
+  assert.throws(() => parseConfig({ ...minimal, pull: { repo: 'nope', token: 't' } }, {}), /repo/);
+});

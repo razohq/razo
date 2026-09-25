@@ -1,3 +1,4 @@
+import { githubConfigSchema } from '../adapters/github';
 import { DEFAULT_RULES, type RulesConfig } from '../core/classify';
 
 export interface PluginRef {
@@ -82,10 +83,14 @@ export function parseConfig(raw: unknown, env: Env = process.env): TriageConfig 
     rules: mergeRules(cfg.rules),
   };
   if (cfg.pull !== undefined) {
-    if (!isObject(cfg.pull) || typeof cfg.pull.repo !== 'string' || typeof cfg.pull.token !== 'string') {
-      throw new Error('pull: expected { repo, token, workflow?, branch?, artifactPrefix? }');
+    if (!isObject(cfg.pull)) throw new Error('pull: expected { repo, token, workflow?, branch?, artifactPrefix? }');
+    let repoAndToken: { repo: string; token: string };
+    try {
+      repoAndToken = githubConfigSchema.parse({ repo: cfg.pull.repo, token: cfg.pull.token });
+    } catch (error) {
+      throw new Error(`pull: ${error instanceof Error ? error.message.replace(/^github config /, '') : String(error)}`);
     }
-    out.pull = { repo: cfg.pull.repo, token: cfg.pull.token };
+    out.pull = repoAndToken;
     for (const key of ['workflow', 'branch', 'artifactPrefix'] as const) {
       if (typeof cfg.pull[key] === 'string') out.pull[key] = cfg.pull[key] as string;
     }

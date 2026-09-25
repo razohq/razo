@@ -8,6 +8,14 @@ interface CompareCommit {
   commit: { message: string; author: { name: string; date: string } };
 }
 
+interface ComparePage {
+  total_commits: number;
+  commits: CompareCommit[];
+}
+
+/** GitHub serves at most 100 commits per compare page whatever per_page asks. */
+const MAX_COMPARE_PAGE = 100;
+
 interface CommitResponse {
   files?: Array<{ filename: string; status: string; patch?: string }>;
 }
@@ -24,11 +32,16 @@ export class GitHubCodeContext implements CodeContext {
 
   async commitsBetween(fromSha: string, toSha: string): Promise<Commit[]> {
     try {
-      const commits = await this.api.getAll<CompareCommit>(
-        `/repos/${this.repo}/compare/${fromSha}...${toSha}`,
-        (page) => (page as { commits: CompareCommit[] }).commits,
-        this.options.perPage ?? 250,
-      );
+      const perPage = Math.min(this.options.perPage ?? MAX_COMPARE_PAGE, MAX_COMPARE_PAGE);
+      const commits: CompareCommit[] = [];
+      // Walk until total_commits is reached: a page shorter than requested is not the end when the server caps pages.
+      for (let page = 1; ; page++) {
+        const body = await this.api.getJson<ComparePage>(
+          `/repos/${this.repo}/compare/${fromSha}...${toSha}?per_page=${perPage}&page=${page}`,
+        );
+        commits.push(...body.commits);
+        if (body.commits.length === 0 || commits.length >= body.total_commits) break;
+      }
       return commits.map((c) => ({
         sha: c.sha,
         message: c.commit.message.split('\n')[0],

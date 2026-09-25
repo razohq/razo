@@ -69,3 +69,18 @@ describe('githubCodePlugin', () => {
     assert.throws(() => githubCodePlugin.configSchema.parse({ repo: 'o/r', token: '' }));
   });
 });
+
+test('review 2b-4: compare pages are capped at 100 and the walk continues until total_commits is reached', async () => {
+  const many = Array.from({ length: 6 }, (_, i) => ({ sha: String(i).repeat(40), message: `c${i}`, author: 'x', date: `2026-01-0${i + 1}T00:00:00Z`, files: [] }));
+  const urls = [];
+  // A server that serves at most 2 commits per page whatever per_page asks, like GitHub's 100 cap.
+  const capped = async (url, init) => {
+    const u = new URL(url);
+    if (u.pathname.includes('/compare/')) u.searchParams.set('per_page', String(Math.min(Number(u.searchParams.get('per_page') ?? 2), 2)));
+    urls.push(url);
+    return fakeGitHub(many)(u.toString(), init);
+  };
+  const got = await new GitHubCodeContext(new GitHubApi({ token: 't', fetch: capped }), 'o/r', { perPage: 250 }).commitsBetween(many[0].sha, many[5].sha);
+  assert.deepEqual(got.map((c) => c.message), ['c1', 'c2', 'c3', 'c4', 'c5']);
+  assert.ok(urls.every((u) => Number(new URL(u).searchParams.get('per_page')) <= 100), 'never asks for more than 100');
+});

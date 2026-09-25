@@ -26,13 +26,16 @@ export class MarkdownNotifier implements Notifier {
   }
 }
 
-/** The JSON twins of every report in `outDir`, ascending by name. */
+const REPORT_FILE = /^triage-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})(?:-(\d+))?\.json$/;
+
+/** The JSON twins of every report in `outDir`, in the order they were written: by timestamp, then by the -N suffix. */
 export function readReports(outDir: string): TriageReport[] {
   if (!fs.existsSync(outDir)) return [];
   return fs.readdirSync(outDir)
-    .filter((f) => /^triage-.*\.json$/.test(f))
-    .sort()
-    .map((f) => JSON.parse(fs.readFileSync(path.join(outDir, f), 'utf8')) as TriageReport);
+    .map((f) => ({ f, m: f.match(REPORT_FILE) }))
+    .filter((x): x is { f: string; m: RegExpMatchArray } => x.m !== null)
+    .sort((a, b) => a.m[1].localeCompare(b.m[1]) || Number(a.m[2] ?? 1) - Number(b.m[2] ?? 1))
+    .map(({ f }) => JSON.parse(fs.readFileSync(path.join(outDir, f), 'utf8')) as TriageReport);
 }
 
 export interface MarkdownNotifierConfig {

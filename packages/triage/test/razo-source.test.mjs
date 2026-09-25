@@ -236,3 +236,24 @@ describe('review 5: malformed inputs name their file instead of crashing or vani
     await assert.rejects(new RazoSource(dir).fetchRuns(new Date(0)), /when.*finishedAt/);
   });
 });
+
+describe('review 2b-1: writeRun is atomic', () => {
+  test('a leftover .tmp-* directory is ignored by readRuns', () => {
+    const dir = tmp();
+    fs.mkdirSync(path.join(dir, 'runs', '.tmp-gh-1-1', 'reports'), { recursive: true });
+    writeRun(dir, manifest, [{ retry: 0, report: report({}) }]);
+    assert.deepEqual(readRuns(dir).map((r) => r.manifest.id), ['run-9']);
+  });
+  test('a failure while writing leaves no runs/<id> directory behind', () => {
+    const dir = tmp();
+    assert.throws(() => writeRun(dir, manifest, [{ retry: 0, report: report({}) }, { retry: 0, report: { ...report({}), file: null } }]));
+    assert.equal(fs.existsSync(path.join(dir, 'runs', 'run-9')), false);
+    assert.deepEqual(fs.readdirSync(path.join(dir, 'runs')).filter((d) => !d.startsWith('.tmp-')), []);
+  });
+  test('writing the same run twice replaces it', () => {
+    const dir = tmp();
+    writeRun(dir, manifest, [{ retry: 0, report: report({}) }, { retry: 0, report: report({ test: 'u' }) }]);
+    writeRun(dir, manifest, [{ retry: 0, report: report({}) }]);
+    assert.equal(readRuns(dir)[0].reports.length, 1);
+  });
+});

@@ -32,6 +32,8 @@ export class GitHubApi {
   private readonly token: string;
 
   constructor(options: GitHubApiOptions) {
+    // GitHub Actions hands a missing secret over as an empty string; refuse it here, not with a 401 later.
+    if (!options.token) throw new Error('GitHub token is empty');
     this.token = options.token;
     this.fetchImpl = options.fetch ?? (globalThis.fetch as unknown as FetchLike);
     this.baseUrl = (options.baseUrl ?? 'https://api.github.com').replace(/\/$/, '');
