@@ -67,10 +67,18 @@ function readManifest(runDir: string): RunManifest {
   } catch (error) {
     throw new Error(`${runDir}: cannot read run.json (${error instanceof Error ? error.message : String(error)})`);
   }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`${runDir}: run.json must be an object`);
+  }
   const manifest = parsed as Record<string, unknown>;
   for (const key of REQUIRED) {
     if (typeof manifest[key] !== 'string' || (manifest[key] as string).length === 0) {
       throw new Error(`${runDir}: run.json is missing "${key}"`);
+    }
+  }
+  for (const key of ['startedAt', 'finishedAt'] as const) {
+    if (Number.isNaN(Date.parse(manifest[key] as string))) {
+      throw new Error(`${runDir}: run.json has an unparseable "${key}": ${JSON.stringify(manifest[key])}`);
     }
   }
   return manifest as unknown as RunManifest;
@@ -99,7 +107,14 @@ export function readRuns(dataDir: string): StoredRun[] {
     const runDir = path.join(runsDir, entry.name);
     const manifest = readManifest(runDir);
     const reports = walkReports(path.join(runDir, 'reports')).map(({ file, relPath }) => {
-      const report = JSON.parse(fs.readFileSync(file, 'utf8')) as RazoReport;
+      let report: RazoReport;
+      try {
+        report = JSON.parse(fs.readFileSync(file, 'utf8')) as RazoReport;
+      } catch (error) {
+        throw new Error(`${runDir}/reports/${relPath}: cannot read report (${error instanceof Error ? error.message : String(error)})`);
+      }
+      if (typeof report !== 'object' || report === null) throw new Error(`${runDir}/reports/${relPath}: report must be an object`);
+      report.steps = Array.isArray(report.steps) ? report.steps : [];
       const fromDir = Number(path.basename(path.dirname(file)).match(RETRY_SUFFIX)?.[1] ?? 0);
       const retry = typeof report.retry === 'number' && report.retry >= 0 ? report.retry : fromDir;
       return { report, retry, relPath: `reports/${relPath}` };

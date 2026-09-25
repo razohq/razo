@@ -1,6 +1,6 @@
 import { failingTestIds } from './cluster';
 import {
-  isFailing, onBaseBranch, retryFlip, sameShaFlips, stableBefore, type TestHistory,
+  isFailing, onBaseBranch, retryFlip, sameShaFlips, shaRange, stableBefore, type TestHistory,
 } from './history';
 import type { Category, Cluster, Commit, Confidence, Evidence, SuspectCommit, TestRun } from './model';
 import type { UnevaluableFile } from './suspects';
@@ -40,8 +40,10 @@ export interface Classification {
   evidence: Evidence[];
 }
 
-const ENVIRONMENT = /econnrefused|econnreset|enotfound|etimedout|err_connection|err_name_not_resolved|net::err_|socket hang up|fetch failed|navigating to|page\.goto|\b5\d\d\b|service unavailable|bad gateway|gateway timeout/;
-const LOCATOR = /waiting for |not found|strict mode|resolved to \d+ elements|tobevisible|tobehidden|not visible|hidden|element is not attached|detached|intercepts pointer events|locator\./;
+// A 5xx only counts next to a word that makes it a status: a bare "512" is an assertion value.
+const ENVIRONMENT = /econnrefused|econnreset|enotfound|etimedout|err_connection|err_name_not_resolved|net::err_|socket hang up|fetch failed|navigating to|page\.goto|\b(?:status|http|response|code)\s*:?\s*5\d\d\b|service unavailable|bad gateway|gateway timeout/;
+// Includes razo's own healing failure ("locator drift … no longer resolves"), the strongest stale-test signal it emits.
+const LOCATOR = /waiting for |not found|strict mode|resolved to \d+ elements|tobevisible|tobehidden|not visible|hidden|element is not attached|detached|intercepts pointer events|locator\.|locator drift|no longer resolves/;
 
 export const isEnvironmentSignature = (signature: string): boolean => ENVIRONMENT.test(signature);
 export const isLocatorSignature = (signature: string): boolean => LOCATOR.test(signature);
@@ -52,17 +54,18 @@ const lower = (c: Confidence): Confidence => LEVELS[Math.max(0, LEVELS.indexOf(c
 const lowest = (cs: Confidence[]): Confidence => cs.reduce((a, b) => (LEVELS.indexOf(a) <= LEVELS.indexOf(b) ? a : b));
 
 /**
- * Distinct files failing with environment-like errors inside any window of
- * `windowMinutes` (by run finishedAt). Run-level timestamps are the finest
- * grain the model carries.
+ * Distinct files failing with environment-like errors inside a window of
+ * `windowMinutes` (by run finishedAt) that contains at least one of the
+ * cluster's own runs: an outage a week ago says nothing about today's
+ * failure. Run-level timestamps are the finest grain the model carries.
  */
-function environmentFileBurst(runs: TestRun[], windowMinutes: number): number {
-  const events: Array<{ at: number; file: string }> = [];
+function environmentFileBurst(runs: TestRun[], windowMinutes: number, anchorRunIds: Set<string>): number {
+  const events: Array<{ at: number; file: string; runId: string }> = [];
   for (const run of runs) {
     const at = Date.parse(run.finishedAt);
     for (const result of run.results) {
       if (result.attempts.some((a) => a.error && isEnvironmentSignature(a.error.signature))) {
-        events.push({ at, file: result.file });
+        events.push({ at, file: result.file, runId: run.id });
       }
     }
   }
@@ -71,10 +74,28 @@ function environmentFileBurst(runs: TestRun[], windowMinutes: number): number {
   let best = 0;
   for (let i = 0; i < events.length; i++) {
     const files = new Set<string>();
-    for (let j = i; j < events.length && events[j].at - events[i].at <= span; j++) files.add(events[j].file);
-    best = Math.max(best, files.size);
+    let anchored = false;
+    for (let j = i; j < events.length && events[j].at - events[i].at <= span; j++) {
+      files.add(events[j].file);
+      if (anchorRunIds.has(events[j].runId)) anchored = true;
+    }
+    if (anchored) best = Math.max(best, files.size);
   }
   return best;
+}
+
+/**
+ * The history as this cluster sees it: outcomes that failed with another
+ * signature belong to another cluster's story and are dropped, and attempts
+ * failing with another signature do not count as this cluster's failures.
+ */
+function relatedTo(history: TestHistory, signature: string): TestHistory {
+  const outcomes = history.outcomes.flatMap((o) => {
+    const failsHere = o.attempts.some((a) => a.error?.signature === signature);
+    if (isFailing(o.status) && !failsHere) return [];
+    return [{ ...o, attempts: o.attempts.filter((a) => !a.error || a.error.signature === signature) }];
+  });
+  return { ...history, outcomes };
 }
 
 /** Every attempt of every outcome in the current base-branch streak failed: nothing passed on retry. */
@@ -105,13 +126,14 @@ function classifyTest(
   const evidence: Evidence[] = [];
   const options = { baseBranch: input.baseBranch };
 
-  // 2. flaky
-  const flip = retryFlip(history);
+  // 2. flaky, judged only on this cluster's own failures.
+  const related = relatedTo(history, input.cluster.signature);
+  const flip = retryFlip(related);
   if (flip) {
     evidence.push({ kind: 'retry', description: `${testId} failed and then passed within run ${flip.runId} at ${short(flip.sha)}` });
     return { testId, category: 'flaky', confidence: 'high', evidence };
   }
-  const flips = sameShaFlips(history, rules.flaky.lookbackRuns);
+  const flips = sameShaFlips(related, rules.flaky.lookbackRuns);
   if (flips >= 2) {
     evidence.push({ kind: 'history', description: `${testId} alternated ${flips} times without a sha change in the last ${rules.flaky.lookbackRuns} runs` });
     return { testId, category: 'flaky', confidence: 'medium', evidence };
@@ -133,9 +155,10 @@ function classifyTest(
   // 4. regression
   const base = onBaseBranch(history, options);
   if (stableBefore(history, rules.regression.stableRuns, options) && currentStreakAllFailing(base)) {
+    const firstRed = shaRange(history, options).firstRedSha ?? '';
     evidence.push({
       kind: 'history',
-      description: `${testId} passed in the ${rules.regression.stableRuns} runs before ${short(input.range.firstRedSha ?? '')} and failed every attempt since`,
+      description: `${testId} passed in the ${rules.regression.stableRuns} runs before ${short(firstRed)} and failed every attempt since`,
     });
     return { testId, category: 'regression', confidence: overlapping ? 'high' : 'medium', evidence };
   }
@@ -181,7 +204,7 @@ export function classify(input: ClassifyInput, rules: RulesConfig = DEFAULT_RULE
 
   // 1. environment: cluster-wide, by the burst of files failing together.
   if (isEnvironmentSignature(cluster.signature)) {
-    const burst = environmentFileBurst(input.runs, rules.env.windowMinutes);
+    const burst = environmentFileBurst(input.runs, rules.env.windowMinutes, new Set(cluster.failures.map((f) => f.runId)));
     if (burst >= rules.env.minFiles) {
       evidence.push({ kind: 'history', description: `${burst} files failed with network/timeout errors within ${rules.env.windowMinutes} min` });
       return { category: 'environment', confidence: input.commitsInRange.length === 0 ? 'high' : 'medium', evidence };

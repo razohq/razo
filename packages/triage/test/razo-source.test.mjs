@@ -181,3 +181,30 @@ describe('razoSourcePlugin', () => {
     assert.deepEqual(later.map((r) => r.id), [seed.runs[2].id]);
   });
 });
+
+describe('review 5: malformed inputs name their file instead of crashing or vanishing', () => {
+  test('run.json that is null or not an object is rejected naming the directory', () => {
+    const dir = tmp();
+    fs.mkdirSync(path.join(dir, 'runs', 'nully'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'runs', 'nully', 'run.json'), 'null');
+    assert.throws(() => readRuns(dir), /nully.*run\.json/);
+  });
+  test('a truncated razo-steps.json is rejected naming its path', () => {
+    const dir = tmp();
+    const rep = path.join(dir, 'runs', 'r', 'reports', 'a-t');
+    fs.mkdirSync(rep, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'runs', 'r', 'run.json'), JSON.stringify(manifest));
+    fs.writeFileSync(path.join(rep, 'razo-steps.json'), '{"test": "t", "file": "a.spec.ts", "sta');
+    assert.throws(() => readRuns(dir), /reports\/a-t\/razo-steps\.json/);
+  });
+  test('a report without steps maps with no controls instead of throwing', () => {
+    const run = toTestRun(manifest, [stored(0, 'a', { test: 't', file: 'a.spec.ts', status: 'passed', durationMs: 1 })]);
+    assert.equal(run.results[0].controls, undefined);
+  });
+  test('a manifest with an unparseable timestamp is rejected, never silently dropped by fetchRuns', async () => {
+    const dir = tmp();
+    fs.mkdirSync(path.join(dir, 'runs', 'when', 'reports'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'runs', 'when', 'run.json'), JSON.stringify({ ...manifest, finishedAt: 'last night' }));
+    await assert.rejects(new RazoSource(dir).fetchRuns(new Date(0)), /when.*finishedAt/);
+  });
+});

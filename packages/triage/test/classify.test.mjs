@@ -185,3 +185,43 @@ test('synthetic-flaky: the retried test is flaky/high', async () => {
   assert.equal(out.category, 'flaky');
   assert.equal(out.confidence, 'high');
 });
+
+// --- review fixes ---
+const GOTO = err('page.goto: Timeout 30000ms exceeded navigating to http://localhost:3000/');
+
+test('review 1: a retry flip on a different error does not make this cluster flaky', () => {
+  const runs = [
+    run(1, { 'f::t': flip(GOTO) }), run(2, { 'f::t': passed }), run(3, { 'f::t': passed }), run(4, { 'f::t': passed }),
+    run(5, { 'f::t': failed(ASSERTION) }), run(6, { 'f::t': failed(ASSERTION) }),
+  ];
+  const out = classify(inputFor(runs, (c) => c.signature === ASSERTION.signature));
+  assert.equal(out.category, 'regression');
+  assert.equal(out.confidence, 'medium');
+});
+
+test('review 1: same-sha alternation on another error does not count either', () => {
+  const runs = [run(1, { 'f::t': passed }), run(2, { 'f::t': failed(GOTO) }), run(3, { 'f::t': passed }), run(4, { 'f::t': failed(ASSERTION) })];
+  for (const r of runs.slice(0, 3)) r.sha = sha(9);
+  const out = classify(inputFor(runs, (c) => c.signature === ASSERTION.signature));
+  assert.notEqual(out.category, 'flaky');
+});
+
+test('review 2: an outage a week earlier does not make a lone later failure environment', () => {
+  const NET = err('page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:65531/x');
+  const outage = run(1, { 'a::t': failed(NET), 'b::t': failed(NET), 'c::t': failed(NET), 'd::t': failed(NET), 'e::t': failed(NET) });
+  const later = run(9, { 'f::t': failed(err('TimeoutError: page.goto: Timeout 30000ms exceeded navigating to http://localhost:3000/')) });
+  const out = classify(inputFor([outage, later], (c) => c.failures[0].runId === 'r9'));
+  assert.notEqual(out.category, 'environment');
+  const still = classify(inputFor([outage, later], (c) => c.failures[0].runId === 'r1'));
+  assert.equal(still.category, 'environment');
+});
+
+test('review 2: a bare 5xx-looking number is not an environment signature', () => {
+  assert.equal(isEnvironmentSignature(errorSignature('expected total 3, got 512')), false);
+  assert.equal(isEnvironmentSignature(errorSignature('request failed with status 502')), true);
+  assert.equal(isEnvironmentSignature(errorSignature('HTTP 504 from /api')), true);
+});
+
+test("review 3: razo's own locator drift error is a locator signature", () => {
+  assert.equal(isLocatorSignature(errorSignature('locator drift: [data-testid="export-v0"] no longer resolves; element found via role=button[name="Export"] — update the locator')), true);
+});

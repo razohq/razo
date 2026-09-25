@@ -13,7 +13,7 @@ function toStatus(raw: string): TestStatus {
 
 function errorOf(report: RazoReport, status: TestStatus): TestError | undefined {
   if (!FAILING.has(status)) return undefined;
-  const lastFailedStep = [...report.steps].reverse().find((s) => s.status === 'failed' && s.error);
+  const lastFailedStep = [...(report.steps ?? [])].reverse().find((s) => s.status === 'failed' && s.error);
   const message = report.error ?? lastFailedStep?.error ?? `${status} without error message`;
   return { message, signature: errorSignature(message) };
 }
@@ -48,7 +48,7 @@ function controlsOf(reports: RazoReport[]): TouchedControl[] {
     if (!seen.has(key)) seen.set(key, { controlType, name, selector });
   };
   for (const report of reports) {
-    for (const step of report.steps) {
+    for (const step of report.steps ?? []) {
       // The pre-heal selector is what the test source names; keep it for suspects.
       if (step.healed) add(step.controlType, step.name, step.healed.from);
       add(step.controlType, step.name, step.selector);
@@ -60,7 +60,7 @@ function controlsOf(reports: RazoReport[]): TouchedControl[] {
 function healedOf(reports: RazoReport[]): Array<{ from: string; to: string }> | undefined {
   const seen = new Map<string, { from: string; to: string }>();
   for (const report of reports) {
-    for (const step of report.steps) {
+    for (const step of report.steps ?? []) {
       if (step.healed) seen.set(`${step.healed.from}\u0000${step.healed.to}`, { from: step.healed.from, to: step.healed.to });
     }
   }

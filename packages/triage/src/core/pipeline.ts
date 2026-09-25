@@ -2,7 +2,7 @@ import type { CodeContext } from '../ports/code-context';
 import { classify, DEFAULT_RULES, type Classification, type RulesConfig } from './classify';
 import { clusterFailures, failingTestIds } from './cluster';
 import { shaRange, testHistories } from './history';
-import type { Cluster, TestRun, TouchedControl } from './model';
+import type { Cluster, Commit, TestRun, TouchedControl } from './model';
 import { commitsInRange, findSuspects, type UnevaluableFile } from './suspects';
 
 export interface TriageItem {
@@ -41,10 +41,20 @@ export async function analyzeWindow(
   const histories = testHistories(runs);
   const items: TriageItem[] = [];
   for (const cluster of clusters) {
-    const [firstTest] = failingTestIds(cluster);
-    const history = histories.get(firstTest) ?? { testId: firstTest, file: '', outcomes: [] };
-    const range = shaRange(history, options);
-    const commits = await commitsInRange(code, range);
+    // Each test has its own range; the cluster shows the first complete one and
+    // its suspects come from the union of every complete range.
+    const ranges = failingTestIds(cluster).map((id) =>
+      shaRange(histories.get(id) ?? { testId: id, file: '', outcomes: [] }, options),
+    );
+    const complete = ranges.filter((r) => r.lastGreenSha && r.firstRedSha);
+    const range = complete[0] ?? ranges.find((r) => r.firstRedSha) ?? {};
+    const commits: Commit[] = [];
+    const seenSha = new Set<string>();
+    for (const r of complete) {
+      for (const c of await commitsInRange(code, r)) {
+        if (!seenSha.has(c.sha)) { seenSha.add(c.sha); commits.push(c); }
+      }
+    }
     const { suspects, unevaluable } = await findSuspects({
       controls: controlsOf(cluster, runs), commits, changedFiles: (sha) => code.changedFiles(sha),
     });
