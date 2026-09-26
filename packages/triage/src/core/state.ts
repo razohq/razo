@@ -1,4 +1,4 @@
-import type { Cluster } from './model';
+import type { Cluster, TestRun } from './model';
 
 /**
  * Combines the clusters the store remembers with the ones this run produced.
@@ -26,4 +26,37 @@ export function mergeClusters(previous: Cluster[], current: Cluster[]): Cluster[
     if (!seen.has(cluster.id)) merged.push(cluster);
   }
   return merged;
+}
+
+export interface StateContext {
+  /** Every run the pipeline saw (the lookback), to count runs after a cluster's last failure. */
+  runs: TestRun[];
+  /** Branch whose runs count toward resolution. Default: main. */
+  baseBranch?: string;
+  /** Base-branch runs without the cluster's failure before it becomes resolved. */
+  resolveAfterRuns: number;
+}
+
+/**
+ * mergeClusters plus what time decides: novelty (new or recurring), a cluster
+ * absent for `resolveAfterRuns` base-branch runs after its last failure
+ * becomes resolved, and a resolved cluster that fails again comes back as new
+ * while keeping its history.
+ */
+export function reconcileClusters(previous: Cluster[], current: Cluster[], context: StateContext): Cluster[] {
+  const known = new Set(previous.map((c) => c.id));
+  const present = new Set(current.map((c) => c.id));
+  const baseBranch = context.baseBranch ?? 'main';
+  const baseRuns = context.runs.filter((r) => r.branch === baseBranch);
+  return mergeClusters(previous, current).map((cluster) => {
+    if (present.has(cluster.id)) {
+      const novelty = known.has(cluster.id) ? 'recurring' : 'new';
+      const state = cluster.state === 'resolved' ? 'new' : cluster.state;
+      return { ...cluster, novelty, state };
+    }
+    if (cluster.state === 'resolved') return cluster;
+    const since = Date.parse(cluster.lastSeenAt);
+    const quiet = baseRuns.filter((r) => Date.parse(r.finishedAt) > since).length;
+    return quiet >= context.resolveAfterRuns ? { ...cluster, state: 'resolved' } : cluster;
+  });
 }

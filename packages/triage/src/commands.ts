@@ -7,7 +7,8 @@ import type { TriageReport } from './core/model';
 import { analyzeWindow } from './core/pipeline';
 import { buildReport } from './core/report';
 import { SIGNATURE_ALGORITHM_VERSION } from './core/signature';
-import { mergeClusters } from './core/state';
+import { reconcileClusters } from './core/state';
+import type { TriageAction } from './core/model';
 import { JsonFileStore } from './adapters/json-store';
 import type { FetchLike } from './adapters/github/api';
 
@@ -45,6 +46,27 @@ export async function runTriage(config: TriageConfig, options: RunOptions): Prom
   const startedAt = Date.now();
   const runs = await source.fetchRuns(options.lookback);
   const items = await analyzeWindow(runs, code, config.rules, { baseBranch: config.baseBranch, since: options.since, until: options.now });
+
+  // With a store, the clusters carry what people and time decided: state, novelty, first seen.
+  let reconciled: ReturnType<typeof reconcileClusters> | undefined;
+  const actions = new Map<string, TriageAction[]>();
+  if (store) {
+    const version = await store.signatureVersion();
+    if (version !== null && version !== SIGNATURE_ALGORITHM_VERSION) {
+      options.log?.(
+        `warning: the stored state was computed with signature algorithm version ${version}, this build uses ${SIGNATURE_ALGORITHM_VERSION}: previous clusters will not be recognized and will look new`,
+      );
+    }
+    reconciled = reconcileClusters(await store.loadClusters(), items.map((i) => i.cluster), {
+      runs, baseBranch: config.baseBranch, resolveAfterRuns: config.rules.state.resolveAfterRuns,
+    });
+    const byId = new Map(reconciled.map((c) => [c.id, c]));
+    for (const item of items) {
+      item.cluster = byId.get(item.cluster.id) ?? item.cluster;
+      actions.set(item.cluster.id, await store.actionsFor(item.cluster.id));
+    }
+  }
+
   // Totals describe the window; the lookback only feeds history.
   const windowRuns = runs.filter((run) => {
     const at = Date.parse(run.finishedAt);
@@ -55,18 +77,12 @@ export async function runTriage(config: TriageConfig, options: RunOptions): Prom
     runs: windowRuns,
     window: { from: options.since.toISOString(), to: options.now.toISOString() },
     generatedAt: options.now.toISOString(),
+    actions,
+    quarantineSuggestAfter: config.rules.flaky.quarantineSuggestAfter,
   });
   for (const notifier of notifiers) await notifier.send(report);
-  if (store) {
-    const version = await store.signatureVersion();
-    if (version !== null && version !== SIGNATURE_ALGORITHM_VERSION) {
-      options.log?.(
-        `warning: the stored state was computed with signature algorithm version ${version}, this build uses ${SIGNATURE_ALGORITHM_VERSION}: previous clusters will not be recognized and will look new`,
-      );
-    }
-    // The store keeps what people decided (state, first seen, linked issue) and clusters
-    // absent from this run; the rules refresh everything else.
-    await store.saveClusters(mergeClusters(await store.loadClusters(), items.map((i) => i.cluster)));
+  if (store && reconciled) {
+    await store.saveClusters(reconciled);
     await store.recordRun({
       id: `triage-${report.generatedAt}`,
       generatedAt: report.generatedAt,
