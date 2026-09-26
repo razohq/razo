@@ -18,6 +18,19 @@ export class GitHubApiError extends Error {
   }
 }
 
+/** What a person can do about a 401 or 403, from the headers GitHub sends with them. */
+function explain(response: FetchResponseLike): string {
+  if (response.status === 401) return 'check the token (it needs actions:read and contents:read on the repository)';
+  if (response.status !== 403 && response.status !== 429) return '';
+  const retryAfter = response.headers.get('retry-after');
+  if (retryAfter) return `retry after ${retryAfter}s`;
+  const reset = response.headers.get('x-ratelimit-reset');
+  if (response.headers.get('x-ratelimit-remaining') === '0' && reset) {
+    return `rate limit exhausted, resets at ${new Date(Number(reset) * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')}`;
+  }
+  return 'forbidden: check the token permissions (actions:read and contents:read)';
+}
+
 export interface GitHubApiOptions {
   token: string;
   /** Defaults to the global fetch. Tests inject a replayer. */
@@ -57,7 +70,7 @@ export class GitHubApi {
       } catch {
         // not JSON: the status is the whole story
       }
-      throw new GitHubApiError(response.status, path, detail);
+      throw new GitHubApiError(response.status, path, [detail, explain(response)].filter(Boolean).join('; '));
     }
     return response;
   }

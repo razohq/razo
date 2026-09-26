@@ -42,3 +42,13 @@ test('getBinary returns a Buffer and follows redirects', async () => {
 test('review 2b-3: GitHubApi refuses an empty token', () => {
   assert.throws(() => new GitHubApi({ token: '' }), /token/);
 });
+
+test('hardening: a 403 rate limit names the reset time, and a 401 says to check the token', async () => {
+  const reset = Math.floor(Date.parse('2026-09-26T03:00:00Z') / 1000);
+  const limited = new GitHubApi({ token: 't', fetch: async () => response(403, { message: 'API rate limit exceeded' }, { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': String(reset) }) });
+  await assert.rejects(limited.getJson('/repos/a/b'), (e) => e instanceof GitHubApiError && e.status === 403 && /2026-09-26T03:00:00/.test(e.message) && /rate limit/i.test(e.message));
+  const retry = new GitHubApi({ token: 't', fetch: async () => response(403, { message: 'secondary rate limit' }, { 'retry-after': '30' }) });
+  await assert.rejects(retry.getJson('/repos/a/b'), (e) => /retry after 30s/i.test(e.message));
+  const unauthorized = new GitHubApi({ token: 't', fetch: async () => response(401, { message: 'Bad credentials' }) });
+  await assert.rejects(unauthorized.getJson('/repos/a/b'), (e) => e.status === 401 && /token/i.test(e.message) && /actions:read|contents:read/.test(e.message));
+});
