@@ -86,3 +86,64 @@ code: { plugin: commits-json, config: { path: ./commits.json } }
 `);
   assert.throws(() => execFileSync('node', [CLI, 'pull', '--config', path.join(dir, 'triage.config.yaml')], { encoding: 'utf8', stdio: 'pipe' }), (e) => e.status === 2 && /pull/.test(e.stderr));
 });
+
+test('hardening: an unknown flag is a usage error naming the flag', () => {
+  assert.throws(
+    () => execFileSync('node', [CLI, 'run', '--sinc', '24h'], { encoding: 'utf8', stdio: 'pipe' }),
+    (e) => e.status === 2 && /--sinc/.test(e.stderr),
+  );
+});
+
+test('hardening: totals.tests counts the tests of the window, not of the whole lookback', async () => {
+  const dir = tmp();
+  const { writeSeedLayout } = await import('./helpers/razo-layout.mjs');
+  const run = (id, day, tests) => ({
+    id, sha: String(day).repeat(40), branch: 'main', source: 's',
+    startedAt: `2026-03-0${day}T00:00:00Z`, finishedAt: `2026-03-0${day}T00:05:00Z`,
+    results: tests.map((t) => ({ testId: `f::${t}`, title: t, file: 'f.spec.ts', status: 'passed', durationMs: 1, attempts: [{ status: 'passed', durationMs: 1 }] })),
+  });
+  writeSeedLayout(dir, [run('old', 1, ['t1', 't2']), run('new', 5, ['t3'])]);
+  const outDir = tmp();
+  const cfg = parseConfig({
+    source: { plugin: 'razo-source', config: { dataDir: dir } },
+    code: { plugin: 'commits-json', config: { path: path.join(DEMO, 'commits.json') } },
+    notifiers: [{ plugin: 'markdown', config: { outDir } }],
+  }, {});
+  const now = new Date('2026-03-06T00:00:00Z');
+  const { report } = await runTriage(cfg, { now, since: parseDuration('2d', now), lookback: parseDuration('30d', now) });
+  assert.equal(report.totals.tests, 1, 'only the run inside the window counts');
+});
+
+test('store: runTriage records the run and saves the clusters when a store is configured', async () => {
+  const outDir = tmp();
+  const stateFile = path.join(tmp(), 'triage-state.json');
+  const cfg = parseConfig({
+    source: { plugin: 'razo-source', config: { dataDir: DEMO } },
+    code: { plugin: 'commits-json', config: { path: path.join(DEMO, 'commits.json') } },
+    notifiers: [{ plugin: 'markdown', config: { outDir } }],
+    store: { plugin: 'json-file', config: { path: stateFile } },
+  }, {});
+  const now = new Date('2026-08-04T07:00:00Z');
+  const result = await runTriage(cfg, { now, since: parseDuration('2d', now), lookback: parseDuration('30d', now) });
+  assert.equal(result.stored, true);
+  const { JsonFileStore } = await import('../dist/index.js');
+  const store = new JsonFileStore(stateFile);
+  assert.equal((await store.lastTriageAt()).toISOString(), now.toISOString());
+  const clusters = await store.loadClusters();
+  assert.equal(clusters.length, 2);
+  assert.ok(clusters.some((c) => c.category === 'stale-test'));
+  const without = await runTriage(demoConfig(tmp()), { now, since: parseDuration('2d', now), lookback: parseDuration('30d', now) });
+  assert.equal(without.stored, false);
+});
+
+test('pull accepts --reset-state as a flag', () => {
+  const dir = tmp();
+  fs.writeFileSync(path.join(dir, 'triage.config.yaml'), `
+source: { plugin: razo-source, config: { dataDir: ./.razo } }
+code: { plugin: commits-json, config: { path: ./commits.json } }
+`);
+  assert.throws(
+    () => execFileSync('node', [CLI, 'pull', '--reset-state', '--config', path.join(dir, 'triage.config.yaml')], { encoding: 'utf8', stdio: 'pipe' }),
+    (e) => e.status === 2 && /pull/.test(e.stderr) && !/unknown flag/.test(e.stderr),
+  );
+});

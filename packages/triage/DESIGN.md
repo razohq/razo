@@ -2,7 +2,7 @@
 
 Package: `@razohq/triage` (location: `packages/triage`)
 
-This document covers the open engine: the contracts, the deterministic core, the local and GitHub adapters, the Markdown report and the local SQLite store. Model-assisted diagnosis, interactive notifications, issue trackers, the Postgres store and the collector that reads from razo-cloud live in razo-cloud and are designed in their own document; they consume this engine through its ports and its canonical model.
+This document covers the open engine: the contracts, the deterministic core, the local and GitHub adapters, the Markdown report and the local JSON file store. Model-assisted diagnosis, interactive notifications, issue trackers, the Postgres store and the collector that reads from razo-cloud live in razo-cloud and are designed in their own document; they consume this engine through its ports and its canonical model.
 
 ## 1. Goal
 
@@ -18,7 +18,7 @@ Included:
 - Code context from the version control system (GitHub first).
 - Clustering, classification and suspect commits, all deterministic.
 - A report in Markdown and JSON.
-- Local memory of clusters and actions (SQLite store).
+- Local memory of clusters and actions (JSON file store, persisted in CI as an artifact).
 - Integrations extensible through adapters (plugins) with contract kits.
 
 Out of scope for this document (they live in razo-cloud):
@@ -120,7 +120,7 @@ export interface Cluster {
   failures: FailureRef[];
   category: Category;
   confidence: Confidence;
-  novelty: 'new' | 'recurring';
+  novelty: 'new' | 'recurring' | 'reopened';   // reopened: it was resolved and failed again
   firstSeenAt: string;
   lastSeenAt: string;
   lastGreenSha?: string;
@@ -268,15 +268,25 @@ export interface TriageStore {
 }
 ```
 
-Adapter: `sqlite` (Phase 3), a local file with no server, to run the triage from CI or from a development machine. Other stores are implemented against the interface only; the core does not change.
+Adapter: `json-file` (Phase 3), one JSON file with atomic writes (temporary file, then rename) and a `schemaVersion` field; a file with an unknown version is refused naming the file and the version, never guessed at. SQLite was the original plan and was replaced because it needs either a native dependency (`better-sqlite3`) or Node 22's experimental `node:sqlite`, and the package promises Node 20 with no native dependencies. The state is small (clusters, runs, actions) and one file is enough for a daily job. Other stores are implemented against the interface only; the core does not change.
 
-The `store` contract kit is added in Phase 3 together with the first adapter. It verifies, at minimum, that `saveClusters` followed by `loadClusters` returns what was saved, that `lastTriageAt` is `null` on an empty store and advances with each `recordRun`, and that `actionsFor` returns the actions in order.
+The `store` contract kit verifies that `saveClusters` followed by `loadClusters` returns exactly what was saved and replaces the previous set, that `lastTriageAt` is `null` on an empty store and is the latest `generatedAt` after each `recordRun`, that `actionsFor` returns that cluster's actions in recording order, and that what comes back is a copy.
 
-State rules:
+**Persistence in CI.** A CI job has no disk between runs, so the state travels as an artifact:
 
-- A cluster in state `ignored` or `flaky` is not reported as new; it appears in a compact section.
-- A cluster with no failures for `state.resolveAfterRuns` runs (default 3) becomes `resolved`.
-- A test marked `flaky` `flaky.quarantineSuggestAfter` times (default 3) produces the suggested action `quarantine`.
+1. `triage pull` looks for the most recent non-expired artifact named `razo-triage-state`, downloads it and restores its `triage-state.json` into the store file before pulling any run. An artifact without that entry or with another schema version is refused and the local file is kept. When none exists, the morning starts empty and the CLI says so.
+2. `triage run` reads and writes the store file as usual.
+3. The workflow uploads the store file as `razo-triage-state` after `triage run` with `actions/upload-artifact`. GitHub's REST API cannot create artifacts from outside the runner, so this step belongs to the workflow, not to the CLI. The package README has the snippet.
+
+State rules (`core/state.ts`, applied by `triage run` between `classify` and `report` when a store is configured):
+
+- The store keeps what people and time decided about a known cluster (`state`, `firstSeenAt`, `linkedIssue`); the rules refresh everything else each morning. A cluster absent from the run is kept as it was, so an ignored cluster stays ignored across quiet mornings and when it reappears.
+- Novelty: a cluster the store never saw is `new`; a known one is `recurring`.
+- A cluster in state `ignored` or `flaky` is not reported as new; it appears in a compact "Known" section of the report, with its days open.
+- A cluster with no failures for `state.resolveAfterRuns` base-branch runs (default 3) after its last failure becomes `resolved`. PR-branch runs do not count. A resolved cluster that fails again is `reopened`: state `new`, novelty `reopened`, history kept; the report counts reopened clusters at the top, lists them first and marks their heading.
+- If sending the report fails, `triage run` fails and saves nothing: the state only records mornings that were delivered.
+- A cluster marked `flaky` `flaky.quarantineSuggestAfter` times (default 3, counted from recorded `mark-flaky` actions) gets the proposed action `quarantine` instead of `mark-flaky`.
+- The state records the signature algorithm version; a build with another version warns that previous clusters will not be recognized.
 
 ## 8. Integrations (ports)
 
@@ -369,6 +379,11 @@ notifiers:
     config:
       outDir: ./triage-reports
 
+store:               # optional; without it every morning starts from scratch
+  plugin: json-file
+  config:
+    path: ./.razo/triage-state.json
+
 rules:
   env: { windowMinutes: 10, minFiles: 5 }
   flaky: { lookbackRuns: 10, quarantineSuggestAfter: 3 }
@@ -398,13 +413,14 @@ packages/triage/
       suspects.ts         needlesFor(), findSuspects() → { suspects, unevaluable }, commitsInRange()
       classify.ts         DEFAULT_RULES, classify(): section 6 rules and mixed-cluster resolution
       pipeline.ts         analyzeWindow(): cluster → history → suspects → classify, window [since, until]
+      state.ts            mergeClusters(), reconcileClusters(): previous state, novelty, resolution
       report.ts           buildReport(): TriageReport with verdicts and proposed actions
     ports/
       result-source.ts
       code-context.ts
       issue-tracker.ts
       notifier.ts
-      store.ts            (Phase 3)
+      store.ts            TriageStore
       plugin.ts
     contract/
       case.ts             ContractCase, runContract
@@ -414,6 +430,7 @@ packages/triage/
       issue-tracker.ts
       notifier.ts
       plugin.ts
+      store.ts
     fakes/                in-memory adapters and their plugins
     config/
       schema.ts           TriageConfig, parseConfig() with ${VAR} expansion and threshold merging
@@ -424,9 +441,11 @@ packages/triage/
       github/             api.ts (GitHubApi, injectable fetch), code-context.ts, index.ts (github plugin)
       commits-json/       network-free CodeContext over a commits.json like the fixtures carry
       markdown-notifier/  render.ts, index.ts (writes .md and .json; readReports)
+      json-store/         JsonFileStore, STATE_SCHEMA_VERSION, json-file plugin
     collectors/
       unzip.ts            reportsFromZip()
       github-artifacts.ts pullGithubArtifacts(): triage pull
+      state-artifact.ts   restoreState(): the razo-triage-state artifact → store file
     commands.ts           runTriage(), runPull(), parseDuration()
     cli.ts                triage run | triage pull
   scripts/
@@ -443,6 +462,7 @@ packages/triage/
     cluster / history / suspects / classify / pipeline / report .test.mjs
     anonymize.test.mjs
     markdown-notifier / github-api / github-code-context / commits-json / github-artifacts / config / cli .test.mjs
+    json-store / state-artifact .test.mjs
 ```
 
 Monorepo conventions: tsup, `tsc --noEmit`, `node --test` against `dist/`, no new runtime dependencies beyond `fflate` and `js-yaml`.
@@ -501,30 +521,36 @@ Anonymization: only needed if data from a third-party project is ever captured. 
 - razo-demo: upload `test-results` as an artifact on every run with `if: always()`, one name per run and explicit retention, so real history exists for `triage pull` to read.
 
 ### Phase 3 — Local memory
-- `TriageStore` port, its contract kit and the `sqlite` adapter; cluster states, novelty and days open.
+- `TriageStore` port, its contract kit and the `json-file` adapter ✅ (2026-09-26).
+- Cluster states, novelty, days open and resolution ✅ (2026-09-26); see the state rules in section 7.
+- State persisted in CI as the `razo-triage-state` artifact: restored by `triage pull` from base-branch runs only, uploaded by the workflow after scheduled `triage run`s; `--reset-state` starts over on purpose ✅ (2026-09-26).
 - Workflow re-runs as flaky evidence: the collector stores `run_attempt` in `run.json` and, when the same SHA has more than one workflow attempt, `classify` adds `retry` evidence to the cluster. Today `/actions/runs` lists only the latest attempt; earlier ones have to be fetched through `/actions/runs/{id}/attempts/{n}`.
-- **Done when:** two consecutive days do not repeat an already seen cluster as "new".
+- **Done when:** two consecutive days do not repeat an already seen cluster as "new". To be confirmed against real nightly runs of razo-demo; the `runTriage` test over the razo-demo fixture already shows the second morning reporting the cluster as recurring.
 
 #### Hardening (minors deferred from the Phase 2 reviews)
 
-Each with its failing test first:
+Each with its failing test first. Items 4 to 10 were closed on 2026-09-26 at the start of Phase 3; items 1 to 3 remain open.
 
 1. `suspects`: the file-name match for "unevaluable" is a substring match, and `-` and `_` count as token boundaries in `containsToken`; `order` scores `data-testid="order-row"` and `src/reorder.ts` ends up unevaluable for `Order`.
 2. `suspects`: needle matching is case-sensitive; `Place order` does not match `<button>place order</button>`.
 3. `anonymize-fixture`: a step with an empty name splices the replacement between every character of the text.
-4. `github-artifacts`: takes the first non-expired artifact; with sharded uploads or workflow re-runs they may mix. Prefer the exact name `<prefix><run_id>-<run_attempt>` and, failing that, merge every candidate.
-5. `config/registry`: looks plugins up by name only; a future `github` tracker would collide with the `github` code plugin. Look up by name and kind.
-6. `markdown-notifier`: the signature goes in a single-backtick span; a signature containing backticks breaks it. Use a fenced block or a run of N+1 backticks.
-7. `cli`: accepts unknown flags silently (`--sinc 24h` runs with the default window). Reject them with exit code 2.
-8. `commands`: `totals.tests` counts every run of the lookback, not only those of the window.
-9. `github/api`: 403 rate-limit and 401 errors do not surface `x-ratelimit-reset` or `Retry-After` in the message.
-10. Missing tests: the collector's zip-without-reports branch, and `compare` pagination when a page brings fewer than requested but `total_commits` is larger.
+4. `github-artifacts`: takes the first non-expired artifact; with sharded uploads or workflow re-runs they may mix. Artifacts named `<prefix><run_id>-<attempt>[-shard]` carry attempt information: those of the run's attempt are merged as shards, and when attempts exist but none matches `run_attempt` the run is skipped with an `attempt mismatch` warning. Only candidates with no attempt information at all are merged. ✅
+5. `config/registry`: looks plugins up by name only; a future `github` tracker would collide with the `github` code plugin. Look up by name and kind. ✅
+6. `markdown-notifier`: the signature goes in a single-backtick span; a signature containing backticks breaks it. Use a fenced block or a run of N+1 backticks. ✅
+7. `cli`: accepts unknown flags silently (`--sinc 24h` runs with the default window). Reject them with exit code 2. ✅
+8. `commands`: `totals.tests` counts every run of the lookback, not only those of the window. ✅
+9. `github/api`: 403 rate-limit and 401 errors do not surface `x-ratelimit-reset` or `Retry-After` in the message. ✅
+10. Missing tests: the collector's zip-without-reports branch, and `compare` pagination when a page brings fewer than requested but `total_commits` is larger. ✅
 
 ### Phase 4 — Public SDK
 - Documentation of the plugin contract and a template plugin.
 - A second adapter of each kind implemented against the interface only, outside the monorepo, as proof of the SDK.
 - Streaming download of large artifacts: today the collector loads the whole zip into memory before filtering its entries; with traces and videos from a large suite the archive has to be read in parts and only the `razo-steps.json` entries extracted.
 - **Done when:** an external adapter works with no changes in `core/`.
+
+### Backlog
+
+- Prune old resolved clusters from the state: a cluster resolved for longer than a configurable number of days (and with no recorded actions worth keeping) leaves `triage_clusters`, so the state artifact stays small over months. Until then the state grows by one entry per distinct failure ever seen.
 
 ## 12. Metrics
 

@@ -1,6 +1,12 @@
 import { createHash } from 'crypto';
 
 /**
+ * Bump whenever errorSignature changes what it collapses: signatures, and
+ * therefore cluster ids, stop matching the ones a previous state recorded.
+ */
+export const SIGNATURE_ALGORITHM_VERSION = 1;
+
+/**
  * Normalizes an error message into the key failures are clustered by.
  *
  * Lives in the core, not in adapters, so every ResultSource produces the same

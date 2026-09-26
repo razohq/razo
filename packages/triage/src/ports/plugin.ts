@@ -2,14 +2,16 @@ import type { CodeContext } from './code-context';
 import type { IssueTracker } from './issue-tracker';
 import type { Notifier } from './notifier';
 import type { ResultSource } from './result-source';
+import type { TriageStore } from './store';
 
-export type PluginKind = 'source' | 'code' | 'tracker' | 'notifier';
+export type PluginKind = 'source' | 'code' | 'tracker' | 'notifier' | 'store';
 
 export interface AdapterOf {
   source: ResultSource;
   code: CodeContext;
   tracker: IssueTracker;
   notifier: Notifier;
+  store: TriageStore;
 }
 
 /**

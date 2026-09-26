@@ -1,10 +1,13 @@
 export * from './core/model';
-export { errorSignature, clusterIdOf } from './core/signature';
+export { errorSignature, clusterIdOf, SIGNATURE_ALGORITHM_VERSION } from './core/signature';
+export { mergeClusters, reconcileClusters, type StateContext } from './core/state';
 export type { ResultSource } from './ports/result-source';
 export type { CodeContext } from './ports/code-context';
 export type { IssueTracker } from './ports/issue-tracker';
 export type { Notifier } from './ports/notifier';
 export type { AdapterOf, ConfigSchema, PluginKind, TriagePlugin } from './ports/plugin';
+export type { TriageStore } from './ports/store';
+export { JsonFileStore, jsonFileStorePlugin, STATE_SCHEMA_VERSION, type JsonFileStoreConfig } from './adapters/json-store';
 export { clusterFailures, failingTestIds } from './core/cluster';
 export {
   testHistories, shaRange, stableBefore, retryFlip, sameShaFlips, isFailing, onBaseBranch, DEFAULT_BASE_BRANCH,
@@ -37,5 +40,6 @@ export { pullGithubArtifacts, DEFAULT_ARTIFACT_PREFIX, type PullOptions, type Pu
 export { parseConfig, type TriageConfig, type PluginRef, type PullConfig } from './config/schema';
 export { loadConfig } from './config/load';
 export { instantiate, builtinPlugins, type Adapters } from './config/registry';
-export { parseDuration, runTriage, runPull, type RunOptions, type RunResult, type PullCommandOptions } from './commands';
+export { parseDuration, runTriage, runPull, type RunOptions, type RunResult, type PullCommandOptions, type PullResult } from './commands';
+export { restoreState, STATE_ARTIFACT_NAME, STATE_FILE_NAME, type RestoreOptions, type RestoreResult } from './collectors/state-artifact';
 export { MAX_REPORT_BYTES } from './collectors/unzip';

@@ -70,7 +70,8 @@ export interface Cluster {
   failures: FailureRef[];
   category: Category;
   confidence: Confidence;
-  novelty: 'new' | 'recurring';
+  /** reopened: it was resolved and failed again; the report highlights it. */
+  novelty: 'new' | 'recurring' | 'reopened';
   firstSeenAt: string;
   lastSeenAt: string;
   lastGreenSha?: string;
@@ -140,6 +141,25 @@ export type ProposedAction =
   | { type: 'mark-flaky' }
   | { type: 'quarantine' }
   | { type: 'ignore' };
+
+/** One triage run, as the store remembers it. */
+export interface TriageRunRecord {
+  id: string;
+  generatedAt: string;
+  window: { from: string; to: string };
+  totals: { tests: number; failures: number; clusters: number };
+  durationMs: number;
+}
+
+/** A person's decision about a cluster, recorded before anything acts on it. */
+export interface TriageAction {
+  clusterId: string;
+  action: ProposedAction['type'] | 'acknowledge';
+  user: string;
+  /** ISO 8601 */
+  at: string;
+  payload?: unknown;
+}
 
 export interface Commit {
   sha: string;

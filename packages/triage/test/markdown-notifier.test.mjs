@@ -59,3 +59,14 @@ test('review 2b-7: readReports keeps send order across many sends in one second 
   await notifier.send({ ...seed.report, generatedAt: '2026-09-24T07:00:01Z', totals: { ...seed.report.totals, tests: 11 } });
   assert.deepEqual(readReports(dir).map((r) => r.totals.tests), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
 });
+
+test('hardening: a signature containing backticks renders as valid inline code', () => {
+  const signature = 'expected `a` to equal `b`';
+  const md = renderMarkdown({ ...seed.report, items: [{ ...seed.report.items[0], cluster: { ...seed.report.items[0].cluster, signature } }] });
+  // The text ends with a backtick, so the span is padded with spaces as CommonMark requires.
+  assert.ok(md.includes('`` expected `a` to equal `b` ``'), md.split('\n').find((l) => l.includes('expected')));
+  const plain = renderMarkdown({ ...seed.report, items: [{ ...seed.report.items[0], cluster: { ...seed.report.items[0].cluster, signature: 'a `b` c' } }] });
+  assert.ok(plain.includes('``a `b` c``'), 'no padding when the text does not touch the fence');
+  const edge = renderMarkdown({ ...seed.report, items: [{ ...seed.report.items[0], cluster: { ...seed.report.items[0].cluster, signature: '`x`' } }] });
+  assert.ok(edge.includes('`` `x` ``'), 'a signature starting or ending with a backtick gets padding spaces');
+});

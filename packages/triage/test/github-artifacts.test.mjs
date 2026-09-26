@@ -150,3 +150,69 @@ test('review 2b-6: entries that are not reports, or reports over the size cap, a
   const found = reportsFromZip(zip, { maxEntryBytes: 10_000 });
   assert.deepEqual(found.map((f) => f.report.test), ['pays']);
 });
+
+// --- Phase 3 hardening ---
+test('hardening: candidates with a different attempt number are never merged; the run is skipped with a warning', async () => {
+  const dataDir = tmp();
+  const { fetch, calls } = fakeActions({
+    runs: [RUN(9, { run_attempt: 2 })],
+    artifacts: { 9: [{ id: 901, name: 'razo-test-results-9-1', expired: false }, { id: 903, name: 'razo-test-results-9-3', expired: false }] },
+    zips: { 901: zipOf({ 'a/razo-steps.json': report('a', 'passed') }), 903: zipOf({ 'a/razo-steps.json': report('a', 'passed') }) },
+  });
+  const summary = await pullGithubArtifacts({ api: new GitHubApi({ token: 't', fetch }), repo: 'o/r', dataDir, since: new Date(0) });
+  assert.deepEqual(summary.pulled, []);
+  assert.equal(summary.skipped.length, 1);
+  assert.equal(summary.skipped[0].reason, 'attempt mismatch');
+  assert.match(summary.skipped[0].detail, /run_attempt 2/);
+  assert.match(summary.skipped[0].detail, /razo-test-results-9-1.*razo-test-results-9-3/);
+  assert.equal(calls.filter((u) => /\/zip$/.test(u)).length, 0, 'nothing downloaded');
+  assert.deepEqual(readRuns(dataDir), []);
+});
+
+test('hardening: candidates without attempt information are merged as shards', async () => {
+  const dataDir = tmp();
+  const { fetch } = fakeActions({
+    runs: [RUN(6)],
+    artifacts: { 6: [{ id: 601, name: 'razo-test-results-nightly-a', expired: false }, { id: 602, name: 'razo-test-results-nightly-b', expired: false }] },
+    zips: { 601: zipOf({ 'a-one/razo-steps.json': report('one', 'passed') }), 602: zipOf({ 'b-two/razo-steps.json': report('two', 'passed') }) },
+  });
+  const summary = await pullGithubArtifacts({ api: new GitHubApi({ token: 't', fetch }), repo: 'o/r', dataDir, since: new Date(0) });
+  assert.deepEqual(summary.pulled, ['gh-6-1']);
+  assert.deepEqual(readRuns(dataDir)[0].reports.map((r) => r.report.test).sort(), ['one', 'two']);
+});
+
+test('hardening: the exact <prefix><run_id>-<run_attempt> artifact wins; shards of that attempt are merged', async () => {
+  const dataDir = tmp();
+  const zips = {
+    701: zipOf({ 'checkout-pays/razo-steps.json': report('pays', 'passed') }),
+    702: zipOf({ 'checkout-pays/razo-steps.json': report('pays', 'failed', { error: 'from attempt 2' }) }),
+    801: zipOf({ 'a-one/razo-steps.json': report('one', 'passed') }),
+    802: zipOf({ 'b-two/razo-steps.json': report('two', 'passed') }),
+  };
+  const { fetch } = fakeActions({
+    runs: [RUN(7, { run_attempt: 2 }), RUN(8)],
+    artifacts: {
+      7: [{ id: 701, name: 'razo-test-results-7-1', expired: false }, { id: 702, name: 'razo-test-results-7-2', expired: false }],
+      8: [{ id: 801, name: 'razo-test-results-8-1-shard1', expired: false }, { id: 802, name: 'razo-test-results-8-1-shard2', expired: false }],
+    },
+    zips,
+  });
+  const summary = await pullGithubArtifacts({ api: new GitHubApi({ token: 't', fetch }), repo: 'o/r', dataDir, since: new Date(0) });
+  assert.deepEqual(summary.pulled, ['gh-7-2', 'gh-8-1']);
+  const runs = Object.fromEntries(readRuns(dataDir).map((r) => [r.manifest.id, r]));
+  assert.equal(runs['gh-7-2'].reports.length, 1);
+  assert.equal(runs['gh-7-2'].reports[0].report.error, 'from attempt 2', 'attempt 2 took its own artifact, not attempt 1');
+  assert.deepEqual(runs['gh-8-1'].reports.map((r) => r.report.test).sort(), ['one', 'two'], 'shards merged');
+});
+
+test('hardening: an artifact whose zip has no razo report is skipped as no artifact', async () => {
+  const dataDir = tmp();
+  const { fetch } = fakeActions({
+    runs: [RUN(1)],
+    artifacts: { 1: [{ id: 501, name: 'razo-test-results-1-1', expired: false }] },
+    zips: { 501: zipOf({ 'checkout-pays/error-context.md': '# only context', 'trace.zip': 'x' }) },
+  });
+  const summary = await pullGithubArtifacts({ api: new GitHubApi({ token: 't', fetch }), repo: 'o/r', dataDir, since: new Date(0) });
+  assert.deepEqual(summary, { pulled: [], skipped: [{ runId: 'gh-1-1', reason: 'no artifact' }] });
+  assert.deepEqual(readRuns(dataDir), []);
+});

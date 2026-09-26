@@ -84,3 +84,21 @@ test('review 2b-4: compare pages are capped at 100 and the walk continues until 
   assert.deepEqual(got.map((c) => c.message), ['c1', 'c2', 'c3', 'c4', 'c5']);
   assert.ok(urls.every((u) => Number(new URL(u).searchParams.get('per_page')) <= 100), 'never asks for more than 100');
 });
+
+test('hardening: an empty page with total_commits still larger ends the walk instead of looping', async () => {
+  const many = Array.from({ length: 4 }, (_, i) => ({ sha: String(i).repeat(40), message: `c${i}`, author: 'x', date: `2026-01-0${i + 1}T00:00:00Z`, files: [] }));
+  let calls = 0;
+  const lying = async (url, init) => {
+    calls++;
+    const res = await fakeGitHub(many)(url, init);
+    if (new URL(url).pathname.includes('/compare/')) {
+      const body = await res.json();
+      // The server claims more commits than it ever serves.
+      return { ...res, json: async () => ({ ...body, total_commits: 999, commits: calls === 1 ? body.commits : [] }) };
+    }
+    return res;
+  };
+  const got = await new GitHubCodeContext(new GitHubApi({ token: 't', fetch: lying }), 'o/r', { perPage: 2 }).commitsBetween(many[0].sha, many[3].sha);
+  assert.deepEqual(got.map((c) => c.message), ['c1', 'c2']);
+  assert.ok(calls <= 3, `stopped after an empty page (${calls} calls)`);
+});

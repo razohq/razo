@@ -1,5 +1,5 @@
 import { failingTestIds } from './cluster';
-import type { IssueDraft, ProposedAction, TestRun, TriageReport } from './model';
+import type { IssueDraft, ProposedAction, TestRun, TriageAction, TriageReport } from './model';
 import type { TriageItem } from './pipeline';
 
 export interface ReportInput {
@@ -8,6 +8,10 @@ export interface ReportInput {
   runs: TestRun[];
   window: { from: string; to: string };
   generatedAt?: string;
+  /** Recorded actions per cluster id, from the store. */
+  actions?: Map<string, TriageAction[]>;
+  /** A cluster marked flaky this many times gets quarantine proposed instead. Default: 3. */
+  quarantineSuggestAfter?: number;
 }
 
 const short = (sha: string) => sha.slice(0, 7);
@@ -46,9 +50,12 @@ function draftFor(item: TriageItem, runs: TestRun[]): IssueDraft {
   };
 }
 
-function actionsFor(item: TriageItem, runs: TestRun[]): ProposedAction[] {
+function actionsFor(item: TriageItem, runs: TestRun[], input: ReportInput): ProposedAction[] {
   switch (item.classification.category) {
-    case 'flaky': return [{ type: 'mark-flaky' }];
+    case 'flaky': {
+      const marks = (input.actions?.get(item.cluster.id) ?? []).filter((a) => a.action === 'mark-flaky').length;
+      return marks >= (input.quarantineSuggestAfter ?? 3) ? [{ type: 'quarantine' }] : [{ type: 'mark-flaky' }];
+    }
     case 'environment': return [{ type: 'ignore' }];
     case 'regression':
     case 'stale-test': return [{ type: 'create-issue', draft: draftFor(item, runs) }];
@@ -94,7 +101,7 @@ export function buildReport(input: ReportInput): TriageReport {
         evidence: item.classification.evidence,
         origin: 'rules',
       },
-      proposedActions: actionsFor(item, input.runs),
+      proposedActions: actionsFor(item, input.runs, input),
     })),
   };
 }

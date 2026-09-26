@@ -9,3 +9,4 @@ export {
 } from './contract/issue-tracker';
 export { notifierContract, type NotifierFactory, type NotifierUnderTest } from './contract/notifier';
 export { pluginContract } from './contract/plugin';
+export { storeContract, type StoreFactory } from './contract/store';
