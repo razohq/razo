@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { parseConfig, loadConfig, instantiate, DEFAULT_RULES, RazoSource, MarkdownNotifier, CommitsJsonCodeContext } from '../dist/index.js';
+import { parseConfig, loadConfig, instantiate, builtinPlugins, DEFAULT_RULES, RazoSource, MarkdownNotifier, CommitsJsonCodeContext } from '../dist/index.js';
 
 const minimal = {
   source: { plugin: 'razo-source', config: { dataDir: './.razo' } },
@@ -95,4 +95,15 @@ test('review 2b-2: the README config snippet parses and expands', () => {
 test('review 2b-3: an empty or malformed pull token or repo is rejected', () => {
   assert.throws(() => parseConfig({ ...minimal, pull: { repo: 'o/r', token: '${GITHUB_TOKEN}' } }, { GITHUB_TOKEN: '' }), /token/);
   assert.throws(() => parseConfig({ ...minimal, pull: { repo: 'nope', token: 't' } }, {}), /repo/);
+});
+
+test('hardening: plugins are looked up by kind and name, so two kinds may share a name', () => {
+  const githubTracker = {
+    name: 'github', kind: 'tracker', configSchema: { parse: (x) => x },
+    create: () => ({ findBySignature: async () => [], create: async () => ({ tracker: 'github', key: 'k', url: 'u', status: 'open' }), comment: async () => {} }),
+  };
+  const cfg = parseConfig({ ...minimal, code: { plugin: 'github', config: { repo: 'o/r', token: 't' } } }, {});
+  const built = instantiate(cfg, [githubTracker, ...builtinPlugins]);
+  assert.equal(typeof built.code.commitsBetween, 'function', 'the code plugin named github was chosen, not the tracker');
+  assert.throws(() => instantiate(parseConfig({ ...minimal, code: { plugin: 'markdown', config: {} } }, {})), /markdown.*notifier.*code|no code plugin named "markdown"/);
 });
