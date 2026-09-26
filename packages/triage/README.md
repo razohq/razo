@@ -54,6 +54,9 @@ code:
 notifiers:
   - plugin: markdown
     config: { outDir: ./triage-reports }
+store:                     # optional: memory between runs
+  plugin: json-file
+  config: { path: ./.razo/triage-state.json }
 rules:                     # optional; DESIGN.md §6 defaults, flaky and environment thresholds still provisional
   env: { windowMinutes: 10, minFiles: 5 }
   flaky: { lookbackRuns: 10, quarantineSuggestAfter: 3 }
@@ -62,6 +65,32 @@ rules:                     # optional; DESIGN.md §6 defaults, flaky and environ
 
 Offline: `code: { plugin: commits-json, config: { path: ./commits.json } }`
 reads a commits list shaped like the ones under `fixtures/`.
+
+## State between runs in CI
+
+With a `store` configured, `triage run` records the run and its clusters in
+the store file. A CI job keeps no disk between runs, so the state travels as
+an artifact named `razo-triage-state`:
+
+- `triage pull` restores the most recent one into the store file before
+  pulling any run. When none exists it says so and starts empty.
+- After `triage run`, the workflow uploads the store file. GitHub's API
+  cannot create artifacts from outside the runner, so this is a workflow
+  step, not a CLI feature:
+
+```yaml
+      - run: npx triage pull --since 7d
+      - run: npx triage run --since 24h --lookback 14d
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: razo-triage-state
+          path: .razo/triage-state.json
+          retention-days: 90
+```
+
+The file carries a `schemaVersion`; a file or artifact with an unknown
+version is refused rather than guessed at.
 
 ## Commands
 
