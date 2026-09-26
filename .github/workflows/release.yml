@@ -24,7 +24,7 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run build
+      - run: npm run build -w @razohq/razo -w @razohq/razo-analyzer
 
       - name: Create release PR or publish
         uses: changesets/action@v1

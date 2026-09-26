@@ -1,0 +1,43 @@
+{
+  "name": "@razohq/triage",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Morning triage for Playwright runs: canonical model, adapter ports, and the contract test kit plugins must pass.",
+  "license": "MIT",
+  "author": "Mitchell Lombardo <razohq@gmail.com>",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./contract": {
+      "types": "./dist/contract.d.ts",
+      "default": "./dist/contract.js"
+    },
+    "./fakes": {
+      "types": "./dist/fakes.d.ts",
+      "default": "./dist/fakes.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "DESIGN.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}
