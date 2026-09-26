@@ -50,20 +50,26 @@ function scrubText(text, names) {
 export function anonymizeReport(report, dictionary, salt) {
   const names = new Map();
   for (const step of report.steps) {
-    names.set(step.name, remember(dictionary, step.name, salt, 'title'));
+    // An empty name would be found between every two characters; it has nothing to hide anyway.
+    if (step.name) names.set(step.name, remember(dictionary, step.name, salt, 'title'));
     const selectors = [step.selector, step.healed?.from, step.healed?.to].filter(Boolean);
     for (const selector of selectors) {
-      for (const q of selector.matchAll(/["']([^"']+)["']/g)) names.set(q[1], remember(dictionary, q[1], salt, 'kebab'));
+      for (const q of selector.matchAll(/["']([^"']+)["']/g)) if (q[1]) names.set(q[1], remember(dictionary, q[1], salt, 'kebab'));
     }
   }
+  // The spec is replaced as a whole file name (x.spec.ts), never as a bare word: a short
+  // name such as "x" would otherwise be rewritten inside every word that contains it.
   const specName = report.file.match(/([^/]+)\.(spec|test)\.([cm]?[jt]s)$/);
-  if (specName) names.set(specName[1], remember(dictionary, specName[1], salt, 'kebab'));
+  if (specName) {
+    const ext = `.${specName[2]}.${specName[3]}`;
+    names.set(`${specName[1]}${ext}`, `${remember(dictionary, specName[1], salt, 'kebab')}${ext}`);
+  }
 
   const out = { ...report, test: phrase(report.test, dictionary, salt) };
-  if (specName) out.file = report.file.replace(specName[1], names.get(specName[1]));
+  if (specName) out.file = report.file.replace(`${specName[1]}.${specName[2]}.${specName[3]}`, names.get(`${specName[1]}.${specName[2]}.${specName[3]}`));
   if (report.error) out.error = scrubText(report.error, names);
   out.steps = report.steps.map((step) => {
-    const s = { ...step, name: names.get(step.name) };
+    const s = { ...step, name: step.name ? names.get(step.name) : step.name };
     s.selector = scrubText(step.selector, names);
     s.sentence = scrubText(step.sentence, names);
     for (const key of ['detail', 'expected', 'actual', 'error']) {

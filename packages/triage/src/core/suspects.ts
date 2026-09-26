@@ -26,27 +26,44 @@ export function needlesFor(control: TouchedControl): string[] {
   );
 }
 
-const ALNUM = /[A-Za-z0-9]/;
+/** Letters, digits, hyphen and underscore glue a token together: `order` is not a token of `order-row` or `order_id`. */
+const WORD = /[A-Za-z0-9_-]/;
 
-/** True when `needle` occurs in `line` as a whole token: not glued to other letters or digits. */
+/** True when `needle` occurs in `line` as a whole token, case-insensitively. */
 function containsToken(line: string, needle: string): boolean {
+  const haystack = line.toLowerCase();
+  const target = needle.toLowerCase();
   let from = 0;
   for (;;) {
-    const at = line.indexOf(needle, from);
+    const at = haystack.indexOf(target, from);
     if (at === -1) return false;
-    const before = at === 0 ? '' : line[at - 1];
-    const after = line[at + needle.length] ?? '';
-    if (!ALNUM.test(before) && !ALNUM.test(after)) return true;
+    const before = at === 0 ? '' : haystack[at - 1];
+    const after = haystack[at + target.length] ?? '';
+    if (!WORD.test(before) && !WORD.test(after)) return true;
     from = at + 1;
   }
 }
 
-const normalize = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
+/** `src/checkout/PlaceOrder.tsx` → ['src', 'checkout', 'place', 'order', 'tsx']; `place_order_form` → ['place', 'order', 'form']. */
+function tokensOf(text: string): string[] {
+  return text
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .map((t) => t.toLowerCase());
+}
 
-/** A file whose name carries one of the needles: the component's own source file, most likely. */
+/** A file whose name carries a needle's tokens in sequence: the component's own source file, most likely. `reorder` is not `order`. */
 function fileNamesControl(filename: string, needles: string[]): boolean {
-  const name = normalize(filename);
-  return needles.some((n) => name.includes(normalize(n)));
+  const file = tokensOf(filename);
+  return needles.some((needle) => {
+    const want = tokensOf(needle);
+    if (want.length === 0) return false;
+    for (let i = 0; i + want.length <= file.length; i++) {
+      if (want.every((t, k) => file[i + k] === t)) return true;
+    }
+    return false;
+  });
 }
 
 /** Added and removed lines only; `+++`/`---` carry filenames, not content. */

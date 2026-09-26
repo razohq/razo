@@ -122,7 +122,7 @@ test('a file without a patch that matches nothing is simply skipped', async () =
 });
 
 test('unevaluable files are deduplicated per commit and file, with components merged, and capped like suspects', async () => {
-  const controls = [placeOrder, { controlType: 'field', name: 'Order note', selector: '[data-testid="placeorder"]' }];
+  const controls = [placeOrder, { controlType: 'link', name: 'Order', selector: '[data-testid="order"]' }];
   const commits = ['a', 'b', 'c', 'd', 'e'].map((l, i) => commit(l, String(i + 1).padStart(2, '0')));
   const { unevaluable } = await findSuspects({
     controls, commits,
@@ -130,7 +130,7 @@ test('unevaluable files are deduplicated per commit and file, with components me
   });
   assert.equal(unevaluable.length, 3, 'capped at max');
   assert.equal(new Set(unevaluable.map((u) => `${u.sha}:${u.filename}`)).size, 3, 'no duplicates');
-  assert.deepEqual(unevaluable[0].components, ['button "Place order"', 'field "Order note"']);
+  assert.deepEqual(unevaluable[0].components, ['button "Place order"', 'link "Order"']);
 });
 
 test('a generic needle like "btn" never turns unrelated commits into suspects', async () => {
@@ -183,4 +183,44 @@ test('razo-demo: the cart test has no suspect, its table testid is untouched by 
   const commits = await commitsInRange(code, shaRange(testHistories(runs).get(cart.testId)));
   const { suspects } = await findSuspects({ controls: cart.controls, commits, changedFiles: (sha) => code.changedFiles(sha) });
   assert.deepEqual(suspects, []);
+});
+
+// --- Phase 3 hardening minors 1 and 2 ---
+test('minor 1: hyphen and underscore are part of a token, so "order" does not score "order-row" or "order_id"', async () => {
+  const control = { controlType: 'link', name: 'Order', selector: '[data-testid="order"]' };
+  const { suspects } = await findSuspects({
+    controls: [control], commits: [commit('a')],
+    changedFiles: async () => [{ filename: 'x.ts', patch: '+ data-testid="order-row"\n+ const order_id = 1\n+ reorder()' }],
+  });
+  assert.deepEqual(suspects, []);
+  const hit = await findSuspects({
+    controls: [control], commits: [commit('a')],
+    changedFiles: async () => [{ filename: 'x.ts', patch: '+ data-testid="order"' }],
+  });
+  assert.equal(hit.suspects.length, 1);
+});
+
+test('minor 1: the file-name match for unevaluable files is by whole tokens, not substrings', async () => {
+  const order = { controlType: 'link', name: 'Order', selector: '[data-testid="order"]' };
+  const reorder = await findSuspects({ controls: [order], commits: [commit('a')], changedFiles: async () => [{ filename: 'src/reorder.ts' }] });
+  assert.deepEqual(reorder.unevaluable, [], 'reorder is not order');
+  const exact = await findSuspects({ controls: [order], commits: [commit('a')], changedFiles: async () => [{ filename: 'src/order.ts' }] });
+  assert.equal(exact.unevaluable.length, 1);
+  const camel = await findSuspects({ controls: [placeOrder], commits: [commit('a')], changedFiles: async () => [{ filename: 'src/checkout/PlaceOrder.tsx' }] });
+  assert.equal(camel.unevaluable.length, 1, 'PlaceOrder splits into place + order');
+  const snake = await findSuspects({ controls: [placeOrder], commits: [commit('a')], changedFiles: async () => [{ filename: 'src/place_order_form.ts' }] });
+  assert.equal(snake.unevaluable.length, 1, 'place_order_form contains the tokens place order in sequence');
+});
+
+test('minor 2: needle matching ignores case', async () => {
+  const { suspects } = await findSuspects({
+    controls: [placeOrder], commits: [commit('a')],
+    changedFiles: async () => [{ filename: 'x.tsx', patch: '+ <button>place order</button>' }],
+  });
+  assert.equal(suspects.length, 1);
+  const upper = await findSuspects({
+    controls: [placeOrder], commits: [commit('a')],
+    changedFiles: async () => [{ filename: 'x.tsx', patch: '+ data-testid="PLACE-ORDER"' }],
+  });
+  assert.equal(upper.suspects.length, 1);
 });

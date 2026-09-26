@@ -47,3 +47,14 @@ test('a shared dictionary keeps names stable across reports', () => {
   assert.equal(a.steps[0].name, b.steps[0].name);
   assert.equal(a.file, b.file);
 });
+
+test('minor 3: a step with an empty name never splices tokens into the text', () => {
+  const out = anonymizeReport({
+    test: 'empty name', file: 'tests/x.spec.ts', status: 'failed', durationMs: 1,
+    error: 'locator.click: Timeout 5000ms exceeded.',
+    steps: [{ action: 'click', controlType: 'button', name: '', sentence: 'Click button ""', selector: '[data-testid=""]', status: 'failed', error: 'x', timestamp: '2026-09-24T06:01:00Z' }],
+  }, new Map(), 'salt');
+  assert.equal(out.error, 'locator.click: Timeout 5000ms exceeded.');
+  assert.equal(out.steps[0].sentence, 'Click button ""');
+  assert.equal(out.steps[0].name, '');
+});
