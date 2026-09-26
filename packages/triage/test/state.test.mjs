@@ -105,11 +105,11 @@ test('resolved: PR-branch runs and runs before the last failure do not count', (
   assert.equal(reconcileClusters([gone], [], mixed).find((c) => c.id === 'gone').state, 'new');
 });
 
-test('a resolved cluster that fails again comes back as new and recurring', () => {
+test('a resolved cluster that fails again comes back as new, marked reopened', () => {
   const resolved = { ...base(), id: 'back', state: 'resolved', firstSeenAt: '2026-09-01T00:00:00Z' };
   const [out] = reconcileClusters([resolved], [{ ...base(), id: 'back' }], ctx([]));
   assert.equal(out.state, 'new');
-  assert.equal(out.novelty, 'recurring');
+  assert.equal(out.novelty, 'reopened');
   assert.equal(out.firstSeenAt, '2026-09-01T00:00:00Z', 'history is kept');
 });
 
@@ -159,4 +159,43 @@ test('runTriage reports state-aware clusters: recurring on the second morning, s
   assert.equal(again.cluster.novelty, 'recurring');
   assert.equal(again.cluster.state, 'ignored');
   assert.equal(again.cluster.firstSeenAt, stale.firstSeenAt);
+});
+
+// --- notifier failure, reopened ---
+test('when a notifier fails, triage run fails and the state is not saved', async () => {
+  const stateFile = path.join(tmp(), 'triage-state.json');
+  const cfg = parseConfig({
+    source: { plugin: 'razo-source', config: { dataDir: DEMO } },
+    code: { plugin: 'commits-json', config: { path: path.join(DEMO, 'commits.json') } },
+    notifiers: [{ plugin: 'markdown', config: { outDir: path.join(tmp(), 'ok') } }, { plugin: 'markdown', config: { outDir: '/dev/null/not-a-directory' } }],
+    store: { plugin: 'json-file', config: { path: stateFile } },
+  }, {});
+  const red = new Date('2026-08-04T07:00:00Z');
+  await assert.rejects(runTriage(cfg, { now: red, since: parseDuration('2d', red), lookback: parseDuration('30d', red) }), /notifier|ENOTDIR|not-a-directory/);
+  assert.equal(fs.existsSync(stateFile), false, 'nothing was saved');
+});
+
+test('a resolved cluster that fails again is reopened, not new and recurring', () => {
+  const resolved = { ...base(), id: 'back', state: 'resolved', firstSeenAt: '2026-09-01T00:00:00Z' };
+  const [out] = reconcileClusters([resolved], [{ ...base(), id: 'back' }], ctx([]));
+  assert.equal(out.novelty, 'reopened');
+  assert.equal(out.state, 'new');
+  assert.equal(out.firstSeenAt, '2026-09-01T00:00:00Z');
+});
+
+test('the Markdown highlights reopened clusters and lists them first', () => {
+  const item = seed.report.items[0];
+  const report = {
+    ...seed.report,
+    generatedAt: '2026-09-26T07:00:00Z',
+    items: [
+      { ...item, cluster: { ...item.cluster, id: 'plain', signature: 'plain one', novelty: 'new' } },
+      { ...item, cluster: { ...item.cluster, id: 'back', signature: 'came back', novelty: 'reopened', firstSeenAt: '2026-09-01T07:00:00Z' } },
+    ],
+  };
+  const md = renderMarkdown(report);
+  assert.ok(md.indexOf('came back') < md.indexOf('plain one'), 'reopened first');
+  assert.match(md, /## ⚠ reopened · stale-test · medium/);
+  assert.match(md, /open for 25 days/);
+  assert.match(md, /1 reopened/, 'the totals line counts it');
 });

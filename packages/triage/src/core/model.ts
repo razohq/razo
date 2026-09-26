@@ -70,7 +70,8 @@ export interface Cluster {
   failures: FailureRef[];
   category: Category;
   confidence: Confidence;
-  novelty: 'new' | 'recurring';
+  /** reopened: it was resolved and failed again; the report highlights it. */
+  novelty: 'new' | 'recurring' | 'reopened';
   firstSeenAt: string;
   lastSeenAt: string;
   lastGreenSha?: string;

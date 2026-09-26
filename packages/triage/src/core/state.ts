@@ -40,8 +40,8 @@ export interface StateContext {
 /**
  * mergeClusters plus what time decides: novelty (new or recurring), a cluster
  * absent for `resolveAfterRuns` base-branch runs after its last failure
- * becomes resolved, and a resolved cluster that fails again comes back as new
- * while keeping its history.
+ * becomes resolved, and a resolved cluster that fails again is reopened: state
+ * new, novelty reopened, history kept.
  */
 export function reconcileClusters(previous: Cluster[], current: Cluster[], context: StateContext): Cluster[] {
   const known = new Set(previous.map((c) => c.id));
@@ -50,9 +50,8 @@ export function reconcileClusters(previous: Cluster[], current: Cluster[], conte
   const baseRuns = context.runs.filter((r) => r.branch === baseBranch);
   return mergeClusters(previous, current).map((cluster) => {
     if (present.has(cluster.id)) {
-      const novelty = known.has(cluster.id) ? 'recurring' : 'new';
-      const state = cluster.state === 'resolved' ? 'new' : cluster.state;
-      return { ...cluster, novelty, state };
+      if (cluster.state === 'resolved') return { ...cluster, novelty: 'reopened', state: 'new' };
+      return { ...cluster, novelty: known.has(cluster.id) ? 'recurring' : 'new' };
     }
     if (cluster.state === 'resolved') return cluster;
     const since = Date.parse(cluster.lastSeenAt);

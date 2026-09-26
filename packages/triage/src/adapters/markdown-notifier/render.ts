@@ -40,13 +40,18 @@ export function renderMarkdown(report: TriageReport): string {
     lines.push('No failures in this window.', '');
     return lines.join('\n');
   }
-  const main = report.items.filter((i) => !COMPACT.has(i.cluster.state));
+  // Reopened clusters first: a fix that stopped working outranks anything else this morning.
+  const main = report.items
+    .filter((i) => !COMPACT.has(i.cluster.state))
+    .sort((a, b) => Number(b.cluster.novelty === 'reopened') - Number(a.cluster.novelty === 'reopened'));
   const known = report.items.filter((i) => COMPACT.has(i.cluster.state));
+  const reopened = main.filter((i) => i.cluster.novelty === 'reopened').length;
+  if (reopened > 0) lines.push(`**${reopened} reopened**: resolved before, failing again.`, '');
   if (main.length === 0) lines.push('Nothing new: every failure in this window is a known ignored or flaky cluster.', '');
   for (const { cluster, verdict, proposedActions } of main) {
     const days = daysOpen(cluster.firstSeenAt, report.generatedAt);
     lines.push(
-      `## ${verdict.category} · ${verdict.confidence}`, '',
+      `## ${cluster.novelty === 'reopened' ? '⚠ reopened · ' : ''}${verdict.category} · ${verdict.confidence}`, '',
       `${cluster.novelty} · open for ${days} day${days === 1 ? '' : 's'} · state ${cluster.state}`, '',
       code(cluster.signature), '', verdict.summary, '', `**Next:** ${verdict.nextStep}`, '',
     );
