@@ -7,6 +7,8 @@ import type { Cluster, TriageAction, TriageRunRecord } from '../core/model';
  * they were recorded.
  */
 export interface TriageStore {
+  /** The signature algorithm version the stored clusters were computed with; null on an empty store. */
+  signatureVersion(): Promise<number | null>;
   lastTriageAt(): Promise<Date | null>;
   loadClusters(): Promise<Cluster[]>;
   saveClusters(clusters: Cluster[]): Promise<void>;

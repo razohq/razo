@@ -2,6 +2,7 @@ import assert from 'assert/strict';
 import type { TriageAction, TriageRunRecord } from '../core/model';
 import type { TriageStore } from '../ports/store';
 import type { ContractCase } from './case';
+import { SIGNATURE_ALGORITHM_VERSION } from '../core/signature';
 import { seed } from './seed';
 
 /** Builds an empty store. Each case gets a fresh one. */
@@ -66,6 +67,15 @@ export function storeContract(factory: StoreFactory): ContractCase[] {
         await store.recordAction(action('c1', '2026-09-26T07:03:00Z', 'mark-flaky'));
         assert.deepEqual((await store.actionsFor('c1')).map((a) => a.action), ['acknowledge', 'mark-flaky']);
         assert.deepEqual((await store.actionsFor('c2')).map((a) => a.action), ['ignore']);
+      },
+    },
+    {
+      name: 'signatureVersion is null on an empty store and the current algorithm version after a write',
+      async run() {
+        const store = await factory();
+        assert.equal(await store.signatureVersion(), null);
+        await store.saveClusters([cluster()]);
+        assert.equal(await store.signatureVersion(), SIGNATURE_ALGORITHM_VERSION);
       },
     },
     {

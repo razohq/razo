@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Cluster, TriageAction, TriageRunRecord } from '../../core/model';
+import { SIGNATURE_ALGORITHM_VERSION } from '../../core/signature';
 import type { ConfigSchema, TriagePlugin } from '../../ports/plugin';
 import type { TriageStore } from '../../ports/store';
 
@@ -9,6 +10,8 @@ export const STATE_SCHEMA_VERSION = 1;
 
 interface State {
   schemaVersion: number;
+  /** Algorithm the stored clusters' signatures were computed with; absent on a never-written file. */
+  signatureVersion?: number;
   clusters: Cluster[];
   runs: TriageRunRecord[];
   actions: TriageAction[];
@@ -40,7 +43,21 @@ export class JsonFileStore implements TriageStore {
         `${this.file}: unknown triage state schema version ${JSON.stringify(state?.schemaVersion)} (this build reads version ${STATE_SCHEMA_VERSION})`,
       );
     }
-    return { schemaVersion: STATE_SCHEMA_VERSION, clusters: state.clusters ?? [], runs: state.runs ?? [], actions: state.actions ?? [] };
+    return {
+      schemaVersion: STATE_SCHEMA_VERSION,
+      ...(typeof state.signatureVersion === 'number' ? { signatureVersion: state.signatureVersion } : {}),
+      clusters: state.clusters ?? [], runs: state.runs ?? [], actions: state.actions ?? [],
+    };
+  }
+
+  /** Starts over on purpose: an empty state replaces whatever the file held. */
+  reset(): void {
+    this.write(empty());
+  }
+
+  async signatureVersion(): Promise<number | null> {
+    if (!fs.existsSync(this.file)) return null;
+    return this.read().signatureVersion ?? null;
   }
 
   private write(state: State): void {
@@ -59,6 +76,7 @@ export class JsonFileStore implements TriageStore {
   private update(change: (state: State) => void): void {
     const state = this.read();
     change(state);
+    state.signatureVersion = SIGNATURE_ALGORITHM_VERSION;
     this.write(state);
   }
 

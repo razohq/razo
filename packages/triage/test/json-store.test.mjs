@@ -57,3 +57,13 @@ test('writes are atomic: no temporary file is left behind and a failing write ke
   assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).clusters.length, 1);
   assert.deepEqual(fs.readdirSync(path.dirname(file)), ['triage-state.json']);
 });
+
+test('the file records the signature algorithm version and the store reports it', async () => {
+  const { SIGNATURE_ALGORITHM_VERSION } = await import('../dist/index.js');
+  const file = tmpFile();
+  const store = new JsonFileStore(file);
+  assert.equal(await store.signatureVersion(), null);
+  await store.saveClusters([]);
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).signatureVersion, SIGNATURE_ALGORITHM_VERSION);
+  assert.equal(await store.signatureVersion(), SIGNATURE_ALGORITHM_VERSION);
+});

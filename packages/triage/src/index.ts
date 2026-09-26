@@ -1,5 +1,6 @@
 export * from './core/model';
-export { errorSignature, clusterIdOf } from './core/signature';
+export { errorSignature, clusterIdOf, SIGNATURE_ALGORITHM_VERSION } from './core/signature';
+export { mergeClusters } from './core/state';
 export type { ResultSource } from './ports/result-source';
 export type { CodeContext } from './ports/code-context';
 export type { IssueTracker } from './ports/issue-tracker';

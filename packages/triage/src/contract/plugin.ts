@@ -9,7 +9,7 @@ const METHODS: Record<PluginKind, string[]> = {
   code: ['commitsBetween', 'changedFiles'],
   tracker: ['findBySignature', 'create', 'comment'],
   notifier: ['send'],
-  store: ['lastTriageAt', 'loadClusters', 'saveClusters', 'recordRun', 'recordAction', 'actionsFor'],
+  store: ['signatureVersion', 'lastTriageAt', 'loadClusters', 'saveClusters', 'recordRun', 'recordAction', 'actionsFor'],
 };
 
 const KEBAB = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
