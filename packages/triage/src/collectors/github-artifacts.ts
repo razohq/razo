@@ -42,8 +42,8 @@ export interface PullSummary {
   pulled: string[];
   skipped: Array<{
     runId: string;
-    reason: 'exists' | 'no artifact' | 'expired' | 'not completed' | 'error';
-    /** For `error`: what went wrong with this run; the others still pull. */
+    reason: 'exists' | 'no artifact' | 'expired' | 'not completed' | 'attempt mismatch' | 'error';
+    /** For `error` and `attempt mismatch`: what happened with this run; the others still pull. */
     detail?: string;
   }>;
 }
@@ -100,10 +100,24 @@ export async function pullGithubArtifacts(options: PullOptions): Promise<PullSum
       summary.skipped.push({ runId, reason: 'no artifact' });
       return;
     }
-    // The artifact named after this exact attempt wins; otherwise every candidate is
-    // a shard of the same run and they are merged.
-    const exact = candidates.filter((a) => a.name === `${prefix}${run.id}-${run.run_attempt}`);
-    const chosen = (exact.length > 0 ? exact : candidates).filter((a) => !a.expired);
+    // Artifacts named <prefix><run_id>-<attempt>[-shard] carry attempt information: those of
+    // this attempt are merged as shards, and a different attempt's are never mixed in. When
+    // no candidate names an attempt at all, every candidate is a shard of the run.
+    const attemptOf = (name: string): number | undefined => {
+      const m = name.slice(prefix.length).match(new RegExp(`^${run.id}-(\\d+)(?:-|$)`));
+      return m ? Number(m[1]) : undefined;
+    };
+    const withAttempt = candidates.filter((a) => attemptOf(a.name) !== undefined);
+    const thisAttempt = withAttempt.filter((a) => attemptOf(a.name) === run.run_attempt);
+    if (withAttempt.length > 0 && thisAttempt.length === 0) {
+      summary.skipped.push({
+        runId,
+        reason: 'attempt mismatch',
+        detail: `run_attempt ${run.run_attempt} has no artifact; found ${withAttempt.map((a) => a.name).join(', ')}`,
+      });
+      return;
+    }
+    const chosen = (thisAttempt.length > 0 ? thisAttempt : candidates).filter((a) => !a.expired);
     if (chosen.length === 0) {
       summary.skipped.push({ runId, reason: 'expired' });
       return;
