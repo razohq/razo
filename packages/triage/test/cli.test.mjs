@@ -135,3 +135,15 @@ test('store: runTriage records the run and saves the clusters when a store is co
   const without = await runTriage(demoConfig(tmp()), { now, since: parseDuration('2d', now), lookback: parseDuration('30d', now) });
   assert.equal(without.stored, false);
 });
+
+test('pull accepts --reset-state as a flag', () => {
+  const dir = tmp();
+  fs.writeFileSync(path.join(dir, 'triage.config.yaml'), `
+source: { plugin: razo-source, config: { dataDir: ./.razo } }
+code: { plugin: commits-json, config: { path: ./commits.json } }
+`);
+  assert.throws(
+    () => execFileSync('node', [CLI, 'pull', '--reset-state', '--config', path.join(dir, 'triage.config.yaml')], { encoding: 'utf8', stdio: 'pipe' }),
+    (e) => e.status === 2 && /pull/.test(e.stderr) && !/unknown flag/.test(e.stderr),
+  );
+});

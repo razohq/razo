@@ -6,6 +6,10 @@ import type { TriageConfig } from './config/schema';
 import type { TriageReport } from './core/model';
 import { analyzeWindow } from './core/pipeline';
 import { buildReport } from './core/report';
+import { SIGNATURE_ALGORITHM_VERSION } from './core/signature';
+import { mergeClusters } from './core/state';
+import { JsonFileStore } from './adapters/json-store';
+import type { FetchLike } from './adapters/github/api';
 
 /** `24h`, `7d`, `30m` relative to `now`, or an ISO date. */
 export function parseDuration(text: string, now: Date): Date {
@@ -25,6 +29,7 @@ export interface RunOptions {
   since: Date;
   /** History start: runs at or after it feed ranges and flakiness. */
   lookback: Date;
+  log?: (line: string) => void;
 }
 
 export interface RunResult {
@@ -53,9 +58,15 @@ export async function runTriage(config: TriageConfig, options: RunOptions): Prom
   });
   for (const notifier of notifiers) await notifier.send(report);
   if (store) {
-    // Cluster states, novelty and days open come with the next step of Phase 3; for now the
-    // store remembers the run and the clusters as the rules left them.
-    await store.saveClusters(items.map((i) => i.cluster));
+    const version = await store.signatureVersion();
+    if (version !== null && version !== SIGNATURE_ALGORITHM_VERSION) {
+      options.log?.(
+        `warning: the stored state was computed with signature algorithm version ${version}, this build uses ${SIGNATURE_ALGORITHM_VERSION}: previous clusters will not be recognized and will look new`,
+      );
+    }
+    // The store keeps what people decided (state, first seen, linked issue) and clusters
+    // absent from this run; the rules refresh everything else.
+    await store.saveClusters(mergeClusters(await store.loadClusters(), items.map((i) => i.cluster)));
     await store.recordRun({
       id: `triage-${report.generatedAt}`,
       generatedAt: report.generatedAt,
@@ -70,7 +81,11 @@ export async function runTriage(config: TriageConfig, options: RunOptions): Prom
 export interface PullCommandOptions {
   since: Date;
   dataDir: string;
+  /** Skip the state artifact and start from an empty state on purpose. */
+  resetState?: boolean;
   log?: (line: string) => void;
+  /** Tests inject a replayer; defaults to the global fetch. */
+  fetch?: FetchLike;
 }
 
 export interface PullResult extends PullSummary {
@@ -80,11 +95,16 @@ export interface PullResult extends PullSummary {
 
 export async function runPull(config: TriageConfig, options: PullCommandOptions): Promise<PullResult> {
   if (!config.pull) throw new Error('config has no "pull" section (repo, token, workflow?, branch?, artifactPrefix?)');
-  const api = new GitHubApi({ token: config.pull.token });
+  const api = new GitHubApi({ token: config.pull.token, fetch: options.fetch });
   let state: RestoreResult | undefined;
   const storeFile = config.store?.plugin === 'json-file' ? (config.store.config as { path?: string } | undefined)?.path : undefined;
-  if (storeFile) {
-    state = await restoreState({ api, repo: config.pull.repo, file: storeFile });
+  if (storeFile && options.resetState) {
+    new JsonFileStore(storeFile).reset();
+    state = { restored: false, reset: true };
+    options.log?.('state reset on request: starting from an empty state');
+  } else if (storeFile) {
+    // Only the base branch's runs write state worth restoring; an invalid artifact is an error, not a silent empty start.
+    state = await restoreState({ api, repo: config.pull.repo, file: storeFile, branch: config.baseBranch });
     options.log?.(state.restored
       ? `restored triage state from artifact #${state.artifactId} (${state.createdAt})`
       : 'no triage state artifact found: starting from an empty state');

@@ -76,3 +76,18 @@ test('restoreState refuses an artifact without a triage-state.json entry', async
   await assert.rejects(restoreState({ api: new GitHubApi({ token: 't', fetch }), repo: 'o/r', file }), /triage-state\.json/);
   assert.equal(fs.existsSync(file), false);
 });
+
+test('restoreState takes only state artifacts uploaded by runs of the base branch', async () => {
+  const file = path.join(tmp(), 'triage-state.json');
+  const { fetch } = fakeArtifacts(
+    [
+      { id: 1, name: STATE_ARTIFACT_NAME, expired: false, created_at: '2026-09-25T07:00:00Z', workflow_run: { head_branch: 'main' } },
+      { id: 2, name: STATE_ARTIFACT_NAME, expired: false, created_at: '2026-09-26T07:00:00Z', workflow_run: { head_branch: 'feat/x' } },
+    ],
+    { 1: zipOf({ 'triage-state.json': stateJson([{ id: 'r1', generatedAt: '2026-09-25T07:00:00Z', window: { from: 'a', to: 'b' }, totals: { tests: 1, failures: 0, clusters: 0 }, durationMs: 1 }]) }) },
+  );
+  const result = await restoreState({ api: new GitHubApi({ token: 't', fetch }), repo: 'o/r', file, branch: 'main' });
+  assert.deepEqual(result, { restored: true, artifactId: 1, createdAt: '2026-09-25T07:00:00Z' });
+  const none = await restoreState({ api: new GitHubApi({ token: 't', fetch }), repo: 'o/r', file: path.join(tmp(), 's.json'), branch: 'release' });
+  assert.deepEqual(none, { restored: false });
+});

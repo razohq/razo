@@ -4,7 +4,7 @@ import { parseDuration, runPull, runTriage } from './commands';
 
 const USAGE = `Usage:
   triage run  [--config triage.config.yaml] [--since 24h] [--lookback 14d] [--now <iso>]
-  triage pull [--config triage.config.yaml] [--since 7d] [--data-dir <dir>]
+  triage pull [--config triage.config.yaml] [--since 7d] [--data-dir <dir>] [--reset-state]
 
 run   reads the runs of the last --lookback, triages the failures since --since,
       and sends the report to every notifier in the config.
@@ -20,8 +20,10 @@ function fail(message: string): never {
 
 const FLAGS: Record<string, Set<string>> = {
   run: new Set(['config', 'since', 'lookback', 'now']),
-  pull: new Set(['config', 'since', 'data-dir', 'now']),
+  pull: new Set(['config', 'since', 'data-dir', 'now', 'reset-state']),
 };
+/** Flags that take no value. */
+const SWITCHES = new Set(['reset-state']);
 
 function parseArgs(argv: string[]): { command?: string; flags: Record<string, string> } {
   const flags: Record<string, string> = {};
@@ -35,7 +37,7 @@ function parseArgs(argv: string[]): { command?: string; flags: Record<string, st
     if (a.startsWith('--')) {
       const name = a.slice(2);
       if (!command || !FLAGS[command]?.has(name)) fail(`unknown flag: --${name}`);
-      flags[name] = argv[++i] ?? '';
+      flags[name] = SWITCHES.has(name) ? 'true' : argv[++i] ?? '';
     } else if (!command) command = a;
     else fail(`unexpected argument: ${a}`);
   }
@@ -64,14 +66,14 @@ async function main(): Promise<void> {
     const sourceDir = (config.source.config as { dataDir?: string } | undefined)?.dataDir;
     const dataDir = flags['data-dir'] ?? sourceDir;
     if (!dataDir) fail('no data dir: pass --data-dir or configure source.config.dataDir');
-    const summary = await runPull(config, { since, dataDir, log: (line) => console.error(line) });
+    const summary = await runPull(config, { since, dataDir, resetState: flags['reset-state'] === 'true', log: (line) => console.error(line) });
     if (summary.state && !summary.state.restored) console.log('warning: no triage state artifact found, starting from an empty state');
     console.log(`pulled ${summary.pulled.length} run(s), skipped ${summary.skipped.length}`);
     for (const s of summary.skipped) console.log(`  skipped ${s.runId}: ${s.reason}${s.detail ? ` (${s.detail})` : ''}`);
     return;
   }
 
-  const result = await runTriage(config, { now, since, lookback });
+  const result = await runTriage(config, { now, since, lookback, log: (line) => console.error(line) });
   const { report } = result;
   console.log(`triage ${report.generatedAt}: ${report.totals.tests} tests, ${report.totals.failures} failures, ${report.totals.clusters} clusters`);
   for (const item of report.items) {

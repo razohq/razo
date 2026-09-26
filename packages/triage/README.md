@@ -79,18 +79,46 @@ an artifact named `razo-triage-state`:
   step, not a CLI feature:
 
 ```yaml
+on:
+  schedule:
+    - cron: '0 7 * * 1-5'
+  workflow_dispatch:
+
+# One triage at a time: two overlapping runs would each upload a state
+# that ignores the other's.
+concurrency:
+  group: razo-triage
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
       - run: npx triage pull --since 7d
+        env: { GITHUB_TOKEN: ${{ secrets.TRIAGE_TOKEN }} }
       - run: npx triage run --since 24h --lookback 14d
+        env: { GITHUB_TOKEN: ${{ secrets.TRIAGE_TOKEN }} }
+      # Only scheduled runs on the base branch write state: a manual run or
+      # a PR must never become the state the next morning restores from.
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: github.event_name == 'schedule' && github.ref_name == 'main'
         with:
           name: razo-triage-state
           path: .razo/triage-state.json
           retention-days: 90
 ```
 
+`triage pull` restores only artifacts uploaded by runs of `baseBranch`.
 The file carries a `schemaVersion`; a file or artifact with an unknown
-version is refused rather than guessed at.
+version is an error rather than a silent empty start, and
+`triage pull --reset-state` starts from an empty state on purpose. The
+state also records the signature algorithm version: when a new build
+changes how signatures are computed, `triage run` warns that the previous
+clusters will not be recognized.
 
 ## Commands
 

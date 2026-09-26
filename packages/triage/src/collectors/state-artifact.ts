@@ -14,6 +14,7 @@ interface Artifact {
   name: string;
   expired: boolean;
   created_at: string;
+  workflow_run?: { head_branch?: string | null };
 }
 
 export interface RestoreOptions {
@@ -23,11 +24,13 @@ export interface RestoreOptions {
   /** Where the JSON file store lives locally. */
   file: string;
   artifactName?: string;
+  /** Only artifacts uploaded by runs of this branch count; a PR run's state must never become the base's. */
+  branch?: string;
 }
 
 export type RestoreResult =
   | { restored: true; artifactId: number; createdAt: string }
-  | { restored: false };
+  | { restored: false; reset?: true };
 
 /**
  * Downloads the most recent non-expired state artifact into the store file.
@@ -42,6 +45,7 @@ export async function restoreState(options: RestoreOptions): Promise<RestoreResu
   );
   const latest = artifacts
     .filter((a) => a.name === name && !a.expired)
+    .filter((a) => !options.branch || a.workflow_run?.head_branch === options.branch)
     .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
   if (!latest) return { restored: false };
 
