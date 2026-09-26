@@ -1,6 +1,14 @@
 import type { ProposedAction, TriageReport } from '../../core/model';
 
 const short = (sha: string) => sha.slice(0, 7);
+
+/** Inline code that survives backticks in the text: a fence one longer than the longest run inside, padded when the text touches the edge. */
+function code(text: string): string {
+  const longest = Math.max(0, ...[...text.matchAll(/`+/g)].map((m) => m[0].length));
+  const fence = '`'.repeat(longest + 1);
+  const pad = text.startsWith('`') || text.endsWith('`') ? ' ' : '';
+  return `${fence}${pad}${text}${pad}${fence}`;
+}
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 function actionLine(action: ProposedAction): string {
@@ -26,7 +34,7 @@ export function renderMarkdown(report: TriageReport): string {
     return lines.join('\n');
   }
   for (const { cluster, verdict, proposedActions } of report.items) {
-    lines.push(`## ${verdict.category} · ${verdict.confidence}`, '', `\`${cluster.signature}\``, '', verdict.summary, '', `**Next:** ${verdict.nextStep}`, '');
+    lines.push(`## ${verdict.category} · ${verdict.confidence}`, '', code(cluster.signature), '', verdict.summary, '', `**Next:** ${verdict.nextStep}`, '');
     lines.push('Tests:', ...[...new Set(cluster.failures.map((f) => f.testId))].map((t) => `- ${t}`), '');
     if (cluster.lastGreenSha && cluster.firstRedSha) {
       lines.push(`Range: ${short(cluster.lastGreenSha)}..${short(cluster.firstRedSha)}`, '');
