@@ -120,7 +120,7 @@ export interface Cluster {
   failures: FailureRef[];
   category: Category;
   confidence: Confidence;
-  novelty: 'new' | 'recurring';
+  novelty: 'new' | 'recurring' | 'reopened';   // reopened: it was resolved and failed again
   firstSeenAt: string;
   lastSeenAt: string;
   lastGreenSha?: string;
@@ -283,7 +283,8 @@ State rules (`core/state.ts`, applied by `triage run` between `classify` and `re
 - The store keeps what people and time decided about a known cluster (`state`, `firstSeenAt`, `linkedIssue`); the rules refresh everything else each morning. A cluster absent from the run is kept as it was, so an ignored cluster stays ignored across quiet mornings and when it reappears.
 - Novelty: a cluster the store never saw is `new`; a known one is `recurring`.
 - A cluster in state `ignored` or `flaky` is not reported as new; it appears in a compact "Known" section of the report, with its days open.
-- A cluster with no failures for `state.resolveAfterRuns` base-branch runs (default 3) after its last failure becomes `resolved`. PR-branch runs do not count. A resolved cluster that fails again comes back as `new` and `recurring`, keeping its history.
+- A cluster with no failures for `state.resolveAfterRuns` base-branch runs (default 3) after its last failure becomes `resolved`. PR-branch runs do not count. A resolved cluster that fails again is `reopened`: state `new`, novelty `reopened`, history kept; the report counts reopened clusters at the top, lists them first and marks their heading.
+- If sending the report fails, `triage run` fails and saves nothing: the state only records mornings that were delivered.
 - A cluster marked `flaky` `flaky.quarantineSuggestAfter` times (default 3, counted from recorded `mark-flaky` actions) gets the proposed action `quarantine` instead of `mark-flaky`.
 - The state records the signature algorithm version; a build with another version warns that previous clusters will not be recognized.
 
@@ -546,6 +547,10 @@ Each with its failing test first. Items 4 to 10 were closed on 2026-09-26 at the
 - A second adapter of each kind implemented against the interface only, outside the monorepo, as proof of the SDK.
 - Streaming download of large artifacts: today the collector loads the whole zip into memory before filtering its entries; with traces and videos from a large suite the archive has to be read in parts and only the `razo-steps.json` entries extracted.
 - **Done when:** an external adapter works with no changes in `core/`.
+
+### Backlog
+
+- Prune old resolved clusters from the state: a cluster resolved for longer than a configurable number of days (and with no recorded actions worth keeping) leaves `triage_clusters`, so the state artifact stays small over months. Until then the state grows by one entry per distinct failure ever seen.
 
 ## 12. Metrics
 
