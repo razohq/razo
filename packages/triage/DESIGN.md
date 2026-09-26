@@ -233,8 +233,8 @@ A cluster groups by signature, and several tests may share it with different his
 - Range: `lastGreenSha..firstRedSha` through `CodeContext.commitsBetween`.
 - Score: number of overlapping components between the test's `controls` and the commit's files. The reference logic is `matchControlsToDiff` in razo-cloud (private repo); `core/suspects.ts` reimplements it over `ChangedFile.patch` without importing anything from razo-cloud, with these rules:
   - A control's needles are its name and the quoted values of its selector (testid, role name). Needles shorter than 4 characters and generic ones (`btn`, `button`, `input`, `row`, `item`, `text`…) are dropped: they would turn every commit into a suspect.
-  - A needle matches only as a whole token on a `+`/`-` line: `order` does not match `reorder`.
-  - A file without a patch (binary or truncated) or a removed file whose name carries a component of the test is marked **unevaluable** and goes into the verdict's evidence, without a score. A file without a patch that names nothing is ignored.
+  - A needle matches only as a whole token on a `+`/`-` line, case-insensitively; letters, digits, `-` and `_` glue a token, so `order` matches neither `reorder` nor `order-row`.
+  - A file without a patch (binary or truncated) or a removed file whose name carries a component's tokens in sequence (`PlaceOrder.tsx`, `place_order_form.ts`; not `reorder.ts` for `Order`) is marked **unevaluable** and goes into the verdict's evidence, without a score. A file without a patch that names nothing is ignored.
 - At most 3 commits are reported per cluster.
 
 ## 7. State and memory
@@ -529,11 +529,11 @@ Anonymization: only needed if data from a third-party project is ever captured. 
 
 #### Hardening (minors deferred from the Phase 2 reviews)
 
-Each with its failing test first. Items 4 to 10 were closed on 2026-09-26 at the start of Phase 3; items 1 to 3 remain open.
+Each with its failing test first. Items 4 to 10 were closed on 2026-09-26 at the start of Phase 3; items 1 to 3 on 2026-09-26 after it merged. The block is complete.
 
-1. `suspects`: the file-name match for "unevaluable" is a substring match, and `-` and `_` count as token boundaries in `containsToken`; `order` scores `data-testid="order-row"` and `src/reorder.ts` ends up unevaluable for `Order`.
-2. `suspects`: needle matching is case-sensitive; `Place order` does not match `<button>place order</button>`.
-3. `anonymize-fixture`: a step with an empty name splices the replacement between every character of the text.
+1. `suspects`: the file-name match for "unevaluable" is a substring match, and `-` and `_` count as token boundaries in `containsToken`; `order` scores `data-testid="order-row"` and `src/reorder.ts` ends up unevaluable for `Order`. ✅
+2. `suspects`: needle matching is case-sensitive; `Place order` does not match `<button>place order</button>`. ✅
+3. `anonymize-fixture`: a step with an empty name splices the replacement between every character of the text. ✅
 4. `github-artifacts`: takes the first non-expired artifact; with sharded uploads or workflow re-runs they may mix. Artifacts named `<prefix><run_id>-<attempt>[-shard]` carry attempt information: those of the run's attempt are merged as shards, and when attempts exist but none matches `run_attempt` the run is skipped with an `attempt mismatch` warning. Only candidates with no attempt information at all are merged. ✅
 5. `config/registry`: looks plugins up by name only; a future `github` tracker would collide with the `github` code plugin. Look up by name and kind. ✅
 6. `markdown-notifier`: the signature goes in a single-backtick span; a signature containing backticks breaks it. Use a fenced block or a run of N+1 backticks. ✅
