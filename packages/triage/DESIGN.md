@@ -507,18 +507,18 @@ Anonymization: only needed if data from a third-party project is ever captured. 
 
 #### Hardening (minors deferred from the Phase 2 reviews)
 
-Each with its failing test first:
+Each with its failing test first. Items 4 to 10 were closed on 2026-09-26 at the start of Phase 3; items 1 to 3 remain open.
 
 1. `suspects`: the file-name match for "unevaluable" is a substring match, and `-` and `_` count as token boundaries in `containsToken`; `order` scores `data-testid="order-row"` and `src/reorder.ts` ends up unevaluable for `Order`.
 2. `suspects`: needle matching is case-sensitive; `Place order` does not match `<button>place order</button>`.
 3. `anonymize-fixture`: a step with an empty name splices the replacement between every character of the text.
-4. `github-artifacts`: takes the first non-expired artifact; with sharded uploads or workflow re-runs they may mix. Prefer the exact name `<prefix><run_id>-<run_attempt>` and, failing that, merge every candidate.
-5. `config/registry`: looks plugins up by name only; a future `github` tracker would collide with the `github` code plugin. Look up by name and kind.
-6. `markdown-notifier`: the signature goes in a single-backtick span; a signature containing backticks breaks it. Use a fenced block or a run of N+1 backticks.
-7. `cli`: accepts unknown flags silently (`--sinc 24h` runs with the default window). Reject them with exit code 2.
-8. `commands`: `totals.tests` counts every run of the lookback, not only those of the window.
-9. `github/api`: 403 rate-limit and 401 errors do not surface `x-ratelimit-reset` or `Retry-After` in the message.
-10. Missing tests: the collector's zip-without-reports branch, and `compare` pagination when a page brings fewer than requested but `total_commits` is larger.
+4. `github-artifacts`: takes the first non-expired artifact; with sharded uploads or workflow re-runs they may mix. Prefer the exact name `<prefix><run_id>-<run_attempt>` and, failing that, merge every candidate. ✅
+5. `config/registry`: looks plugins up by name only; a future `github` tracker would collide with the `github` code plugin. Look up by name and kind. ✅
+6. `markdown-notifier`: the signature goes in a single-backtick span; a signature containing backticks breaks it. Use a fenced block or a run of N+1 backticks. ✅
+7. `cli`: accepts unknown flags silently (`--sinc 24h` runs with the default window). Reject them with exit code 2. ✅
+8. `commands`: `totals.tests` counts every run of the lookback, not only those of the window. ✅
+9. `github/api`: 403 rate-limit and 401 errors do not surface `x-ratelimit-reset` or `Retry-After` in the message. ✅
+10. Missing tests: the collector's zip-without-reports branch, and `compare` pagination when a page brings fewer than requested but `total_commits` is larger. ✅
 
 ### Phase 4 — Public SDK
 - Documentation of the plugin contract and a template plugin.
