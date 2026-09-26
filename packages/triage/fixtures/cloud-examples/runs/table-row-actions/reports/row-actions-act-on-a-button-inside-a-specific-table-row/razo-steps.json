@@ -1,0 +1,38 @@
+{
+  "test": "act on a button inside a specific table row",
+  "file": "row-actions.spec.ts",
+  "status": "failed",
+  "durationMs": 3624,
+  "error": "TimeoutError: locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for getByTestId('exports').locator('tbody tr').filter({ hasText: 'base.3mf' }).first().getByRole('button', { name: 'Delete' })\n    - locator resolved to <button disabled>Delete</button>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n      - waiting 100ms\n    6 × waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n      - waiting 500ms\n",
+  "steps": [
+    {
+      "action": "assert-row-count",
+      "controlType": "table",
+      "name": "Exports",
+      "sentence": "Assert table \"Exports\" has 2 rows",
+      "expected": "2",
+      "selector": "[data-testid=\"exports\"]",
+      "status": "passed",
+      "timestamp": "2026-07-28T15:53:21.637Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Delete",
+      "sentence": "Click button \"Delete\" in row \"mi-llavero.3mf\"",
+      "selector": "getByTestId('exports').locator('tbody tr').filter({ hasText: 'mi-llavero.3mf' }).first() role=button[name=\"Delete\"]",
+      "status": "passed",
+      "timestamp": "2026-07-28T15:53:21.743Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Delete",
+      "sentence": "Click button \"Delete\" in row \"base.3mf\"",
+      "selector": "getByTestId('exports').locator('tbody tr').filter({ hasText: 'base.3mf' }).first() role=button[name=\"Delete\"]",
+      "status": "failed",
+      "error": "locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for getByTestId('exports').locator('tbody tr').filter({ hasText: 'base.3mf' }).first().getByRole('button', { name: 'Delete' })\n    - locator resolved to <button disabled>Delete</button>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n      - waiting 100ms\n    6 × waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n      - waiting 500ms\n",
+      "timestamp": "2026-07-28T15:53:24.775Z"
+    }
+  ]
+}

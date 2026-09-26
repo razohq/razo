@@ -1,0 +1,57 @@
+{
+  "test": "exporting a model succeeds @flaky",
+  "file": "tests/flaky.spec.ts",
+  "status": "passed",
+  "durationMs": 181,
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Type \"flaky-keychain\" into field \"Filename\"",
+      "detail": "flaky-keychain",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:56:40.785Z"
+    },
+    {
+      "action": "choose",
+      "controlType": "select",
+      "name": "Format",
+      "sentence": "Choose \"3MF\" in select \"Format\"",
+      "detail": "3MF",
+      "selector": "[data-testid=\"format\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:56:40.790Z"
+    },
+    {
+      "action": "select",
+      "controlType": "radio group",
+      "name": "Quality",
+      "sentence": "Select option \"Standard\" in radio group \"Quality\"",
+      "detail": "Standard",
+      "selector": "[data-testid=\"quality\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:56:40.825Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Click button \"Export\"",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:56:40.859Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Export status",
+      "sentence": "Assert label \"Export status\" has text \"Exported flaky-keychain.3mf (Standard)\"",
+      "expected": "Exported flaky-keychain.3mf (Standard)",
+      "selector": "[data-testid=\"status\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:56:40.864Z"
+    }
+  ]
+}

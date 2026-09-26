@@ -1,0 +1,17 @@
+{
+  "test": "a passing step emits a passed StepEvent with the grammar sentence",
+  "file": "tests/control-base.spec.ts",
+  "status": "passed",
+  "durationMs": 440,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Click button \"Export\"",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.099Z"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "test": "an anonymous control is rejected",
+  "file": "tests/control-base.spec.ts",
+  "status": "passed",
+  "durationMs": 95,
+  "steps": []
+}

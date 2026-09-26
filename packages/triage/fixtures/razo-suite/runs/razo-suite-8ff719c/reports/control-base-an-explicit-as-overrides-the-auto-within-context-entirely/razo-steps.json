@@ -1,0 +1,17 @@
+{
+  "test": "an explicit `as` overrides the auto within-context entirely",
+  "file": "tests/control-base.spec.ts",
+  "status": "passed",
+  "durationMs": 93,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Confirm",
+      "sentence": "Confirm the export",
+      "selector": "[data-testid=\"export\"] [data-testid=\"confirm\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.490Z"
+    }
+  ]
+}

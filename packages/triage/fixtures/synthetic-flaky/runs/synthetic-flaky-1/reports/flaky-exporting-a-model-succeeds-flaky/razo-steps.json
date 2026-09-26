@@ -1,0 +1,49 @@
+{
+  "test": "exporting a model succeeds @flaky",
+  "file": "tests/flaky.spec.ts",
+  "status": "failed",
+  "durationMs": 2394,
+  "error": "TimeoutError: locator.click: Timeout 2000ms exceeded.\nCall log:\n  - waiting for getByTestId('export-v0')\n",
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Type \"flaky-keychain\" into field \"Filename\"",
+      "detail": "flaky-keychain",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:56:38.269Z"
+    },
+    {
+      "action": "choose",
+      "controlType": "select",
+      "name": "Format",
+      "sentence": "Choose \"3MF\" in select \"Format\"",
+      "detail": "3MF",
+      "selector": "[data-testid=\"format\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:56:38.275Z"
+    },
+    {
+      "action": "select",
+      "controlType": "radio group",
+      "name": "Quality",
+      "sentence": "Select option \"Standard\" in radio group \"Quality\"",
+      "detail": "Standard",
+      "selector": "[data-testid=\"quality\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:56:38.317Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Click button \"Export\"",
+      "selector": "[data-testid=\"export-v0\"]",
+      "status": "failed",
+      "error": "locator.click: Timeout 2000ms exceeded.\nCall log:\n  - waiting for getByTestId('export-v0')\n",
+      "timestamp": "2026-09-25T01:56:40.322Z"
+    }
+  ]
+}

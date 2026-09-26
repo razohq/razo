@@ -1,0 +1,18 @@
+{
+  "test": "a Table<TRow> subclass returns the custom row type",
+  "file": "tests/table-row.spec.ts",
+  "status": "passed",
+  "durationMs": 62,
+  "steps": [
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "File",
+      "sentence": "Assert label \"File\" has text \"mi-llavero.3mf\" in row \"mi-llavero.3mf\"",
+      "expected": "mi-llavero.3mf",
+      "selector": "getByTestId('exports').locator('tbody tr').filter({ hasText: 'mi-llavero.3mf' }).first() css=td:nth-child(1)",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.117Z"
+    }
+  ]
+}

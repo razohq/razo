@@ -1,0 +1,22 @@
+{
+  "test": "RAZO_HEALING=fail turns a healed locator into a drift failure",
+  "file": "tests/healing.spec.ts",
+  "status": "passed",
+  "durationMs": 5096,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Healed export",
+      "sentence": "Click button \"Healed export\"",
+      "healed": {
+        "from": "[data-testid=\"healing-export-v1\"]",
+        "to": "role=button[name=\"Healed export\"]"
+      },
+      "selector": "role=button[name=\"Healed export\"]",
+      "status": "failed",
+      "error": "locator drift: [data-testid=\"healing-export-v1\"] no longer resolves; element found via role=button[name=\"Healed export\"] — update the locator",
+      "timestamp": "2026-09-25T01:49:06.102Z"
+    }
+  ]
+}

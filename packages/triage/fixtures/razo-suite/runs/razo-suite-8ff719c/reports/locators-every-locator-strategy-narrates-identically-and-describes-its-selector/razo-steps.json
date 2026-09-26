@@ -1,0 +1,67 @@
+{
+  "test": "every locator strategy narrates identically and describes its selector",
+  "file": "tests/locators.spec.ts",
+  "status": "passed",
+  "durationMs": 160,
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Type \"llavero\" into field \"Filename\"",
+      "detail": "llavero",
+      "selector": "label=\"Filename\"",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:08.103Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Click button \"Export\"",
+      "selector": "role=button[name=\"Export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:08.142Z"
+    },
+    {
+      "action": "assert-disabled",
+      "controlType": "button",
+      "name": "Upload to cloud",
+      "sentence": "Assert button \"Upload to cloud\" is disabled",
+      "expected": "disabled",
+      "selector": "text=\"Upload to cloud\"",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:08.145Z"
+    },
+    {
+      "action": "assert-contains-text",
+      "controlType": "label",
+      "name": "Export status",
+      "sentence": "Assert label \"Export status\" contains text \"Error\"",
+      "expected": "Error",
+      "selector": "css=#status",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:08.150Z"
+    },
+    {
+      "action": "assert-loaded",
+      "controlType": "image",
+      "name": "Model preview",
+      "sentence": "Assert image \"Model preview\" is loaded",
+      "expected": "loaded",
+      "selector": "alt=\"Model preview\"",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:08.176Z"
+    },
+    {
+      "action": "assert-enabled",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Assert button \"Export\" is enabled",
+      "expected": "enabled",
+      "selector": "getByTestId('export')",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:08.178Z"
+    }
+  ]
+}

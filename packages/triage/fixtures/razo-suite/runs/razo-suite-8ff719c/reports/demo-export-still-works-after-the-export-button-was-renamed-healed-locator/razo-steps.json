@@ -1,0 +1,61 @@
+{
+  "test": "export still works after the export button was renamed (healed locator)",
+  "file": "tests/demo.spec.ts",
+  "status": "passed",
+  "durationMs": 5180,
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Type \"mi-llavero\" into field \"Filename\"",
+      "detail": "mi-llavero",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.804Z"
+    },
+    {
+      "action": "choose",
+      "controlType": "select",
+      "name": "Format",
+      "sentence": "Choose \"3MF\" in select \"Format\"",
+      "detail": "3MF",
+      "selector": "[data-testid=\"format\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.812Z"
+    },
+    {
+      "action": "select",
+      "controlType": "radio group",
+      "name": "Quality",
+      "sentence": "Select option \"Standard\" in radio group \"Quality\"",
+      "detail": "Standard",
+      "selector": "[data-testid=\"quality\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.844Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Click button \"Export\"",
+      "selector": "role=button[name=\"Export\"]",
+      "healed": {
+        "from": "[data-testid=\"export-v0\"]",
+        "to": "role=button[name=\"Export\"]"
+      },
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:02.895Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Export status",
+      "sentence": "Assert label \"Export status\" has text \"Exported mi-llavero.3mf (Standard)\"",
+      "expected": "Exported mi-llavero.3mf (Standard)",
+      "selector": "[data-testid=\"status\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:02.900Z"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "test": "a failing step emits a failed StepEvent with the error and rethrows",
+  "file": "tests/control-base.spec.ts",
+  "status": "passed",
+  "durationMs": 152,
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Type \"abc\" into button \"Export\"",
+      "detail": "abc",
+      "selector": "[data-testid=\"export\"]",
+      "status": "failed",
+      "error": "element not found",
+      "timestamp": "2026-09-25T01:48:57.272Z"
+    }
+  ]
+}

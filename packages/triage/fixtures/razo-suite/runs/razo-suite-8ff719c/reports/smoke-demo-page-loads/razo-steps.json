@@ -1,0 +1,7 @@
+{
+  "test": "demo page loads",
+  "file": "tests/smoke.spec.ts",
+  "status": "passed",
+  "durationMs": 83,
+  "steps": []
+}

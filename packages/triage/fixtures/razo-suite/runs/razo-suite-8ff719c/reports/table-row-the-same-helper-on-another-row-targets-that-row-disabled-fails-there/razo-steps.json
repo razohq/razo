@@ -1,0 +1,18 @@
+{
+  "test": "the same helper on another row targets that row (disabled → fails there)",
+  "file": "tests/table-row.spec.ts",
+  "status": "passed",
+  "durationMs": 5062,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Delete",
+      "sentence": "Click button \"Delete\" in row \"base.3mf\"",
+      "selector": "getByTestId('exports').locator('tbody tr').filter({ hasText: 'base.3mf' }).first() role=button[name=\"Delete\"]",
+      "status": "failed",
+      "error": "locator.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for getByTestId('exports').locator('tbody tr').filter({ hasText: 'base.3mf' }).first().getByRole('button', { name: 'Delete' })\n    - locator resolved to <button disabled>Delete</button>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n      - waiting 100ms\n    10 × waiting for element to be visible, enabled and stable\n       - element is not enabled\n     - retrying click action\n       - waiting 500ms\n",
+      "timestamp": "2026-09-25T01:49:14.228Z"
+    }
+  ]
+}

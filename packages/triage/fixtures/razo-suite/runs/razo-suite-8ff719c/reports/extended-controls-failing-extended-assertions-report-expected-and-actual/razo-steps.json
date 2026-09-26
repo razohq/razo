@@ -1,0 +1,30 @@
+{
+  "test": "failing extended assertions report expected and actual",
+  "file": "tests/extended-controls.spec.ts",
+  "status": "passed",
+  "durationMs": 3088,
+  "steps": [
+    {
+      "action": "set",
+      "controlType": "slider",
+      "name": "Scale",
+      "sentence": "Set slider \"Scale\" to \"80\"",
+      "detail": "80",
+      "selector": "[data-testid=\"scale\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.996Z"
+    },
+    {
+      "action": "assert-value",
+      "controlType": "slider",
+      "name": "Scale",
+      "sentence": "Assert slider \"Scale\" has value \"150\"",
+      "expected": "150",
+      "actual": "80",
+      "selector": "[data-testid=\"scale\"]",
+      "status": "failed",
+      "error": "expect(locator).toHaveValue(expected) failed\n\nLocator:  getByTestId('scale')\nExpected: \"150\"\nReceived: \"80\"\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toHaveValue\" with timeout 3000ms\n  - waiting for getByTestId('scale')\n    10 × locator resolved to <input min=\"10\" max=\"200\" value=\"100\" type=\"range\" data-testid=\"scale\"/>\n       - unexpected value \"80\"\n",
+      "timestamp": "2026-09-25T01:49:01.007Z"
+    }
+  ]
+}

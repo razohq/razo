@@ -1,0 +1,156 @@
+{
+  "test": "switch, combobox, table, image, date picker and menu narrate their verbs",
+  "file": "tests/tier2-controls.spec.ts",
+  "status": "passed",
+  "durationMs": 297,
+  "steps": [
+    {
+      "action": "turn-on",
+      "controlType": "switch",
+      "name": "Auto-save",
+      "sentence": "Turn on switch \"Auto-save\"",
+      "selector": "[data-testid=\"auto-save\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.506Z"
+    },
+    {
+      "action": "assert-on",
+      "controlType": "switch",
+      "name": "Auto-save",
+      "sentence": "Assert switch \"Auto-save\" is on",
+      "expected": "on",
+      "selector": "[data-testid=\"auto-save\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.510Z"
+    },
+    {
+      "action": "turn-off",
+      "controlType": "switch",
+      "name": "Auto-save",
+      "sentence": "Turn off switch \"Auto-save\"",
+      "selector": "[data-testid=\"auto-save\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.540Z"
+    },
+    {
+      "action": "assert-off",
+      "controlType": "switch",
+      "name": "Auto-save",
+      "sentence": "Assert switch \"Auto-save\" is off",
+      "expected": "off",
+      "selector": "[data-testid=\"auto-save\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.543Z"
+    },
+    {
+      "action": "fill",
+      "controlType": "combobox",
+      "name": "Material",
+      "sentence": "Type \"PE\" into combobox \"Material\"",
+      "detail": "PE",
+      "selector": "[data-testid=\"material\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.549Z"
+    },
+    {
+      "action": "pick",
+      "controlType": "combobox",
+      "name": "Material",
+      "sentence": "Pick \"PETG\" in combobox \"Material\"",
+      "detail": "PETG",
+      "selector": "[data-testid=\"material\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.587Z"
+    },
+    {
+      "action": "assert-value",
+      "controlType": "combobox",
+      "name": "Material",
+      "sentence": "Assert combobox \"Material\" has value \"PETG\"",
+      "expected": "PETG",
+      "selector": "[data-testid=\"material\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.589Z"
+    },
+    {
+      "action": "assert-row-count",
+      "controlType": "table",
+      "name": "Export history",
+      "sentence": "Assert table \"Export history\" has 2 rows",
+      "expected": "2",
+      "selector": "[data-testid=\"export-history\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.594Z"
+    },
+    {
+      "action": "assert-row-contains",
+      "controlType": "table",
+      "name": "Export history",
+      "sentence": "Assert table \"Export history\" has a row containing \"mi-llavero\"",
+      "expected": "mi-llavero",
+      "selector": "[data-testid=\"export-history\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.597Z"
+    },
+    {
+      "action": "assert-alt",
+      "controlType": "image",
+      "name": "Model preview",
+      "sentence": "Assert image \"Model preview\" has alt text \"Model preview\"",
+      "expected": "Model preview",
+      "selector": "[data-testid=\"preview\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.602Z"
+    },
+    {
+      "action": "assert-loaded",
+      "controlType": "image",
+      "name": "Model preview",
+      "sentence": "Assert image \"Model preview\" is loaded",
+      "expected": "loaded",
+      "selector": "[data-testid=\"preview\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.616Z"
+    },
+    {
+      "action": "pick-date",
+      "controlType": "date picker",
+      "name": "Deadline",
+      "sentence": "Pick date \"2026-08-01\" in date picker \"Deadline\"",
+      "detail": "2026-08-01",
+      "selector": "[data-testid=\"deadline\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.622Z"
+    },
+    {
+      "action": "assert-value",
+      "controlType": "date picker",
+      "name": "Deadline",
+      "sentence": "Assert date picker \"Deadline\" has value \"2026-08-01\"",
+      "expected": "2026-08-01",
+      "selector": "[data-testid=\"deadline\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.625Z"
+    },
+    {
+      "action": "choose",
+      "controlType": "menu",
+      "name": "Actions",
+      "sentence": "Choose \"Archive\" in menu \"Actions\"",
+      "detail": "Archive",
+      "selector": "[data-testid=\"actions-menu\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.687Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Menu status",
+      "sentence": "Assert label \"Menu status\" has text \"Action: Archive\"",
+      "expected": "Action: Archive",
+      "selector": "[data-testid=\"menu-status\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.690Z"
+    }
+  ]
+}

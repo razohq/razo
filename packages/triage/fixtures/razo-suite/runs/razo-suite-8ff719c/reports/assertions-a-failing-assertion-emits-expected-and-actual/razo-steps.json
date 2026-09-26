@@ -1,0 +1,59 @@
+{
+  "test": "a failing assertion emits expected and actual",
+  "file": "tests/assertions.spec.ts",
+  "status": "passed",
+  "durationMs": 3686,
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Type \"llavero\" into field \"Filename\"",
+      "detail": "llavero",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.182Z"
+    },
+    {
+      "action": "choose",
+      "controlType": "select",
+      "name": "Format",
+      "sentence": "Choose \"3MF\" in select \"Format\"",
+      "detail": "3MF",
+      "selector": "[data-testid=\"format\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.205Z"
+    },
+    {
+      "action": "select",
+      "controlType": "radio group",
+      "name": "Quality",
+      "sentence": "Select option \"Draft\" in radio group \"Quality\"",
+      "detail": "Draft",
+      "selector": "[data-testid=\"quality\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.250Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Click button \"Export\"",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.300Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Export status",
+      "sentence": "Assert label \"Export status\" has text \"Exported llavero.3mf (Fine)\"",
+      "expected": "Exported llavero.3mf (Fine)",
+      "actual": "Exported llavero.3mf (Draft)",
+      "selector": "[data-testid=\"status\"]",
+      "status": "failed",
+      "error": "expect(locator).toHaveText(expected) failed\n\nLocator:  getByTestId('status')\nExpected: \"Exported llavero.3mf (Fine)\"\nReceived: \"Exported llavero.3mf (Draft)\"\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toHaveText\" with timeout 3000ms\n  - waiting for getByTestId('status')\n    10 × locator resolved to <p id=\"status\" data-testid=\"status\">Exported llavero.3mf (Draft)</p>\n       - unexpected value \"Exported llavero.3mf (Draft)\"\n",
+      "timestamp": "2026-09-25T01:49:00.351Z"
+    }
+  ]
+}

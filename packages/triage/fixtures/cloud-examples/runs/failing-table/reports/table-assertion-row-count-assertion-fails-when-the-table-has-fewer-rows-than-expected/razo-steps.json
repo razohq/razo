@@ -1,0 +1,31 @@
+{
+  "test": "row count assertion fails when the table has fewer rows than expected",
+  "file": "table-assertion.spec.ts",
+  "status": "failed",
+  "durationMs": 3336,
+  "error": "Error: expect(locator).toHaveCount(expected) failed\n\nLocator:  getByTestId('exports').locator('tbody tr')\nExpected: 5\nReceived: 2\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toHaveCount\" with timeout 3000ms\n  - waiting for getByTestId('exports').locator('tbody tr')\n    10 × locator resolved to 2 elements\n       - unexpected value \"2\"\n",
+  "steps": [
+    {
+      "action": "assert-row-contains",
+      "controlType": "table",
+      "name": "Exports",
+      "sentence": "Assert table \"Exports\" has a row containing \"mi-llavero.3mf\"",
+      "expected": "mi-llavero.3mf",
+      "selector": "[data-testid=\"exports\"]",
+      "status": "passed",
+      "timestamp": "2026-07-28T02:22:17.323Z"
+    },
+    {
+      "action": "assert-row-count",
+      "controlType": "table",
+      "name": "Exports",
+      "sentence": "Assert table \"Exports\" has 5 rows",
+      "expected": "5",
+      "actual": "2",
+      "selector": "[data-testid=\"exports\"]",
+      "status": "failed",
+      "error": "expect(locator).toHaveCount(expected) failed\n\nLocator:  getByTestId('exports').locator('tbody tr')\nExpected: 5\nReceived: 2\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toHaveCount\" with timeout 3000ms\n  - waiting for getByTestId('exports').locator('tbody tr')\n    10 × locator resolved to 2 elements\n       - unexpected value \"2\"\n",
+      "timestamp": "2026-07-28T02:22:20.341Z"
+    }
+  ]
+}

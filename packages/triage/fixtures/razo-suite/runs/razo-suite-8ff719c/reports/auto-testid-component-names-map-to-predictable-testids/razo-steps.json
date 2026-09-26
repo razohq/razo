@@ -1,0 +1,7 @@
+{
+  "test": "component names map to predictable testids",
+  "file": "tests/auto-testid.spec.ts",
+  "status": "passed",
+  "durationMs": 9,
+  "steps": []
+}

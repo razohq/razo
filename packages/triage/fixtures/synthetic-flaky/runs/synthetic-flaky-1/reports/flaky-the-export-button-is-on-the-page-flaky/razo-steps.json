@@ -1,0 +1,18 @@
+{
+  "test": "the export button is on the page @flaky",
+  "file": "tests/flaky.spec.ts",
+  "status": "passed",
+  "durationMs": 63,
+  "steps": [
+    {
+      "action": "assert-visible",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Assert button \"Export\" is visible",
+      "expected": "visible",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:56:40.937Z"
+    }
+  ]
+}

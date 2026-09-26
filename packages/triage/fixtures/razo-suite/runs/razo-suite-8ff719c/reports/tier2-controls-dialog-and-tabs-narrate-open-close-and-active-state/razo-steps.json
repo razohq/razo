@@ -1,0 +1,86 @@
+{
+  "test": "dialog and tabs narrate open, close and active state",
+  "file": "tests/tier2-controls.spec.ts",
+  "status": "passed",
+  "durationMs": 162,
+  "steps": [
+    {
+      "action": "assert-closed",
+      "controlType": "dialog",
+      "name": "Confirm export",
+      "sentence": "Assert dialog \"Confirm export\" is closed",
+      "expected": "closed",
+      "selector": "[data-testid=\"confirm-dialog\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.557Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Confirm export",
+      "sentence": "Click button \"Confirm export\"",
+      "selector": "[data-testid=\"open-confirm\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.588Z"
+    },
+    {
+      "action": "assert-open",
+      "controlType": "dialog",
+      "name": "Confirm export",
+      "sentence": "Assert dialog \"Confirm export\" is open",
+      "expected": "open",
+      "selector": "[data-testid=\"confirm-dialog\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.591Z"
+    },
+    {
+      "action": "close",
+      "controlType": "dialog",
+      "name": "Confirm export",
+      "sentence": "Close dialog \"Confirm export\"",
+      "selector": "[data-testid=\"confirm-dialog\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.597Z"
+    },
+    {
+      "action": "assert-closed",
+      "controlType": "dialog",
+      "name": "Confirm export",
+      "sentence": "Assert dialog \"Confirm export\" is closed",
+      "expected": "closed",
+      "selector": "[data-testid=\"confirm-dialog\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.610Z"
+    },
+    {
+      "action": "assert-active-tab",
+      "controlType": "tabs",
+      "name": "Settings",
+      "sentence": "Assert tabs \"Settings\" has active tab \"General\"",
+      "expected": "General",
+      "selector": "[data-testid=\"settings-tabs\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.615Z"
+    },
+    {
+      "action": "open-tab",
+      "controlType": "tabs",
+      "name": "Settings",
+      "sentence": "Open tab \"Advanced\" in tabs \"Settings\"",
+      "detail": "Advanced",
+      "selector": "[data-testid=\"settings-tabs\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.635Z"
+    },
+    {
+      "action": "assert-active-tab",
+      "controlType": "tabs",
+      "name": "Settings",
+      "sentence": "Assert tabs \"Settings\" has active tab \"Advanced\"",
+      "expected": "Advanced",
+      "selector": "[data-testid=\"settings-tabs\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.638Z"
+    }
+  ]
+}

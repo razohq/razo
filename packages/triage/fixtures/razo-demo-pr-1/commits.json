@@ -1,0 +1,46 @@
+[
+  {
+    "sha": "bea5183bd32353765569d9eb0f8546d23d3a3e8c",
+    "message": "ci: minimal event-test workflow",
+    "author": "Michel Lombardo",
+    "date": "2026-08-03T00:18:52-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/bea5183bd32353765569d9eb0f8546d23d3a3e8c",
+    "files": [
+      {
+        "filename": ".github/workflows/hello.yml",
+        "status": "added",
+        "patch": "diff --git a/.github/workflows/hello.yml b/.github/workflows/hello.yml\nnew file mode 100644\nindex 0000000..ed03b76\n--- /dev/null\n+++ b/.github/workflows/hello.yml\n@@ -0,0 +1,7 @@\n+name: hello\n+on: [push]\n+jobs:\n+  hi:\n+    runs-on: ubuntu-latest\n+    steps:\n+      - run: echo \"events work\""
+      }
+    ]
+  },
+  {
+    "sha": "71466041281432c7048553228fb8637a920b338f",
+    "message": "Express checkout: streamline order flow and slim the demo cart",
+    "author": "Michel Lombardo",
+    "date": "2026-08-02T23:18:05-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/71466041281432c7048553228fb8637a920b338f",
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex ff4eab3..db150b5 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -22,11 +22,10 @@ export const CHECKOUT_PAGE = `\n     <thead><tr><th>Item</th><th>Price</th></tr></thead>\n     <tbody>\n       <tr><td>Keyboard</td><td>$45.00</td></tr>\n-      <tr><td>Mouse</td><td>$5.00</td></tr>\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\"\n+  <button data-testid=\"place-order\" style=\"display:none\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "c0609b59a97c9b91d78987d2970f7cb966bd0e60",
+    "message": "ci: trigger workflows",
+    "author": "Michel Lombardo",
+    "date": "2026-08-03T00:12:59-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/c0609b59a97c9b91d78987d2970f7cb966bd0e60",
+    "files": []
+  },
+  {
+    "sha": "80a6543c1bc02afcdba28919fec705ce2bf6358f",
+    "message": "ci: re-run with repo connected",
+    "author": "Michel Lombardo",
+    "date": "2026-08-03T00:38:41-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/80a6543c1bc02afcdba28919fec705ce2bf6358f",
+    "files": []
+  }
+]

@@ -1,0 +1,37 @@
+{
+  "test": "placing the order confirms it",
+  "file": "tests/checkout.spec.ts",
+  "status": "passed",
+  "durationMs": 79,
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Email",
+      "sentence": "Type \"demo@razo.ar\" into field \"Email\"",
+      "detail": "demo@razo.ar",
+      "selector": "[data-testid=\"email\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:39.297Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Place order",
+      "sentence": "Click button \"Place order\"",
+      "selector": "[data-testid=\"place-order\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:39.320Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Order status",
+      "sentence": "Assert label \"Order status\" has text \"Order placed\"",
+      "expected": "Order placed",
+      "selector": "[data-testid=\"status\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:39.322Z"
+    }
+  ]
+}

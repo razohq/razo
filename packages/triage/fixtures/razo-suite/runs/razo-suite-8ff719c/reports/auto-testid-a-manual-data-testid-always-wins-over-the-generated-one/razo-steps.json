@@ -1,0 +1,7 @@
+{
+  "test": "a manual data-testid always wins over the generated one",
+  "file": "tests/auto-testid.spec.ts",
+  "status": "passed",
+  "durationMs": 3,
+  "steps": []
+}

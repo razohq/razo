@@ -1,0 +1,46 @@
+{
+  "test": "a component without manual testid is reachable by the framework",
+  "file": "tests/auto-testid.spec.ts",
+  "status": "passed",
+  "durationMs": 625,
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Nickname",
+      "sentence": "Type \"expermicid\" into field \"Nickname\"",
+      "detail": "expermicid",
+      "selector": "[data-testid=\"nickname-field\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.182Z"
+    },
+    {
+      "action": "check",
+      "controlType": "checkbox",
+      "name": "Newsletter opt-in",
+      "sentence": "Check checkbox \"Newsletter opt-in\"",
+      "selector": "[data-testid=\"newsletter-opt-in\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.223Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Save",
+      "sentence": "Click button \"Save\"",
+      "selector": "[data-testid=\"save-button\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.261Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Status message",
+      "sentence": "Assert label \"Status message\" has text \"Saved profile for expermicid\"",
+      "expected": "Saved profile for expermicid",
+      "selector": "[data-testid=\"legacy-status\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.286Z"
+    }
+  ]
+}

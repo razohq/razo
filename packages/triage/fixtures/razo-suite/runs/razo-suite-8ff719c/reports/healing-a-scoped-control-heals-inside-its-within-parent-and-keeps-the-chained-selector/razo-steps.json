@@ -1,0 +1,30 @@
+{
+  "test": "a scoped control heals inside its within parent and keeps the chained selector",
+  "file": "tests/healing.spec.ts",
+  "status": "passed",
+  "durationMs": 5159,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Confirm export",
+      "sentence": "Click button \"Confirm export\"",
+      "selector": "[data-testid=\"open-confirm\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:06.229Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Yes, export",
+      "sentence": "Click button \"Yes, export\" in dialog \"Confirm export\"",
+      "selector": "[data-testid=\"confirm-dialog\"] role=button[name=\"Yes, export\"]",
+      "healed": {
+        "from": "[data-testid=\"confirm-dialog\"] [data-testid=\"confirm-yes-v1\"]",
+        "to": "[data-testid=\"confirm-dialog\"] role=button[name=\"Yes, export\"]"
+      },
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.272Z"
+    }
+  ]
+}

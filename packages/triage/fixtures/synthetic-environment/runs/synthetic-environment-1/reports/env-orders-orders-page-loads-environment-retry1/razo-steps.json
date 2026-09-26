@@ -1,0 +1,8 @@
+{
+  "test": "orders page loads @environment",
+  "file": "tests/env-orders.spec.ts",
+  "status": "failed",
+  "durationMs": 1105,
+  "error": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:65531/orders\nCall log:\n  - navigating to \"http://127.0.0.1:65531/orders\", waiting until \"load\"\n",
+  "steps": []
+}

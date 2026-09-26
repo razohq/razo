@@ -1,0 +1,21 @@
+{
+  "test": "a stale testid heals through the implicit role fallback",
+  "file": "tests/healing.spec.ts",
+  "status": "passed",
+  "durationMs": 5126,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Healed export",
+      "sentence": "Click button \"Healed export\"",
+      "selector": "role=button[name=\"Healed export\"]",
+      "healed": {
+        "from": "[data-testid=\"healing-export-v1\"]",
+        "to": "role=button[name=\"Healed export\"]"
+      },
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:05.495Z"
+    }
+  ]
+}

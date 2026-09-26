@@ -1,0 +1,8 @@
+{
+  "test": "profile page loads @environment",
+  "file": "tests/env-profile.spec.ts",
+  "status": "failed",
+  "durationMs": 1110,
+  "error": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:65531/profile\nCall log:\n  - navigating to \"http://127.0.0.1:65531/profile\", waiting until \"load\"\n",
+  "steps": []
+}

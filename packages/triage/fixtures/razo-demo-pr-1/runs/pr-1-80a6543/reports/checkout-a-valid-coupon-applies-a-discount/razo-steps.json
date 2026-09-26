@@ -1,0 +1,47 @@
+{
+  "test": "a valid coupon applies a discount",
+  "file": "tests/checkout.spec.ts",
+  "status": "passed",
+  "durationMs": 142,
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Email",
+      "sentence": "Type \"demo@razo.ar\" into field \"Email\"",
+      "detail": "demo@razo.ar",
+      "selector": "[data-testid=\"email\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:40.527Z"
+    },
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Coupon",
+      "sentence": "Type \"SAVE10\" into field \"Coupon\"",
+      "detail": "SAVE10",
+      "selector": "[data-testid=\"coupon\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:40.531Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Apply coupon",
+      "sentence": "Click button \"Apply coupon\"",
+      "selector": "[data-testid=\"apply-coupon\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:40.572Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Discount",
+      "sentence": "Assert label \"Discount\" has text \"-$5.00\"",
+      "expected": "-$5.00",
+      "selector": "[data-testid=\"discount\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:40.576Z"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "test": "placing the order confirms it",
+  "file": "tests/checkout.spec.ts",
+  "status": "failed",
+  "durationMs": 5117,
+  "error": "TimeoutError: locator.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for getByTestId('place-order')\n    - locator resolved to <button data-testid=\"place-order\" onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">↵    Place order↵  </button>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    10 × waiting for element to be visible, enabled and stable\n       - element is not visible\n     - retrying click action\n       - waiting 500ms\n",
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Email",
+      "sentence": "Type \"demo@razo.ar\" into field \"Email\"",
+      "detail": "demo@razo.ar",
+      "selector": "[data-testid=\"email\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:52:46.225Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Place order",
+      "sentence": "Click button \"Place order\"",
+      "selector": "[data-testid=\"place-order\"]",
+      "status": "failed",
+      "error": "locator.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for getByTestId('place-order')\n    - locator resolved to <button data-testid=\"place-order\" onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">↵    Place order↵  </button>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    10 × waiting for element to be visible, enabled and stable\n       - element is not visible\n     - retrying click action\n       - waiting 500ms\n",
+      "timestamp": "2026-09-25T01:52:51.234Z"
+    }
+  ]
+}

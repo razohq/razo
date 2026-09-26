@@ -8,6 +8,9 @@
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "triage": "./dist/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -35,9 +38,14 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test test/*.test.mjs"
   },
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "js-yaml": "^4.3.0"
+  },
   "devDependencies": {
     "@types/node": "^26.1.1",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@types/js-yaml": "^4.0.9"
   }
 }

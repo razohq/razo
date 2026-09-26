@@ -1,0 +1,57 @@
+{
+  "test": "tooltip, editor and expectCount narrate their verbs",
+  "file": "tests/tier3.spec.ts",
+  "status": "passed",
+  "durationMs": 142,
+  "steps": [
+    {
+      "action": "assert-tooltip",
+      "controlType": "tooltip",
+      "name": "Format info",
+      "sentence": "Assert tooltip \"Format info\" says \"3MF keeps colors and materials\"",
+      "expected": "3MF keeps colors and materials",
+      "selector": "[data-testid=\"format-info\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.970Z"
+    },
+    {
+      "action": "fill",
+      "controlType": "editor",
+      "name": "Description",
+      "sentence": "Type \"Two-color keychain, PETG\" into editor \"Description\"",
+      "detail": "Two-color keychain, PETG",
+      "selector": "[data-testid=\"description\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.976Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "editor",
+      "name": "Description",
+      "sentence": "Assert editor \"Description\" has text \"Two-color keychain, PETG\"",
+      "expected": "Two-color keychain, PETG",
+      "selector": "[data-testid=\"description\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.978Z"
+    },
+    {
+      "action": "clear",
+      "controlType": "editor",
+      "name": "Description",
+      "sentence": "Clear editor \"Description\"",
+      "selector": "[data-testid=\"description\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.983Z"
+    },
+    {
+      "action": "assert-count",
+      "controlType": "label",
+      "name": "Material option",
+      "sentence": "Assert label \"Material option\" appears 3 times",
+      "expected": "3",
+      "selector": "[data-testid=\"material-option\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.985Z"
+    }
+  ]
+}

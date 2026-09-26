@@ -1,0 +1,97 @@
+{
+  "test": "assertions narrate what was expected",
+  "file": "tests/assertions.spec.ts",
+  "status": "passed",
+  "durationMs": 661,
+  "steps": [
+    {
+      "action": "assert-visible",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Assert button \"Export\" is visible",
+      "expected": "visible",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.140Z"
+    },
+    {
+      "action": "assert-enabled",
+      "controlType": "button",
+      "name": "Export",
+      "sentence": "Assert button \"Export\" is enabled",
+      "expected": "enabled",
+      "selector": "[data-testid=\"export\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.160Z"
+    },
+    {
+      "action": "assert-disabled",
+      "controlType": "button",
+      "name": "Upload to cloud",
+      "sentence": "Assert button \"Upload to cloud\" is disabled",
+      "expected": "disabled",
+      "selector": "[data-testid=\"upload\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.166Z"
+    },
+    {
+      "action": "check",
+      "controlType": "checkbox",
+      "name": "Include supports",
+      "sentence": "Check checkbox \"Include supports\"",
+      "selector": "[data-testid=\"include-supports\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.226Z"
+    },
+    {
+      "action": "assert-checked",
+      "controlType": "checkbox",
+      "name": "Include supports",
+      "sentence": "Assert checkbox \"Include supports\" is checked",
+      "expected": "checked",
+      "selector": "[data-testid=\"include-supports\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.240Z"
+    },
+    {
+      "action": "select",
+      "controlType": "radio group",
+      "name": "Quality",
+      "sentence": "Select option \"Fine\" in radio group \"Quality\"",
+      "detail": "Fine",
+      "selector": "[data-testid=\"quality\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.278Z"
+    },
+    {
+      "action": "assert-selected",
+      "controlType": "radio group",
+      "name": "Quality",
+      "sentence": "Assert radio group \"Quality\" has option \"Fine\" selected",
+      "expected": "Fine",
+      "selector": "[data-testid=\"quality\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.283Z"
+    },
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Type \"llavero\" into field \"Filename\"",
+      "detail": "llavero",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.297Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Assert field \"Filename\" has text \"llavero\"",
+      "expected": "llavero",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:48:57.324Z"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "test": "failing tier-3 assertions report expected and actual",
+  "file": "tests/tier3.spec.ts",
+  "status": "passed",
+  "durationMs": 6154,
+  "steps": [
+    {
+      "action": "assert-count",
+      "controlType": "label",
+      "name": "Material option",
+      "sentence": "Assert label \"Material option\" appears 5 times",
+      "expected": "5",
+      "actual": "3",
+      "selector": "[data-testid=\"material-option\"]",
+      "status": "failed",
+      "error": "expect(locator).toHaveCount(expected) failed\n\nLocator:  getByTestId('material-option')\nExpected: 5\nReceived: 3\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toHaveCount\" with timeout 3000ms\n  - waiting for getByTestId('material-option')\n    10 × locator resolved to 3 elements\n       - unexpected value \"3\"\n",
+      "timestamp": "2026-09-25T01:49:15.054Z"
+    },
+    {
+      "action": "assert-tooltip",
+      "controlType": "tooltip",
+      "name": "Format info",
+      "sentence": "Assert tooltip \"Format info\" says \"wrong tip\"",
+      "expected": "wrong tip",
+      "actual": "3MF keeps colors and materials",
+      "selector": "[data-testid=\"format-info\"]",
+      "status": "failed",
+      "error": "expect(locator).toHaveText(expected) failed\n\nLocator:  locator('#format-tip')\nExpected: \"wrong tip\"\nReceived: \"3MF keeps colors and materials\"\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toHaveText\" with timeout 3000ms\n  - waiting for locator('#format-tip')\n    10 × locator resolved to <span role=\"tooltip\" id=\"format-tip\">3MF keeps colors and materials</span>\n       - unexpected value \"3MF keeps colors and materials\"\n",
+      "timestamp": "2026-09-25T01:49:18.132Z"
+    }
+  ]
+}

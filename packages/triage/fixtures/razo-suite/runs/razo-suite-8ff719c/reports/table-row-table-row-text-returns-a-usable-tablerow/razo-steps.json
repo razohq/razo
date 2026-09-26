@@ -1,0 +1,17 @@
+{
+  "test": "Table.row(text) returns a usable TableRow",
+  "file": "tests/table-row.spec.ts",
+  "status": "passed",
+  "durationMs": 82,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Delete",
+      "sentence": "Click button \"Delete\" in row \"mi-llavero.3mf\"",
+      "selector": "getByTestId('exports').locator('tbody tr').filter({ hasText: 'mi-llavero.3mf' }).first() role=button[name=\"Delete\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:10.804Z"
+    }
+  ]
+}

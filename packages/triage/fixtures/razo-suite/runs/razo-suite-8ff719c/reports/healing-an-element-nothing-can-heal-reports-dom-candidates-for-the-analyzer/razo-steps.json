@@ -1,0 +1,25 @@
+{
+  "test": "an element nothing can heal reports DOM candidates for the analyzer",
+  "file": "tests/healing.spec.ts",
+  "status": "passed",
+  "durationMs": 5132,
+  "steps": [
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "No Such Button Anywhere",
+      "sentence": "Click button \"No Such Button Anywhere\"",
+      "domCandidates": [
+        "role=button name=\"\"",
+        "role=button name=\"Export\"",
+        "role=button name=\"Upload to cloud\"",
+        "role=button name=\"Confirm export…\"",
+        "role=button name=\"What is 3MF?\""
+      ],
+      "selector": "[data-testid=\"gone-forever\"]",
+      "status": "failed",
+      "error": "locator.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for getByTestId('gone-forever')\n",
+      "timestamp": "2026-09-25T01:49:10.637Z"
+    }
+  ]
+}

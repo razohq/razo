@@ -1,0 +1,27 @@
+{
+  "test": "input and checkbox helpers scope to the row and narrate row context",
+  "file": "tests/table-row.spec.ts",
+  "status": "passed",
+  "durationMs": 103,
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Qty",
+      "sentence": "Type \"3\" into field \"Qty\" in row \"Widget\"",
+      "detail": "3",
+      "selector": "getByTestId('cart').locator('tbody tr').filter({ hasText: 'Widget' }).first() role=textbox[name=\"Qty\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:10.999Z"
+    },
+    {
+      "action": "check",
+      "controlType": "checkbox",
+      "name": "Select",
+      "sentence": "Check checkbox \"Select\" in row \"Widget\"",
+      "selector": "getByTestId('cart').locator('tbody tr').filter({ hasText: 'Widget' }).first() role=checkbox[name=\"Select\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.037Z"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "test": "universal assertions narrate expected state",
+  "file": "tests/tier1-actions.spec.ts",
+  "status": "passed",
+  "durationMs": 98,
+  "steps": [
+    {
+      "action": "assert-hidden",
+      "controlType": "label",
+      "name": "Help section",
+      "sentence": "Assert label \"Help section\" is hidden",
+      "expected": "hidden",
+      "selector": "[data-testid=\"help-section\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.363Z"
+    },
+    {
+      "action": "focus",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Focus field \"Filename\"",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.367Z"
+    },
+    {
+      "action": "assert-focused",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Assert field \"Filename\" is focused",
+      "expected": "focused",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.371Z"
+    },
+    {
+      "action": "assert-empty",
+      "controlType": "field",
+      "name": "Filename",
+      "sentence": "Assert field \"Filename\" is empty",
+      "expected": "empty",
+      "selector": "[data-testid=\"filename\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.377Z"
+    },
+    {
+      "action": "assert-contains-text",
+      "controlType": "link",
+      "name": "Help",
+      "sentence": "Assert link \"Help\" contains text \"Help\"",
+      "expected": "Help",
+      "selector": "[data-testid=\"help-link\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.381Z"
+    },
+    {
+      "action": "assert-attribute",
+      "controlType": "button",
+      "name": "Upload to cloud",
+      "sentence": "Assert button \"Upload to cloud\" attribute \"disabled\" is \"\"",
+      "detail": "disabled",
+      "expected": "",
+      "selector": "[data-testid=\"upload\"]",
+      "status": "passed",
+      "timestamp": "2026-09-25T01:49:11.385Z"
+    }
+  ]
+}

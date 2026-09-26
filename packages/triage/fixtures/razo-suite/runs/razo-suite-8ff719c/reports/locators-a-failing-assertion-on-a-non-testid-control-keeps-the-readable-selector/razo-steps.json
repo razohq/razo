@@ -1,0 +1,20 @@
+{
+  "test": "a failing assertion on a non-testid control keeps the readable selector",
+  "file": "tests/locators.spec.ts",
+  "status": "passed",
+  "durationMs": 3074,
+  "steps": [
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Export status",
+      "sentence": "Assert label \"Export status\" has text \"Exported\"",
+      "expected": "Exported",
+      "actual": "",
+      "selector": "css=#status",
+      "status": "failed",
+      "error": "expect(locator).toHaveText(expected) failed\n\nLocator:  locator('#status')\nExpected: \"Exported\"\nReceived: \"\"\nTimeout:  3000ms\n\nCall log:\n  - Expect \"toHaveText\" with timeout 3000ms\n  - waiting for locator('#status')\n    10 × locator resolved to <p id=\"status\" data-testid=\"status\"></p>\n       - unexpected value \"\"\n",
+      "timestamp": "2026-09-25T01:49:11.383Z"
+    }
+  ]
+}
