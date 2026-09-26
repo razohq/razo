@@ -100,12 +100,18 @@ export async function pullGithubArtifacts(options: PullOptions): Promise<PullSum
       summary.skipped.push({ runId, reason: 'no artifact' });
       return;
     }
-    const artifact = candidates.find((a) => !a.expired);
-    if (!artifact) {
+    // The artifact named after this exact attempt wins; otherwise every candidate is
+    // a shard of the same run and they are merged.
+    const exact = candidates.filter((a) => a.name === `${prefix}${run.id}-${run.run_attempt}`);
+    const chosen = (exact.length > 0 ? exact : candidates).filter((a) => !a.expired);
+    if (chosen.length === 0) {
       summary.skipped.push({ runId, reason: 'expired' });
       return;
     }
-    const reports = reportsFromZip(await api.getBinary(`/repos/${repo}/actions/artifacts/${artifact.id}/zip`));
+    const reports: ReturnType<typeof reportsFromZip> = [];
+    for (const artifact of chosen) {
+      reports.push(...reportsFromZip(await api.getBinary(`/repos/${repo}/actions/artifacts/${artifact.id}/zip`)));
+    }
     if (reports.length === 0) {
       // razo writes one report per test, so an archive without any is not razo's.
       summary.skipped.push({ runId, reason: 'no artifact' });
