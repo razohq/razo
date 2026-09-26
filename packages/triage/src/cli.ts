@@ -18,6 +18,11 @@ function fail(message: string): never {
   process.exit(2);
 }
 
+const FLAGS: Record<string, Set<string>> = {
+  run: new Set(['config', 'since', 'lookback', 'now']),
+  pull: new Set(['config', 'since', 'data-dir', 'now']),
+};
+
 function parseArgs(argv: string[]): { command?: string; flags: Record<string, string> } {
   const flags: Record<string, string> = {};
   let command: string | undefined;
@@ -27,8 +32,11 @@ function parseArgs(argv: string[]): { command?: string; flags: Record<string, st
       console.log(USAGE);
       process.exit(0);
     }
-    if (a.startsWith('--')) flags[a.slice(2)] = argv[++i] ?? '';
-    else if (!command) command = a;
+    if (a.startsWith('--')) {
+      const name = a.slice(2);
+      if (!command || !FLAGS[command]?.has(name)) fail(`unknown flag: --${name}`);
+      flags[name] = argv[++i] ?? '';
+    } else if (!command) command = a;
     else fail(`unexpected argument: ${a}`);
   }
   return { command, flags };

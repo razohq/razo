@@ -36,9 +36,14 @@ export async function runTriage(config: TriageConfig, options: RunOptions): Prom
   const { source, code, notifiers } = instantiate(config);
   const runs = await source.fetchRuns(options.lookback);
   const items = await analyzeWindow(runs, code, config.rules, { baseBranch: config.baseBranch, since: options.since, until: options.now });
+  // Totals describe the window; the lookback only feeds history.
+  const windowRuns = runs.filter((run) => {
+    const at = Date.parse(run.finishedAt);
+    return at >= options.since.getTime() && at <= options.now.getTime();
+  });
   const report = buildReport({
     items,
-    runs,
+    runs: windowRuns,
     window: { from: options.since.toISOString(), to: options.now.toISOString() },
     generatedAt: options.now.toISOString(),
   });
