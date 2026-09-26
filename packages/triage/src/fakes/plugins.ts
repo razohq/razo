@@ -4,6 +4,7 @@ import { MemoryCodeContext, type MemoryCommit } from './memory-code';
 import { MemoryNotifier } from './memory-notifier';
 import { MemoryResultSource } from './memory-source';
 import { MemoryIssueTracker } from './memory-tracker';
+import { MemoryStore } from './memory-store';
 
 /** Minimal structural schema: a plain object whose listed keys, when present, are arrays. */
 function objectSchema<Config extends object>(arrayKeys: Array<keyof Config & string>): ConfigSchema<Config> {
@@ -45,6 +46,13 @@ export const memoryTrackerPlugin: TriagePlugin<
   kind: 'tracker',
   configSchema: objectSchema(['issues']),
   create: (config) => new MemoryIssueTracker('memory-tracker', config.issues ?? []),
+};
+
+export const memoryStorePlugin: TriagePlugin<'store', Record<string, never>> = {
+  name: 'memory-store',
+  kind: 'store',
+  configSchema: objectSchema([]),
+  create: () => new MemoryStore(),
 };
 
 export const memoryNotifierPlugin: TriagePlugin<'notifier', Record<string, never>> = {

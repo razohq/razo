@@ -149,3 +149,27 @@ describe('the plugin kit catches bad plugins', () => {
     await assert.rejects(shape.run());
   });
 });
+
+// --- TriageStore (Phase 3) ---
+import { storeContract } from '../dist/contract.js';
+import { MemoryStore, memoryStorePlugin } from '../dist/fakes.js';
+
+describe('MemoryStore passes the TriageStore contract', () => {
+  runContract(storeContract(() => new MemoryStore()), test);
+});
+
+describe('memoryStorePlugin passes the plugin contract', () => {
+  runContract(pluginContract(memoryStorePlugin, {}), test);
+});
+
+describe('the TriageStore kit catches a store that forgets', () => {
+  test('the round-trip case fails for a store whose loadClusters returns nothing', async () => {
+    const amnesic = () => ({
+      lastTriageAt: async () => null, loadClusters: async () => [], saveClusters: async () => {},
+      recordRun: async () => {}, recordAction: async () => {}, actionsFor: async () => [],
+    });
+    const roundTrip = storeContract(amnesic).find((c) => /saveClusters/.test(c.name));
+    assert.ok(roundTrip);
+    await assert.rejects(roundTrip.run());
+  });
+});

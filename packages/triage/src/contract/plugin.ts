@@ -2,13 +2,14 @@ import assert from 'assert/strict';
 import type { PluginKind, TriagePlugin } from '../ports/plugin';
 import type { ContractCase } from './case';
 
-const KINDS: readonly PluginKind[] = ['source', 'code', 'tracker', 'notifier'];
+const KINDS: readonly PluginKind[] = ['source', 'code', 'tracker', 'notifier', 'store'];
 
 const METHODS: Record<PluginKind, string[]> = {
   source: ['fetchRuns'],
   code: ['commitsBetween', 'changedFiles'],
   tracker: ['findBySignature', 'create', 'comment'],
   notifier: ['send'],
+  store: ['lastTriageAt', 'loadClusters', 'saveClusters', 'recordRun', 'recordAction', 'actionsFor'],
 };
 
 const KEBAB = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
@@ -26,7 +27,7 @@ export function pluginContract(plugin: TriagePlugin<PluginKind, any>, validConfi
       },
     },
     {
-      name: 'kind is source, code, tracker or notifier',
+      name: 'kind is source, code, tracker, notifier or store',
       async run() {
         assert.ok(KINDS.includes(plugin.kind), `unknown kind: ${plugin.kind}`);
       },
