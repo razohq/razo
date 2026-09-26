@@ -106,6 +106,8 @@ Phase 2a adds `adapters/razo-source`, a pure reader of `<dataDir>/runs/<runId>/{
 
 Phase 2b adds the network edge: `adapters/github` over one `GitHubApi` with an injectable `fetch` (tests replay canned responses, nothing touches the network), `collectors/github-artifacts` behind `triage pull`, the offline `commits-json` code adapter, the Markdown notifier (writes `.md` and `.json`; `readReports` reads them back for the contract kit), YAML config with `${VAR}` expansion and a plugin registry in `config/`, and the CLI: `src/cli.ts` only parses argv, `src/commands.ts` holds `runTriage` and `runPull` so tests drive them without spawning. Config shape and token permissions are in `packages/triage/README.md`. When chaining test runs in a shell, gate on the exit code of `node --test`, not on `grep` output.
 
+Phase 3 adds memory: the `TriageStore` port (`ports/store.ts`, kit in `contract/store.ts`), the `json-file` adapter (`adapters/json-store`, atomic writes, `schemaVersion`, signature algorithm version), `core/state.ts` (`reconcileClusters`: previous state, novelty, resolution), and CI persistence through the `razo-triage-state` artifact (`collectors/state-artifact.ts`, restored by `triage pull` from base-branch runs only; the workflow uploads it). When `errorSignature` changes what it collapses, bump `SIGNATURE_ALGORITHM_VERSION`.
+
 ## Conventions
 
 - Contributions need a changeset (`npx changeset`) with the PR. The release workflow publishes on merge to `main`.

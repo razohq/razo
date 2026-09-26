@@ -278,11 +278,14 @@ The `store` contract kit verifies that `saveClusters` followed by `loadClusters`
 2. `triage run` reads and writes the store file as usual.
 3. The workflow uploads the store file as `razo-triage-state` after `triage run` with `actions/upload-artifact`. GitHub's REST API cannot create artifacts from outside the runner, so this step belongs to the workflow, not to the CLI. The package README has the snippet.
 
-State rules:
+State rules (`core/state.ts`, applied by `triage run` between `classify` and `report` when a store is configured):
 
-- A cluster in state `ignored` or `flaky` is not reported as new; it appears in a compact section.
-- A cluster with no failures for `state.resolveAfterRuns` runs (default 3) becomes `resolved`.
-- A test marked `flaky` `flaky.quarantineSuggestAfter` times (default 3) produces the suggested action `quarantine`.
+- The store keeps what people and time decided about a known cluster (`state`, `firstSeenAt`, `linkedIssue`); the rules refresh everything else each morning. A cluster absent from the run is kept as it was, so an ignored cluster stays ignored across quiet mornings and when it reappears.
+- Novelty: a cluster the store never saw is `new`; a known one is `recurring`.
+- A cluster in state `ignored` or `flaky` is not reported as new; it appears in a compact "Known" section of the report, with its days open.
+- A cluster with no failures for `state.resolveAfterRuns` base-branch runs (default 3) after its last failure becomes `resolved`. PR-branch runs do not count. A resolved cluster that fails again comes back as `new` and `recurring`, keeping its history.
+- A cluster marked `flaky` `flaky.quarantineSuggestAfter` times (default 3, counted from recorded `mark-flaky` actions) gets the proposed action `quarantine` instead of `mark-flaky`.
+- The state records the signature algorithm version; a build with another version warns that previous clusters will not be recognized.
 
 ## 8. Integrations (ports)
 
@@ -409,6 +412,7 @@ packages/triage/
       suspects.ts         needlesFor(), findSuspects() → { suspects, unevaluable }, commitsInRange()
       classify.ts         DEFAULT_RULES, classify(): section 6 rules and mixed-cluster resolution
       pipeline.ts         analyzeWindow(): cluster → history → suspects → classify, window [since, until]
+      state.ts            mergeClusters(), reconcileClusters(): previous state, novelty, resolution
       report.ts           buildReport(): TriageReport with verdicts and proposed actions
     ports/
       result-source.ts
@@ -516,10 +520,11 @@ Anonymization: only needed if data from a third-party project is ever captured. 
 - razo-demo: upload `test-results` as an artifact on every run with `if: always()`, one name per run and explicit retention, so real history exists for `triage pull` to read.
 
 ### Phase 3 — Local memory
-- `TriageStore` port, its contract kit and the `json-file` adapter ✅ (2026-09-26); cluster states, novelty and days open.
-- State persisted in CI as the `razo-triage-state` artifact: restored by `triage pull`, uploaded by the workflow after `triage run` ✅ (2026-09-26).
+- `TriageStore` port, its contract kit and the `json-file` adapter ✅ (2026-09-26).
+- Cluster states, novelty, days open and resolution ✅ (2026-09-26); see the state rules in section 7.
+- State persisted in CI as the `razo-triage-state` artifact: restored by `triage pull` from base-branch runs only, uploaded by the workflow after scheduled `triage run`s; `--reset-state` starts over on purpose ✅ (2026-09-26).
 - Workflow re-runs as flaky evidence: the collector stores `run_attempt` in `run.json` and, when the same SHA has more than one workflow attempt, `classify` adds `retry` evidence to the cluster. Today `/actions/runs` lists only the latest attempt; earlier ones have to be fetched through `/actions/runs/{id}/attempts/{n}`.
-- **Done when:** two consecutive days do not repeat an already seen cluster as "new".
+- **Done when:** two consecutive days do not repeat an already seen cluster as "new". To be confirmed against real nightly runs of razo-demo; the `runTriage` test over the razo-demo fixture already shows the second morning reporting the cluster as recurring.
 
 #### Hardening (minors deferred from the Phase 2 reviews)
 
