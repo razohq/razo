@@ -20,6 +20,8 @@ export interface TriageConfig {
   source: PluginRef;
   code: PluginRef;
   notifiers: PluginRef[];
+  /** Optional memory between runs. Without it every morning starts from scratch. */
+  store?: PluginRef;
   pull?: PullConfig;
   rules: RulesConfig;
 }
@@ -82,6 +84,7 @@ export function parseConfig(raw: unknown, env: Env = process.env): TriageConfig 
     notifiers: ((cfg.notifiers as unknown[] | undefined) ?? []).map((n, i) => pluginRef(n, `notifiers[${i}]`)),
     rules: mergeRules(cfg.rules),
   };
+  if (cfg.store !== undefined) out.store = pluginRef(cfg.store, 'store');
   if (cfg.pull !== undefined) {
     if (!isObject(cfg.pull)) throw new Error('pull: expected { repo, token, workflow?, branch?, artifactPrefix? }');
     let repoAndToken: { repo: string; token: string };

@@ -1,24 +1,27 @@
 import { commitsJsonCodePlugin } from '../adapters/commits-json';
 import { githubCodePlugin } from '../adapters/github';
+import { jsonFileStorePlugin } from '../adapters/json-store';
 import { markdownNotifierPlugin } from '../adapters/markdown-notifier';
 import { razoSourcePlugin } from '../adapters/razo-source';
 import type { CodeContext } from '../ports/code-context';
 import type { Notifier } from '../ports/notifier';
 import type { AdapterOf, PluginKind, TriagePlugin } from '../ports/plugin';
 import type { ResultSource } from '../ports/result-source';
+import type { TriageStore } from '../ports/store';
 import type { PluginRef, TriageConfig } from './schema';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyPlugin = TriagePlugin<PluginKind, any>;
 
 export const builtinPlugins: AnyPlugin[] = [
-  razoSourcePlugin, githubCodePlugin, commitsJsonCodePlugin, markdownNotifierPlugin,
+  razoSourcePlugin, githubCodePlugin, commitsJsonCodePlugin, markdownNotifierPlugin, jsonFileStorePlugin,
 ];
 
 export interface Adapters {
   source: ResultSource;
   code: CodeContext;
   notifiers: Notifier[];
+  store?: TriageStore;
 }
 
 /** Looks a plugin up by kind and name: two kinds may share a name (a `github` code adapter and a `github` tracker). */
@@ -44,5 +47,6 @@ export function instantiate(config: TriageConfig, plugins: AnyPlugin[] = builtin
     notifiers: config.notifiers
       .filter((n) => n.enabled !== false)
       .map((n, i) => build(n, 'notifier', plugins, `notifiers[${i}]`)),
+    ...(config.store ? { store: build(config.store, 'store', plugins, 'store') } : {}),
   };
 }

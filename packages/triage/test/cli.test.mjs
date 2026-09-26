@@ -113,3 +113,25 @@ test('hardening: totals.tests counts the tests of the window, not of the whole l
   const { report } = await runTriage(cfg, { now, since: parseDuration('2d', now), lookback: parseDuration('30d', now) });
   assert.equal(report.totals.tests, 1, 'only the run inside the window counts');
 });
+
+test('store: runTriage records the run and saves the clusters when a store is configured', async () => {
+  const outDir = tmp();
+  const stateFile = path.join(tmp(), 'triage-state.json');
+  const cfg = parseConfig({
+    source: { plugin: 'razo-source', config: { dataDir: DEMO } },
+    code: { plugin: 'commits-json', config: { path: path.join(DEMO, 'commits.json') } },
+    notifiers: [{ plugin: 'markdown', config: { outDir } }],
+    store: { plugin: 'json-file', config: { path: stateFile } },
+  }, {});
+  const now = new Date('2026-08-04T07:00:00Z');
+  const result = await runTriage(cfg, { now, since: parseDuration('2d', now), lookback: parseDuration('30d', now) });
+  assert.equal(result.stored, true);
+  const { JsonFileStore } = await import('../dist/index.js');
+  const store = new JsonFileStore(stateFile);
+  assert.equal((await store.lastTriageAt()).toISOString(), now.toISOString());
+  const clusters = await store.loadClusters();
+  assert.equal(clusters.length, 2);
+  assert.ok(clusters.some((c) => c.category === 'stale-test'));
+  const without = await runTriage(demoConfig(tmp()), { now, since: parseDuration('2d', now), lookback: parseDuration('30d', now) });
+  assert.equal(without.stored, false);
+});

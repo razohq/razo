@@ -65,8 +65,9 @@ async function main(): Promise<void> {
     const dataDir = flags['data-dir'] ?? sourceDir;
     if (!dataDir) fail('no data dir: pass --data-dir or configure source.config.dataDir');
     const summary = await runPull(config, { since, dataDir, log: (line) => console.error(line) });
+    if (summary.state && !summary.state.restored) console.log('warning: no triage state artifact found, starting from an empty state');
     console.log(`pulled ${summary.pulled.length} run(s), skipped ${summary.skipped.length}`);
-    for (const s of summary.skipped) console.log(`  skipped ${s.runId}: ${s.reason}`);
+    for (const s of summary.skipped) console.log(`  skipped ${s.runId}: ${s.reason}${s.detail ? ` (${s.detail})` : ''}`);
     return;
   }
 
@@ -78,7 +79,7 @@ async function main(): Promise<void> {
     const title = first.includes('::') ? first.split('::')[1] : first;
     console.log(`  ${item.verdict.category} · ${item.verdict.confidence} · ${title}`);
   }
-  console.log(`sent to ${result.notified} notifier${result.notified === 1 ? '' : 's'}`);
+  console.log(`sent to ${result.notified} notifier${result.notified === 1 ? '' : 's'}${result.stored ? ', state recorded' : ''}`);
 }
 
 main().catch((error) => {

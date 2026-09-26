@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { parseConfig, loadConfig, instantiate, builtinPlugins, DEFAULT_RULES, RazoSource, MarkdownNotifier, CommitsJsonCodeContext } from '../dist/index.js';
+import { parseConfig, loadConfig, instantiate, builtinPlugins, DEFAULT_RULES, RazoSource, MarkdownNotifier, CommitsJsonCodeContext, JsonFileStore } from '../dist/index.js';
 
 const minimal = {
   source: { plugin: 'razo-source', config: { dataDir: './.razo' } },
@@ -106,4 +106,13 @@ test('hardening: plugins are looked up by kind and name, so two kinds may share 
   const built = instantiate(cfg, [githubTracker, ...builtinPlugins]);
   assert.equal(typeof built.code.commitsBetween, 'function', 'the code plugin named github was chosen, not the tracker');
   assert.throws(() => instantiate(parseConfig({ ...minimal, code: { plugin: 'markdown', config: {} } }, {})), /markdown.*notifier.*code|no code plugin named "markdown"/);
+});
+
+test('store: optional; json-file builds a JsonFileStore, absent means no store', () => {
+  const without = instantiate(parseConfig(minimal, {}));
+  assert.equal(without.store, undefined);
+  const cfg = parseConfig({ ...minimal, store: { plugin: 'json-file', config: { path: './.razo/triage-state.json' } } }, {});
+  const built = instantiate(cfg);
+  assert.ok(built.store instanceof JsonFileStore);
+  assert.throws(() => parseConfig({ ...minimal, store: 'json-file' }, {}), /store/);
 });

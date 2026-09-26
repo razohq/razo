@@ -39,5 +39,6 @@ export { pullGithubArtifacts, DEFAULT_ARTIFACT_PREFIX, type PullOptions, type Pu
 export { parseConfig, type TriageConfig, type PluginRef, type PullConfig } from './config/schema';
 export { loadConfig } from './config/load';
 export { instantiate, builtinPlugins, type Adapters } from './config/registry';
-export { parseDuration, runTriage, runPull, type RunOptions, type RunResult, type PullCommandOptions } from './commands';
+export { parseDuration, runTriage, runPull, type RunOptions, type RunResult, type PullCommandOptions, type PullResult } from './commands';
+export { restoreState, STATE_ARTIFACT_NAME, STATE_FILE_NAME, type RestoreOptions, type RestoreResult } from './collectors/state-artifact';
 export { MAX_REPORT_BYTES } from './collectors/unzip';
