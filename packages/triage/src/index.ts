@@ -5,6 +5,8 @@ export type { CodeContext } from './ports/code-context';
 export type { IssueTracker } from './ports/issue-tracker';
 export type { Notifier } from './ports/notifier';
 export type { AdapterOf, ConfigSchema, PluginKind, TriagePlugin } from './ports/plugin';
+export type { TriageStore } from './ports/store';
+export { JsonFileStore, jsonFileStorePlugin, STATE_SCHEMA_VERSION, type JsonFileStoreConfig } from './adapters/json-store';
 export { clusterFailures, failingTestIds } from './core/cluster';
 export {
   testHistories, shaRange, stableBefore, retryFlip, sameShaFlips, isFailing, onBaseBranch, DEFAULT_BASE_BRANCH,
