@@ -572,8 +572,8 @@ Findings, none of which changed a verdict:
 
 ### Backlog
 
-- Drop a merge commit from the suspects when the commits it merges are already in the range (finding 2).
-- Accumulate `FailureRef`s across mornings, deduplicated by run and test, so a cluster carries its whole history (finding 3); take `firstSeenAt` from the earliest failure in the lookback, not in the window (finding 4).
+- Drop a merge commit from the suspects when the commits it merges are already in the range (finding 2). ✅ 2026-10-02
+- Accumulate `FailureRef`s across mornings, deduplicated by run and test, so a cluster carries its whole history (finding 3); take `firstSeenAt` from the earliest failure in the lookback, not in the window (finding 4). ✅ 2026-10-02
 - Weigh controls whose assertion failed over controls only used along the way when scoring suspects (finding 1).
 - Narrate a stale-test summary from the suspect or the healed locator instead of repeating the signature (finding 5).
 - Prune old resolved clusters from the state: a cluster resolved for longer than a configurable number of days (and with no recorded actions worth keeping) leaves `triage_clusters`, so the state artifact stays small over months. Until then the state grows by one entry per distinct failure ever seen.

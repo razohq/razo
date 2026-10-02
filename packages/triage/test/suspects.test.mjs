@@ -224,3 +224,22 @@ test('minor 2: needle matching ignores case', async () => {
   });
   assert.equal(upper.suspects.length, 1);
 });
+
+// --- backlog: merge commits ---
+test('a merge commit whose merged commits are in the range is not a suspect; its branch commit is', async () => {
+  const base = 'f'.repeat(40);
+  const branch = { sha: 'a'.repeat(40), message: 'real change', author: 'x', date: '2026-01-02T00:00:00Z', parents: [base] };
+  const merge = { sha: 'b'.repeat(40), message: 'Merge pull request #3', author: 'x', date: '2026-01-03T00:00:00Z', parents: [base, branch.sha] };
+  const files = async () => [{ filename: 'page.ts', patch: '+ <button data-testid="place-order" hidden>' }];
+  const { suspects } = await findSuspects({ controls: [placeOrder], commits: [branch, merge], changedFiles: files });
+  assert.deepEqual(suspects.map((s) => s.sha), [branch.sha]);
+});
+
+test('a merge commit whose merged commits are not in the range stays a suspect', async () => {
+  const merge = { sha: 'b'.repeat(40), message: 'Merge release', author: 'x', date: '2026-01-03T00:00:00Z', parents: ['f'.repeat(40), 'e'.repeat(40)] };
+  const { suspects } = await findSuspects({
+    controls: [placeOrder], commits: [merge],
+    changedFiles: async () => [{ filename: 'page.ts', patch: '+ <button data-testid="place-order" hidden>' }],
+  });
+  assert.deepEqual(suspects.map((s) => s.sha), [merge.sha]);
+});

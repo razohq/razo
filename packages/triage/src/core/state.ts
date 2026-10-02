@@ -15,10 +15,14 @@ export function mergeClusters(previous: Cluster[], current: Cluster[]): Cluster[
     seen.add(cluster.id);
     const before = known.get(cluster.id);
     if (!before) return cluster;
+    // Failures accumulate across mornings, deduplicated by run and test; the first sighting never moves forward.
+    const seenFailures = new Set(before.failures.map((f) => `${f.runId}\u0000${f.testId}`));
+    const failures = [...before.failures, ...cluster.failures.filter((f) => !seenFailures.has(`${f.runId}\u0000${f.testId}`))];
     return {
       ...cluster,
+      failures,
       state: before.state,
-      firstSeenAt: before.firstSeenAt,
+      firstSeenAt: before.firstSeenAt < cluster.firstSeenAt ? before.firstSeenAt : cluster.firstSeenAt,
       ...(before.linkedIssue ? { linkedIssue: before.linkedIssue } : {}),
     };
   });

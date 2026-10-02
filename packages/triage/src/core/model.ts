@@ -168,6 +168,8 @@ export interface Commit {
   /** ISO 8601 */
   date: string;
   url?: string;
+  /** Parent shas when the VCS reports them; two or more mark a merge commit. */
+  parents?: string[];
 }
 
 /** One file a commit changed. `patch` is the unified diff; absent for binary or oversized entries. */

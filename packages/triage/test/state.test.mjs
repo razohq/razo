@@ -199,3 +199,12 @@ test('the Markdown highlights reopened clusters and lists them first', () => {
   assert.match(md, /open for 25 days/);
   assert.match(md, /1 reopened/, 'the totals line counts it');
 });
+
+// --- backlog: failures accumulate across mornings ---
+test('mergeClusters unions the failures of a known cluster, deduplicated by run and test, and keeps the earliest first sighting', () => {
+  const previous = { ...base(), failures: [{ runId: 'r1', testId: 't', sha: '1' }, { runId: 'r2', testId: 't', sha: '2' }], firstSeenAt: '2026-09-01T00:00:00Z' };
+  const current = { ...base(), failures: [{ runId: 'r2', testId: 't', sha: '2' }, { runId: 'r3', testId: 't', sha: '3' }], firstSeenAt: '2026-09-03T00:00:00Z' };
+  const [merged] = mergeClusters([previous], [current]);
+  assert.deepEqual(merged.failures.map((f) => f.runId), ['r1', 'r2', 'r3']);
+  assert.equal(merged.firstSeenAt, '2026-09-01T00:00:00Z');
+});

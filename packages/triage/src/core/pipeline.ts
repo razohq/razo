@@ -47,7 +47,10 @@ export async function analyzeWindow(
   const inWindow = options.since
     ? known.filter((run) => Date.parse(run.finishedAt) >= options.since!.getTime())
     : known;
-  const clusters = clusterFailures(inWindow);
+  // Clusters are built over the whole lookback so they carry every failure and their true
+  // first sighting, but only those failing inside the window are reported.
+  const windowRunIds = new Set(inWindow.map((run) => run.id));
+  const clusters = clusterFailures(known).filter((c) => c.failures.some((f) => windowRunIds.has(f.runId)));
   const histories = testHistories(known);
   const items: TriageItem[] = [];
   for (const cluster of clusters) {

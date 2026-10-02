@@ -95,3 +95,22 @@ test('since: only failures at or after the window start form clusters, but histo
   const order = items.find((i) => i.cluster.failures[0].testId.endsWith('placing the order confirms it'));
   assert.equal(order.cluster.lastGreenSha, green.sha, 'the green run before the window still feeds the range');
 });
+
+test('backlog: a cluster in the window carries its failures from the whole lookback and its first sighting', async () => {
+  const err = { message: 'expected 3 rows, got 2', signature: 'expected 3 rows, got 2' };
+  const mk = (n, spec) => ({
+    id: `r${n}`, sha: String(n).repeat(40), branch: 'main', source: 's', startedAt: `2026-01-0${n}T00:00:00Z`, finishedAt: `2026-01-0${n}T00:05:00Z`,
+    results: Object.entries(spec).map(([testId, status]) => ({
+      testId, title: testId.split('::')[1], file: testId.split('::')[0], status, durationMs: 1,
+      attempts: [{ status, durationMs: 1, ...(status === 'failed' ? { error: err } : {}) }], ...(status === 'failed' ? { error: err } : {}),
+    })),
+  });
+  const runs = [mk(1, { 'f::a': 'failed', 'f::only-old': 'failed' }), mk(2, { 'f::a': 'failed', 'f::only-old': 'passed' })];
+  // Only run 2 is in the window; run 1 is history.
+  const items = await analyzeWindow(runs, new MemoryCodeContext([]), undefined, { since: new Date('2026-01-02T00:00:00Z') });
+  assert.equal(items.length, 1, 'the cluster failing only in the old run is not in the window');
+  const [item] = items;
+  assert.deepEqual(item.cluster.failures.map((f) => `${f.runId}:${f.testId}`), ['r1:f::a', 'r1:f::only-old', 'r2:f::a']);
+  assert.equal(item.cluster.firstSeenAt, '2026-01-01T00:05:00Z');
+  assert.equal(item.cluster.lastSeenAt, '2026-01-02T00:05:00Z');
+});
