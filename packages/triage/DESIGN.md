@@ -487,7 +487,8 @@ Deviations from the original design, with their reason:
 - `cluster`, `history`, `suspects` and `classify` with tests based on real Playwright fixtures.
 - CLI `triage pull` that materializes historical runs and `triage run` that generates the Markdown report.
 - **Done when:** the report is generated over a real nightly run and the categories match manual judgment for most clusters.
-- ✅ 2026-09-25: `triage pull` and `triage run` work over razo-demo's real artifacts (four runs of PR #2, all green: a report with no failures). Categories will be checked against manual judgment once nightly runs accumulate.
+- ✅ 2026-09-25: `triage pull` and `triage run` work over razo-demo's real artifacts (four runs of PR #2, all green: a report with no failures).
+- ✅ 2026-09-29: categories confirmed against manual judgment on real nightlies; see the calibration log below.
 
 #### Design approved on 2026-09-24
 
@@ -525,7 +526,7 @@ Anonymization: only needed if data from a third-party project is ever captured. 
 - Cluster states, novelty, days open and resolution ✅ (2026-09-26); see the state rules in section 7.
 - State persisted in CI as the `razo-triage-state` artifact: restored by `triage pull` from base-branch runs only, uploaded by the workflow after scheduled `triage run`s; `--reset-state` starts over on purpose ✅ (2026-09-26).
 - Workflow re-runs as flaky evidence: the collector stores `run_attempt` in `run.json` and, when the same SHA has more than one workflow attempt, `classify` adds `retry` evidence to the cluster. Today `/actions/runs` lists only the latest attempt; earlier ones have to be fetched through `/actions/runs/{id}/attempts/{n}`.
-- **Done when:** two consecutive days do not repeat an already seen cluster as "new". To be confirmed against real nightly runs of razo-demo; the `runTriage` test over the razo-demo fixture already shows the second morning reporting the cluster as recurring.
+- **Done when:** two consecutive days do not repeat an already seen cluster as "new". ✅ Confirmed 2026-10-01 on razo-demo's nightlies; see the calibration log below.
 
 #### Hardening (minors deferred from the Phase 2 reviews)
 
@@ -548,8 +549,33 @@ Each with its failing test first. Items 4 to 10 were closed on 2026-09-26 at the
 - Streaming download of large artifacts: today the collector loads the whole zip into memory before filtering its entries; with traces and videos from a large suite the archive has to be read in parts and only the `razo-steps.json` entries extracted.
 - **Done when:** an external adapter works with no changes in `core/`.
 
+### Calibration log (razo-demo nightlies, 2026-09-26 to 2026-10-02)
+
+The engine was run locally every morning against razo-demo's `main`, whose nightly workflow uploads `razo-test-results-<run_id>-<run_attempt>`. The breakage of 2026-09-28 (PR #3: hide the Place order button, change the SAVE10 discount to -$4.00) was reverted on 2026-10-01 (PR #4).
+
+| Date | Runs on main | Report |
+|---|---|---|
+| 09-26 to 09-28 | three green (merge push, two nightlies) | no failures |
+| 09-29, morning 1 | red nightly after the breakage | two clusters, both `new`: `regression · high` for the discount assertion, `stale-test · medium` for the hidden button, both with the breaking commit as suspect, range `f656e43..4ce8b0c`, regression citing the three green runs before |
+| 10-01, morning 2 (09-30 skipped) | two more red nightlies | same two clusters, `recurring · open for 2 days`, same categories, suspects and `firstSeenAt` |
+| 10-02 | revert push and one green nightly | no failures; both clusters kept in the state unchanged, two of the three green runs toward `resolved` |
+
+Phases 2 and 3 are closed by these runs. Flaky and environment remain calibrated on synthetic fixtures only: razo-demo has no retries and no outages, so those two rules need a noisier real project.
+
+Findings, none of which changed a verdict:
+
+1. The regression's suspect matched through `field "Coupon"`, not `Discount`: the changed line names the coupon testid, the line naming `discount` did not change. Right verdict, incidental evidence. Controls whose assertion failed could weigh more than controls merely used along the way.
+2. The merge commit appears as a suspect next to the real commit, and first: GitHub attributes the same diff to both and the tie goes to the newer one.
+3. A cluster's `failures` only hold the current window's failures, because the merge takes them from this run; the cluster does not accumulate its history.
+4. `firstSeenAt` is the first red nightly, not the red merge push of 09-28 that fell outside morning 1's 24-hour window.
+5. The stale-test summary repeats the signature when no history or retry evidence exists to narrate.
+
 ### Backlog
 
+- Drop a merge commit from the suspects when the commits it merges are already in the range (finding 2).
+- Accumulate `FailureRef`s across mornings, deduplicated by run and test, so a cluster carries its whole history (finding 3); take `firstSeenAt` from the earliest failure in the lookback, not in the window (finding 4).
+- Weigh controls whose assertion failed over controls only used along the way when scoring suspects (finding 1).
+- Narrate a stale-test summary from the suspect or the healed locator instead of repeating the signature (finding 5).
 - Prune old resolved clusters from the state: a cluster resolved for longer than a configurable number of days (and with no recorded actions worth keeping) leaves `triage_clusters`, so the state artifact stays small over months. Until then the state grows by one entry per distinct failure ever seen.
 
 ## 12. Metrics
