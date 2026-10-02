@@ -6,6 +6,7 @@ interface CompareCommit {
   sha: string;
   html_url: string;
   commit: { message: string; author: { name: string; date: string } };
+  parents?: Array<{ sha: string }>;
 }
 
 interface ComparePage {
@@ -48,6 +49,7 @@ export class GitHubCodeContext implements CodeContext {
         author: c.commit.author.name,
         date: c.commit.author.date,
         url: c.html_url,
+        ...(c.parents ? { parents: c.parents.map((p) => p.sha) } : {}),
       }));
     } catch (error) {
       if (error instanceof GitHubApiError && error.status === 404) {

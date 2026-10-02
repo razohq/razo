@@ -108,7 +108,11 @@ export async function findSuspects(input: SuspectInput, max = 3): Promise<Suspec
 
   const suspects: SuspectCommit[] = [];
   const unevaluable = new Map<string, UnevaluableFile>();
+  const inRange = new Set(input.commits.map((c) => c.sha));
   for (const commit of input.commits) {
+    // A merge commit carries the diff of the commits it merges; when those are in the
+    // range themselves, they are the suspects and the merge would only duplicate them.
+    if ((commit.parents?.length ?? 0) >= 2 && commit.parents!.some((p) => inRange.has(p))) continue;
     const files = await input.changedFiles(commit.sha);
     const lines: string[] = [];
     for (const file of files) {

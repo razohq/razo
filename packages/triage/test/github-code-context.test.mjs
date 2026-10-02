@@ -102,3 +102,17 @@ test('hardening: an empty page with total_commits still larger ends the walk ins
   assert.deepEqual(got.map((c) => c.message), ['c1', 'c2']);
   assert.ok(calls <= 3, `stopped after an empty page (${calls} calls)`);
 });
+
+test('commitsBetween carries each commit\'s parents, so merge commits can be told apart', async () => {
+  const commits = structuredClone(seed.commits).map((c, i, all) => ({ ...c, parents: i === 0 ? [] : [all[i - 1].sha] }));
+  const withParents = async (url, init) => {
+    const res = await fakeGitHub(commits)(url, init);
+    if (!new URL(url).pathname.includes('/compare/')) return res;
+    const body = await res.json();
+    return { ...res, json: async () => ({ ...body, commits: body.commits.map((c) => ({ ...c, parents: commits.find((x) => x.sha === c.sha).parents.map((sha) => ({ sha })) })) }) };
+  };
+  const ctx = new GitHubCodeContext(new GitHubApi({ token: 't', fetch: withParents }), 'o/r');
+  const [second, third] = await ctx.commitsBetween(commits[0].sha, commits[2].sha);
+  assert.deepEqual(second.parents, [commits[0].sha]);
+  assert.deepEqual(third.parents, [commits[1].sha]);
+});
