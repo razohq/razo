@@ -61,3 +61,15 @@ test('generatedAt defaults to now and the window is kept verbatim', async () => 
   assert.ok(Date.parse(report.generatedAt) >= before - 1000);
   assert.deepEqual(report.window, { from: 'a', to: 'b' });
 });
+
+test('totals.failures counts only failures of the runs in the window, even when clusters carry older ones', async () => {
+  const { runs, items } = await demo();
+  const [green, red] = runs;
+  const older = { runId: 'ancient', testId: items[0].cluster.failures[0].testId, sha: 'x'.repeat(40) };
+  const withHistory = items.map((i) => ({ ...i, cluster: { ...i.cluster, failures: [older, ...i.cluster.failures] } }));
+  const report = buildReport({ items: withHistory, runs: [red], window: { from: red.startedAt, to: red.finishedAt } });
+  assert.equal(report.totals.failures, 2, 'two failures in the red run; the ancient ones are history');
+  assert.equal(report.totals.tests, 4);
+  const all = buildReport({ items: withHistory, runs: [green, red], window: { from: green.startedAt, to: red.finishedAt } });
+  assert.equal(all.totals.failures, 2);
+});

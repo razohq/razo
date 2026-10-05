@@ -81,13 +81,18 @@ function nextStepFor(item: TriageItem): string {
 /** The report stage: verdicts and proposed actions per cluster, plus totals for the window. */
 export function buildReport(input: ReportInput): TriageReport {
   const tests = new Set<string>();
-  for (const run of input.runs) for (const r of run.results) tests.add(r.testId);
+  const windowRuns = new Set<string>();
+  for (const run of input.runs) {
+    windowRuns.add(run.id);
+    for (const r of run.results) tests.add(r.testId);
+  }
   return {
     generatedAt: input.generatedAt ?? new Date().toISOString(),
     window: input.window,
     totals: {
       tests: tests.size,
-      failures: input.items.reduce((n, i) => n + i.cluster.failures.length, 0),
+      // Clusters carry their whole history; the header describes the window only.
+      failures: input.items.reduce((n, i) => n + i.cluster.failures.filter((f) => windowRuns.has(f.runId)).length, 0),
       clusters: input.items.length,
     },
     items: input.items.map((item) => ({
