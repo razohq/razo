@@ -2,6 +2,7 @@ import { commitsJsonCodePlugin } from '../adapters/commits-json';
 import { githubCodePlugin } from '../adapters/github';
 import { jsonFileStorePlugin } from '../adapters/json-store';
 import { markdownNotifierPlugin } from '../adapters/markdown-notifier';
+import { razoCloudNotifierPlugin } from '../adapters/razo-cloud-notifier';
 import { razoSourcePlugin } from '../adapters/razo-source';
 import type { CodeContext } from '../ports/code-context';
 import type { Notifier } from '../ports/notifier';
@@ -14,7 +15,7 @@ import type { PluginRef, TriageConfig } from './schema';
 type AnyPlugin = TriagePlugin<PluginKind, any>;
 
 export const builtinPlugins: AnyPlugin[] = [
-  razoSourcePlugin, githubCodePlugin, commitsJsonCodePlugin, markdownNotifierPlugin, jsonFileStorePlugin,
+  razoSourcePlugin, githubCodePlugin, commitsJsonCodePlugin, markdownNotifierPlugin, razoCloudNotifierPlugin, jsonFileStorePlugin,
 ];
 
 export interface Adapters {
