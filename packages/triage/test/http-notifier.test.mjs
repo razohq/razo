@@ -1,12 +1,12 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  RazoCloudNotifier, razoCloudNotifierPlugin, prepareReportForUpload,
+  HttpNotifier, httpNotifierPlugin, prepareReportForUpload,
   MAX_CLUSTERS_PER_REPORT, MAX_FAILURES_PER_CLUSTER, MAX_EVIDENCE_PER_VERDICT, MAX_UPLOAD_BYTES,
 } from '../dist/index.js';
 import { notifierContract, pluginContract, runContract, seed } from '../dist/contract.js';
 
-/** A fake razo-cloud: records every report it accepts. */
+/** A fake destination (razo-cloud, qano-cloud, anything that speaks the delivery contract): records every report it accepts. */
 function fakeCloud({ status = 201, failUntil = 0 } = {}) {
   const received = [];
   const calls = [];
@@ -22,25 +22,31 @@ function fakeCloud({ status = 201, failUntil = 0 } = {}) {
   return { fetch, received, calls };
 }
 
-describe('RazoCloudNotifier passes the Notifier contract against a fake razo-cloud', () => {
+describe('HttpNotifier passes the Notifier contract against a fake destination', () => {
   runContract(notifierContract(() => {
     const cloud = fakeCloud();
-    return { notifier: new RazoCloudNotifier({ url: 'https://razo.ar', token: 'rz_test' }, cloud.fetch), received: () => cloud.received };
+    return { notifier: new HttpNotifier({ url: 'https://razo.ar/api/triage/reports', token: 'rz_test' }, cloud.fetch), received: () => cloud.received };
   }), test);
 });
 
-describe('razoCloudNotifierPlugin', () => {
-  runContract(pluginContract(razoCloudNotifierPlugin, { url: 'https://razo.ar', token: 'rz_test' }), test);
+describe('httpNotifierPlugin', () => {
+  runContract(pluginContract(httpNotifierPlugin, { url: 'https://razo.ar/api/triage/reports', token: 'rz_test' }), test);
   test('rejects a missing url, a non-http url, or an empty token', () => {
-    assert.throws(() => razoCloudNotifierPlugin.configSchema.parse({ token: 'rz_x' }), /url/);
-    assert.throws(() => razoCloudNotifierPlugin.configSchema.parse({ url: 'ftp://razo.ar', token: 'rz_x' }), /url/);
-    assert.throws(() => razoCloudNotifierPlugin.configSchema.parse({ url: 'https://razo.ar', token: '' }), /token/);
+    assert.throws(() => httpNotifierPlugin.configSchema.parse({ token: 'rz_x' }), /url/);
+    assert.throws(() => httpNotifierPlugin.configSchema.parse({ url: 'ftp://razo.ar', token: 'rz_x' }), /url/);
+    assert.throws(() => httpNotifierPlugin.configSchema.parse({ url: 'https://razo.ar', token: '' }), /token/);
+  });
+  test('the destination is whatever the url says: razo-cloud, qano-cloud or any other implementer of the contract', async () => {
+    const cloud = fakeCloud();
+    await new HttpNotifier({ url: 'https://qano.cloud/hooks/triage', token: 'qn_1' }, cloud.fetch).send(seed.report);
+    assert.equal(cloud.calls[0].url, 'https://qano.cloud/hooks/triage');
+    assert.equal(cloud.calls[0].init.headers.Authorization, 'Bearer qn_1');
   });
 });
 
-test('send posts the report as JSON to /api/triage/reports with the bearer token', async () => {
+test('send posts the report as JSON to the configured endpoint with the bearer token', async () => {
   const cloud = fakeCloud();
-  await new RazoCloudNotifier({ url: 'https://razo.ar/', token: 'rz_abc' }, cloud.fetch).send(seed.report);
+  await new HttpNotifier({ url: 'https://razo.ar/api/triage/reports', token: 'rz_abc' }, cloud.fetch).send(seed.report);
   const [{ url, init }] = cloud.calls;
   assert.equal(url, 'https://razo.ar/api/triage/reports');
   assert.equal(init.method, 'POST');
@@ -51,7 +57,7 @@ test('send posts the report as JSON to /api/triage/reports with the bearer token
 
 test('a non-2xx answer is an error naming the status and the body', async () => {
   const cloud = fakeCloud({ status: 401 });
-  await assert.rejects(new RazoCloudNotifier({ url: 'https://razo.ar', token: 'rz_abc' }, cloud.fetch).send(seed.report), /401.*nope/);
+  await assert.rejects(new HttpNotifier({ url: 'https://razo.ar/api/triage/reports', token: 'rz_abc' }, cloud.fetch).send(seed.report), /401.*nope/);
 });
 
 const bigItem = (i, failures, evidence) => {
@@ -63,7 +69,7 @@ const bigItem = (i, failures, evidence) => {
   };
 };
 
-test('prepareReportForUpload trims below the per-field caps, keeping the most recent failures and the first evidence', () => {
+test('prepareReportForUpload trims below the delivery caps, keeping the most recent failures and the first evidence', () => {
   const items = [bigItem(0, MAX_FAILURES_PER_CLUSTER + 10, MAX_EVIDENCE_PER_VERDICT + 5), bigItem(1, 3, 2)];
   const { report, trimmed } = prepareReportForUpload({ ...seed.report, items });
   assert.equal(trimmed, true);

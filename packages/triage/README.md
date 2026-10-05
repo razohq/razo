@@ -54,8 +54,8 @@ code:
 notifiers:
   - plugin: markdown
     config: { outDir: ./triage-reports }
-  - plugin: razo-cloud                        # optional: the morning lands in the razo.ar dashboard
-    config: { url: https://razo.ar, token: "${RAZO_INGEST_TOKEN}" }   # the project's ingest token
+  - plugin: http                              # optional: deliver the morning to a server that implements the delivery contract
+    config: { url: https://razo.ar/api/triage/reports, token: "${RAZO_INGEST_TOKEN}" }   # razo-cloud: the project's ingest token
 store:                     # optional: memory between runs
   plugin: json-file
   config: { path: ./.razo/triage-state.json }

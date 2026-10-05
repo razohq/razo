@@ -44,8 +44,8 @@ export { parseDuration, runTriage, runPull, type RunOptions, type RunResult, typ
 export { restoreState, STATE_ARTIFACT_NAME, STATE_FILE_NAME, type RestoreOptions, type RestoreResult } from './collectors/state-artifact';
 export { MAX_REPORT_BYTES } from './collectors/unzip';
 export {
-  RazoCloudNotifier, razoCloudNotifierPlugin, prepareReportForUpload,
+  HttpNotifier, httpNotifierPlugin, prepareReportForUpload,
   MAX_CLUSTERS_PER_REPORT, MAX_FAILURES_PER_CLUSTER, MAX_EVIDENCE_PER_VERDICT, MAX_SUSPECTS_PER_CLUSTER,
   MAX_TEXT_CHARS, MAX_SIGNATURE_CHARS, MAX_UPLOAD_BYTES,
-  type RazoCloudNotifierConfig, type PostLike,
-} from './adapters/razo-cloud-notifier';
+  type HttpNotifierConfig, type PostLike,
+} from './adapters/http-notifier';

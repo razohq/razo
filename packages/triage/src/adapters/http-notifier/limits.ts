@@ -1,9 +1,10 @@
 import type { TriageReport } from '../../core/model';
 
 /**
- * Caps of razo-cloud's triage ingest. The server rejects an oversized report
- * whole, so the notifier trims below these numbers; the Markdown report on
- * disk stays complete.
+ * Caps of the report delivery contract (DESIGN.md, "Report delivery
+ * contract"). A destination may reject an oversized report whole, so the
+ * notifier trims below these numbers; the Markdown report on disk stays
+ * complete.
  */
 export const MAX_CLUSTERS_PER_REPORT = 200;
 export const MAX_FAILURES_PER_CLUSTER = 500;
@@ -61,7 +62,7 @@ export function prepareReportForUpload(report: TriageReport): { report: TriageRe
     } else if (items.length > 1) {
       items.pop();
     } else {
-      throw new Error(`one triage cluster is ${bytes(heaviest)} bytes on its own; razo-cloud accepts up to ${MAX_UPLOAD_BYTES} per report`);
+      throw new Error(`one triage cluster is ${bytes(heaviest)} bytes on its own; the delivery contract allows up to ${MAX_UPLOAD_BYTES} per report`);
     }
   }
   const out: TriageReport = { ...report, items };
