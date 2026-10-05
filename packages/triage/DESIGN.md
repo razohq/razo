@@ -325,6 +325,16 @@ export interface Commit {
 }
 ```
 
+### Report delivery contract
+
+The engine's output has more than one destination: a Markdown file, razo-cloud's dashboard, qano-cloud or any other server, and whatever comes later. A destination is not a plugin of its own; it implements this contract and the `http` notifier delivers to it.
+
+- `POST <url>` with `Authorization: Bearer <token>` and `Content-Type: application/json`; the body is the `TriageReport` of section 5, verbatim.
+- Caps, which the notifier trims below and a destination may reject above: 200 clusters per report, 500 failures and 10 suspects per cluster, 50 evidence entries per verdict, 2048 characters per text field (1024 for signatures), 2 MB per body.
+- Idempotent per `generatedAt`: a destination upserts by project and `generatedAt` and answers 201 on creation and 200 on a replay; the notifier treats both as delivered.
+- Any non-2xx answer is a failed delivery: `triage run` fails and saves no state, so the morning is retried whole.
+- The destination decides who the project is from the token; the report carries no project id.
+
 ### Plugins
 
 ```ts
@@ -441,7 +451,7 @@ packages/triage/
       github/             api.ts (GitHubApi, injectable fetch), code-context.ts, index.ts (github plugin)
       commits-json/       network-free CodeContext over a commits.json like the fixtures carry
       markdown-notifier/  render.ts, index.ts (writes .md and .json; readReports)
-      razo-cloud-notifier/ limits.ts (caps, prepareReportForUpload), index.ts (POST /api/triage/reports)
+      http-notifier/      limits.ts (delivery caps, prepareReportForUpload), index.ts (POST to any implementer of the contract)
       json-store/         JsonFileStore, STATE_SCHEMA_VERSION, json-file plugin
     collectors/
       unzip.ts            reportsFromZip()
@@ -463,7 +473,7 @@ packages/triage/
     cluster / history / suspects / classify / pipeline / report .test.mjs
     anonymize.test.mjs
     markdown-notifier / github-api / github-code-context / commits-json / github-artifacts / config / cli .test.mjs
-    json-store / state-artifact / razo-cloud-notifier .test.mjs
+    json-store / state-artifact / http-notifier .test.mjs
 ```
 
 Monorepo conventions: tsup, `tsc --noEmit`, `node --test` against `dist/`, no new runtime dependencies beyond `fflate` and `js-yaml`.
