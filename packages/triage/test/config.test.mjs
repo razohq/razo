@@ -86,7 +86,7 @@ test('review 2b-2: the README config snippet parses and expands', () => {
   const yaml = readme.match(/```yaml\n([\s\S]*?)```/)[1];
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'triage-readme-')), 'triage.config.yaml');
   fs.writeFileSync(file, yaml);
-  const cfg = loadConfig(file, { GITHUB_TOKEN: 'ghp_test' });
+  const cfg = loadConfig(file, { GITHUB_TOKEN: 'ghp_test', RAZO_INGEST_TOKEN: 'rz_test' });
   assert.equal(cfg.pull.token, 'ghp_test');
   assert.equal(cfg.pull.repo, 'razohq/razo-demo');
   assert.equal(cfg.code.config.token, 'ghp_test');
