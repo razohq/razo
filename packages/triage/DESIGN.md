@@ -587,6 +587,7 @@ Findings, none of which changed a verdict:
 - Accumulate `FailureRef`s across mornings, deduplicated by run and test, so a cluster carries its whole history (finding 3); take `firstSeenAt` from the earliest failure in the lookback, not in the window (finding 4). ✅ 2026-10-02
 - Weigh controls whose assertion failed over controls only used along the way when scoring suspects (finding 1).
 - Narrate a stale-test summary from the suspect or the healed locator instead of repeating the signature (finding 5).
+- Count days open from the start of the current failing streak, not from the first failure seen in the lookback: on 2026-10-08 a cluster that had been resolved for days showed `new · open for 9 days` because its earlier failures were still inside the 14-day lookback.
 - Prune old resolved clusters from the state: a cluster resolved for longer than a configurable number of days (and with no recorded actions worth keeping) leaves `triage_clusters`, so the state artifact stays small over months. Until then the state grows by one entry per distinct failure ever seen.
 
 ## 12. Metrics
