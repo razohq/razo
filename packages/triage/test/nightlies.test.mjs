@@ -59,3 +59,13 @@ test('days open count from the start of the current failing streak, not from the
   assert.doesNotMatch(markdown, /open for 10 days/);
   assert.match(markdown, /open for 0 days/);
 });
+
+test('a failure already green again proposes no issue and says so in the next step', async () => {
+  const { runs, items } = await morningAfterRevert();
+  const report = buildReport({ items, runs, window: { from: '2026-10-07T19:00:00Z', to: '2026-10-08T19:00:00Z' } });
+  for (const { verdict, proposedActions } of report.items) {
+    assert.deepEqual(proposedActions, [], verdict.category);
+    assert.match(verdict.nextStep, new RegExp(`^Green again since ${REVERT}`), verdict.nextStep);
+    assert.match(verdict.nextStep, new RegExp(COMMIT), 'the commit that broke it stays visible');
+  }
+});

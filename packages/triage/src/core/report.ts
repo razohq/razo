@@ -50,7 +50,12 @@ function draftFor(item: TriageItem, runs: TestRun[]): IssueDraft {
   };
 }
 
+/** A regression or stale test that green runs already closed: nothing left to fix unless the fix was temporary. */
+const fixedAlready = (item: TriageItem): boolean =>
+  !!item.range.greenAgainSha && (item.classification.category === 'regression' || item.classification.category === 'stale-test');
+
 function actionsFor(item: TriageItem, runs: TestRun[], input: ReportInput): ProposedAction[] {
+  if (fixedAlready(item)) return [];
   switch (item.classification.category) {
     case 'flaky': {
       const marks = (input.actions?.get(item.cluster.id) ?? []).filter((a) => a.action === 'mark-flaky').length;
@@ -65,6 +70,11 @@ function actionsFor(item: TriageItem, runs: TestRun[], input: ReportInput): Prop
 
 function nextStepFor(item: TriageItem): string {
   const suspect = item.cluster.suspectCommits[0];
+  if (fixedAlready(item)) {
+    const broke = item.range.firstRedSha ? `It broke at ${short(item.range.firstRedSha)}` : 'It broke earlier';
+    const who = suspect ? `, suspect ${short(suspect.sha)} (${suspect.message})` : '';
+    return `Green again since ${short(item.range.greenAgainSha!)}. ${broke}${who}; open an issue only if the fix was a temporary revert.`;
+  }
   switch (item.classification.category) {
     case 'flaky': return 'Mark the test flaky; quarantine it if it keeps flipping.';
     case 'environment': return 'Check the environment for that window; no code change is implied.';
