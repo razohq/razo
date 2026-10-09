@@ -114,3 +114,21 @@ test('backlog: a cluster in the window carries its failures from the whole lookb
   assert.equal(item.cluster.firstSeenAt, '2026-01-01T00:05:00Z');
   assert.equal(item.cluster.lastSeenAt, '2026-01-02T00:05:00Z');
 });
+
+test('a cluster is green again only when all of its tests are', async () => {
+  const sha = (n) => String(n).repeat(40);
+  const err = { message: 'expected 3 rows, got 2', signature: 'expected 3 rows, got 2' };
+  const mk = (n, spec) => ({
+    id: `r${n}`, sha: sha(n), branch: 'main', source: 's', startedAt: `2026-01-0${n}T00:00:00Z`, finishedAt: `2026-01-0${n}T00:05:00Z`,
+    results: Object.entries(spec).map(([testId, status]) => ({
+      testId, title: testId.split('::')[1], file: testId.split('::')[0], status, durationMs: 1,
+      attempts: [{ status, durationMs: 1, ...(status === 'failed' ? { error: err } : {}) }], ...(status === 'failed' ? { error: err } : {}),
+    })),
+  });
+  const runs = [mk(1, { 'f::a': 'passed', 'f::b': 'passed' }), mk(2, { 'f::a': 'failed', 'f::b': 'failed' }), mk(3, { 'f::a': 'passed', 'f::b': 'failed' })];
+  const commits = [1, 2, 3].map((n) => ({ sha: sha(n), message: `c${n}`, author: 'x', date: `2026-01-0${n}T00:00:00Z`, files: [] }));
+  const [item] = await analyzeWindow(runs, new MemoryCodeContext(commits));
+  assert.deepEqual(item.range, { lastGreenSha: sha(1), firstRedSha: sha(2) }, 'b is still red');
+  assert.ok(!item.classification.evidence.some((e) => /green again/.test(e.description)));
+  assert.equal(item.cluster.openSince, '2026-01-02T00:05:00Z');
+});

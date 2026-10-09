@@ -52,34 +52,54 @@ export function testHistories(runs: TestRun[]): Map<string, TestHistory> {
   return histories;
 }
 
+export interface Streak {
+  /** Index of the first failing outcome. */
+  start: number;
+  /** Index of the last failing outcome. */
+  end: number;
+  /** Index of the first passing outcome after it, when the streak is over. */
+  greenAgain?: number;
+}
+
 /**
- * Index of the first outcome of the failing streak that ends the history,
- * or -1 when the history does not currently end red. Skipped outcomes are
- * transparent: they neither break a streak nor count as green.
+ * The most recent failing streak, whether it still ends the history or a
+ * green run closed it: a failure fixed inside the window keeps the range
+ * that explains it. Skipped outcomes are transparent: they neither break a
+ * streak nor count as green.
  */
-function streakStart(history: TestHistory): number {
+export function lastStreak(history: TestHistory): Streak | undefined {
   const { outcomes } = history;
-  let i = outcomes.length - 1;
-  while (i >= 0 && outcomes[i].status === 'skipped') i--;
-  if (i < 0 || !isFailing(outcomes[i].status)) return -1;
-  let start = i;
-  for (let j = i - 1; j >= 0; j--) {
+  let end = outcomes.length - 1;
+  while (end >= 0 && !isFailing(outcomes[end].status)) end--;
+  if (end < 0) return undefined;
+  let start = end;
+  for (let j = end - 1; j >= 0; j--) {
     if (isFailing(outcomes[j].status)) start = j;
     else if (outcomes[j].status !== 'skipped') break;
   }
-  return start;
+  // Everything after `end` passed or was skipped.
+  const greenAgain = outcomes.findIndex((o, k) => k > end && o.status === 'passed');
+  return greenAgain === -1 ? { start, end } : { start, end, greenAgain };
+}
+
+export interface ShaRange {
+  lastGreenSha?: string;
+  firstRedSha?: string;
+  /** First passing sha after the streak, when it is over. */
+  greenAgainSha?: string;
 }
 
 /**
  * The commit range that turned the test red on the base branch: last passing
- * sha before the current streak, first failing sha of it.
+ * sha before the latest streak, first failing sha of it, and the sha that
+ * turned it green again if one did.
  */
-export function shaRange(history: TestHistory, options: HistoryOptions = {}): { lastGreenSha?: string; firstRedSha?: string } {
+export function shaRange(history: TestHistory, options: HistoryOptions = {}): ShaRange {
   const base = onBaseBranch(history, options);
-  const start = streakStart(base);
-  if (start === -1) return {};
-  const range: { lastGreenSha?: string; firstRedSha?: string } = { firstRedSha: base.outcomes[start].sha };
-  for (let j = start - 1; j >= 0; j--) {
+  const streak = lastStreak(base);
+  if (!streak) return {};
+  const range: ShaRange = { firstRedSha: base.outcomes[streak.start].sha };
+  for (let j = streak.start - 1; j >= 0; j--) {
     const outcome = base.outcomes[j];
     if (outcome.status === 'passed') {
       range.lastGreenSha = outcome.sha;
@@ -87,17 +107,30 @@ export function shaRange(history: TestHistory, options: HistoryOptions = {}): { 
     }
     if (outcome.status !== 'skipped') break;
   }
+  if (streak.greenAgain !== undefined) range.greenAgainSha = base.outcomes[streak.greenAgain].sha;
   return range;
 }
 
 /**
- * True when the `n` base-branch outcomes right before the current failing
+ * When the latest base-branch streak started (its first failing run's
+ * finishedAt), or undefined when no green precedes it: then it may have
+ * started before the history does, and the first sighting is the better answer.
+ */
+export function openSince(history: TestHistory, options: HistoryOptions = {}): string | undefined {
+  const base = onBaseBranch(history, options);
+  const streak = lastStreak(base);
+  if (!streak || !shaRange(history, options).lastGreenSha) return undefined;
+  return base.outcomes[streak.start].finishedAt;
+}
+
+/**
+ * True when the `n` base-branch outcomes right before the latest failing
  * streak exist and all passed. Skipped outcomes are transparent here too.
  */
 export function stableBefore(history: TestHistory, n: number, options: HistoryOptions = {}): boolean {
   const base = onBaseBranch(history, options);
   const active = { ...base, outcomes: base.outcomes.filter((o) => o.status !== 'skipped') };
-  const start = streakStart(active);
+  const start = lastStreak(active)?.start ?? -1;
   if (start === -1 || start < n) return false;
   return active.outcomes.slice(start - n, start).every((o) => o.status === 'passed');
 }

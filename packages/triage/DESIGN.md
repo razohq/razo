@@ -210,7 +210,8 @@ Evaluated in this order; the first rule that applies decides the category. Every
 
 4. **regression**
    - The test passed in the last `regression.stableRuns` runs (default 3) up to `lastGreenSha`.
-   - It fails on every attempt since `firstRedSha`.
+   - It fails on every attempt of its latest red streak, from `firstRedSha` on.
+   - The streak may already be over: a failure fixed inside the window keeps its range, suspects and verdict, and the evidence says when it went green again (`failed from <firstRedSha>, green again since <sha>`). Green again on the same SHA it failed on is not a fix, so the rule does not apply.
    - Confidence `high` when at least one suspect commit has overlapping components; `medium` otherwise.
 
 5. **unknown**
@@ -218,7 +219,7 @@ Evaluated in this order; the first rule that applies decides the category. Every
 
 ### Base branch
 
-`lastGreenSha`, `firstRedSha` and the prior stability (`regression.stableRuns`) are computed only from runs of `baseBranch` (default `main`). PR runs interleave with the base branch's, and if they counted, a green PR run would close a red streak that `main` never saw. Same-SHA alternations (`flaky`) do look at every branch: one commit that passes and fails is flaky on any branch.
+`lastGreenSha`, `firstRedSha`, the green-again SHA and the prior stability (`regression.stableRuns`) are computed only from runs of `baseBranch` (default `main`), around the test's latest red streak there, whether it still ends the history or not. PR runs interleave with the base branch's, and if they counted, a green PR run would close a red streak that `main` never saw. Same-SHA alternations (`flaky`) do look at every branch: one commit that passes and fails is flaky on any branch.
 
 ### Clusters whose tests have different histories
 
@@ -269,7 +270,7 @@ export interface TriageStore {
 }
 ```
 
-`TriageAction` also carries an optional `id`, set when the action came from a decision feed, and `Cluster` an optional `reopenedAt` (the `lastSeenAt` of the failure that reopened it).
+`TriageAction` also carries an optional `id`, set when the action came from a decision feed, and `Cluster` an optional `reopenedAt` (the `lastSeenAt` of the failure that reopened it) and an optional `openSince` (when its latest red streak on the base branch started; absent when no green precedes that streak in the lookback).
 
 Adapter: `json-file` (Phase 3), one JSON file with atomic writes (temporary file, then rename) and a `schemaVersion` field; a file with an unknown version is refused naming the file and the version, never guessed at. SQLite was the original plan and was replaced because it needs either a native dependency (`better-sqlite3`) or Node 22's experimental `node:sqlite`, and the package promises Node 20 with no native dependencies. The state is small (clusters, runs, actions) and one file is enough for a daily job. Other stores are implemented against the interface only; the core does not change.
 
@@ -286,6 +287,7 @@ State rules (`core/state.ts`, applied by `triage run` between `classify` and `re
 - The store keeps what people and time decided about a known cluster (`state`, `firstSeenAt`, `linkedIssue`); the rules refresh everything else each morning. A cluster absent from the run is kept as it was, so an ignored cluster stays ignored across quiet mornings and when it reappears.
 - Novelty: a cluster the store never saw is `new`; a known one is `recurring`.
 - A cluster in state `ignored` or `flaky` is not reported as new; it appears in a compact "Known" section of the report, with its days open.
+- Days open count from `openSince`, the start of the current red streak, and from `firstSeenAt` only when that start is unknown. `firstSeenAt` stays the first sighting ever; it never moves.
 - A cluster with no failures for `state.resolveAfterRuns` base-branch runs (default 3) after its last failure becomes `resolved`. PR-branch runs do not count. A resolved cluster that fails again is `reopened`: state `new`, novelty `reopened`, history kept; the report counts reopened clusters at the top, lists them first and marks their heading.
 - If sending the report fails, `triage run` fails and saves nothing: the state only records mornings that were delivered.
 - A cluster marked `flaky` `flaky.quarantineSuggestAfter` times (default 3, counted from recorded `mark-flaky` actions) gets the proposed action `quarantine` instead of `mark-flaky`.
@@ -577,7 +579,7 @@ Each with its failing test first. Items 4 to 10 were closed on 2026-09-26 at the
 - Streaming download of large artifacts: today the collector loads the whole zip into memory before filtering its entries; with traces and videos from a large suite the archive has to be read in parts and only the `razo-steps.json` entries extracted.
 - **Done when:** an external adapter works with no changes in `core/`.
 
-### Calibration log (razo-demo nightlies, 2026-09-26 to 2026-10-02)
+### Calibration log (razo-demo nightlies, 2026-09-26 to 2026-10-08)
 
 The engine was run locally every morning against razo-demo's `main`, whose nightly workflow uploads `razo-test-results-<run_id>-<run_attempt>`. The breakage of 2026-09-28 (PR #3: hide the Place order button, change the SAVE10 discount to -$4.00) was reverted on 2026-10-01 (PR #4).
 
@@ -590,7 +592,7 @@ The engine was run locally every morning against razo-demo's `main`, whose night
 
 Phases 2 and 3 are closed by these runs. Flaky and environment remain calibrated on synthetic fixtures only: razo-demo has no retries and no outages, so those two rules need a noisier real project.
 
-Findings, none of which changed a verdict:
+Findings of the first rounds, none of which changed a verdict:
 
 1. The regression's suspect matched through `field "Coupon"`, not `Discount`: the changed line names the coupon testid, the line naming `discount` did not change. Right verdict, incidental evidence. Controls whose assertion failed could weigh more than controls merely used along the way.
 2. The merge commit appears as a suspect next to the real commit, and first: GitHub attributes the same diff to both and the tie goes to the newer one.
@@ -598,10 +600,18 @@ Findings, none of which changed a verdict:
 4. `firstSeenAt` is the first red nightly, not the red merge push of 09-28 that fell outside morning 1's 24-hour window.
 5. The stale-test summary repeats the signature when no history or retry evidence exists to narrate.
 
+On 2026-10-07 the breakage was reapplied (razo-demo PR #8) and reverted the next day (PR #9), with the triage already scheduled in razo-demo's own CI. The morning that ran after the revert held the push run of the breakage, the red nightly and the green revert run in one 24-hour window. Two more findings, both of which changed what the morning said:
+
+6. Both clusters came out `unknown · low` with no range and no suspects: the range was looked for only in a red streak that still ends the history, and the revert had already closed it. The discount should have stayed `regression · high` and the button `stale-test · medium`, naming the breaking commit.
+7. Both clusters showed `open for 10 days`: days open counted from `firstSeenAt`, the first failure in the 14-day lookback (09-28), across two resolved gaps.
+
+`fixtures/razo-demo-nightlies` holds these real runs, 09-26 to 10-09, and `test/nightlies.test.mjs` replays that morning.
+
 ### Backlog
 
 - Drop a merge commit from the suspects when the commits it merges are already in the range (finding 2). ✅ 2026-10-02
 - Accumulate `FailureRef`s across mornings, deduplicated by run and test, so a cluster carries its whole history (finding 3); take `firstSeenAt` from the earliest failure in the lookback, not in the window (finding 4). ✅ 2026-10-02
+- Take the range, suspects and regression rule from the latest red streak even when green runs already closed it, and say so in the evidence (finding 6); count days open from the start of the current red streak (`openSince`), not from the first sighting (finding 7). ✅ 2026-10-08
 - Weigh controls whose assertion failed over controls only used along the way when scoring suspects (finding 1).
 - Narrate a stale-test summary from the suspect or the healed locator instead of repeating the signature (finding 5).
 - Prune old resolved clusters from the state: a cluster resolved for longer than a configurable number of days (and with no recorded actions worth keeping) leaves `triage_clusters`, so the state artifact stays small over months. Until then the state grows by one entry per distinct failure ever seen.

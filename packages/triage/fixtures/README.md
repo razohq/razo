@@ -10,6 +10,7 @@ scripts in `../scripts`; never edit a report by hand.
 | `razo-suite` | One run of `packages/razo`'s own Playwright suite: 45 tests, 1 deliberate failure, healed steps and DOM candidates. | No |
 | `cloud-examples` | The three example projects of razo-cloud (button hidden, table count, row action), one run each. The sha is all zeros: the examples have no git history of their own. | No |
 | `razo-demo-pr-1` | Public repo razohq/razo-demo, PR #1: a green run at the base commit and a red run at the PR head, plus `commits.json` with the real diffs. | No |
+| `razo-demo-nightlies` | razohq/razo-demo `main`, 2026-09-26 to 2026-10-09, as `triage pull` downloaded it: 21 runs, three red streaks each closed by a revert, plus `commits.json`. Regenerate with `capture-razo-demo-nightlies.mjs`. | No |
 | `synthetic-flaky` | `generator/`, `retries: 2`, one test that fails only on its first attempt. Real reporter, scripted behaviour. | Yes |
 | `synthetic-environment` | `generator/` against a closed port: every spec fails with a connection error. Real reporter, scripted behaviour. | Yes |
 

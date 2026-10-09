@@ -1,0 +1,310 @@
+[
+  {
+    "sha": "f656e4389a2a257c6137a5a033f9500d9ccffa80",
+    "message": "Merge pull request #2 from razohq/ci/upload-test-results",
+    "author": "Michel Lombardo",
+    "date": "2026-09-26T00:14:04-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/f656e4389a2a257c6137a5a033f9500d9ccffa80",
+    "parents": [
+      "c31f204646648b0c23f1d8909d80a1d1f9a52de9",
+      "25f1bb68c2d8c526fef90a59946c8ba857d3b77c"
+    ],
+    "files": [
+      {
+        "filename": ".github/workflows/e2e.yml",
+        "status": "modified",
+        "patch": "diff --git a/.github/workflows/e2e.yml b/.github/workflows/e2e.yml\nindex 94e9ee0..e4758ca 100644\n--- a/.github/workflows/e2e.yml\n+++ b/.github/workflows/e2e.yml\n@@ -4,6 +4,10 @@ on:\n   push:\n   pull_request:\n   workflow_dispatch:\n+  # Nightly on main, so there is a run per day even when nobody pushes:\n+  # that history is what razo's triage reads to tell a regression from a flake.\n+  schedule:\n+    - cron: '0 3 * * *'\n \n jobs:\n   test:\n@@ -27,3 +31,15 @@ jobs:\n         run: npx razo-upload --url https://razo.ar/api/ingest\n         env:\n           RAZO_INGEST_TOKEN: ${{ secrets.RAZO_INGEST_TOKEN }}\n+\n+      # Keep the raw razo-steps.json of every run, green ones included: a green\n+      # run is the \"last known good\" a later failure gets compared against.\n+      # One artifact per attempt so re-runs never overwrite each other.\n+      - name: Keep test-results as an artifact\n+        if: always()\n+        uses: actions/upload-artifact@v4\n+        with:\n+          name: razo-test-results-${{ github.run_id }}-${{ github.run_attempt }}\n+          path: test-results/\n+          retention-days: 30\n+          if-no-files-found: warn"
+      }
+    ]
+  },
+  {
+    "sha": "7ba44abacdc81b80873eea5deadde4d7ab4fdae3",
+    "message": "Checkout: hide Place order until pricing lands and apply the new SAVE10 amount",
+    "author": "Michel Lombardo",
+    "date": "2026-09-26T11:47:06-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/7ba44abacdc81b80873eea5deadde4d7ab4fdae3",
+    "parents": [
+      "f656e4389a2a257c6137a5a033f9500d9ccffa80"
+    ],
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex ff4eab3..2f5527d 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -13,7 +13,7 @@ export const CHECKOUT_PAGE = `\n   <label>Coupon <input data-testid=\"coupon\" /></label>\n   <button data-testid=\"apply-coupon\"\n     onclick=\"document.querySelector('[data-testid=discount]').textContent =\n-      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$5.00' : 'Invalid coupon'\">\n+      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$4.00' : 'Invalid coupon'\">\n     Apply\n   </button>\n   <p data-testid=\"discount\"></p>\n@@ -26,7 +26,7 @@ export const CHECKOUT_PAGE = `\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\"\n+  <button data-testid=\"place-order\" style=\"display:none\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "4ce8b0c94dccb60fcd9f39461a56e391fe9849be",
+    "message": "Merge pull request #3 from razohq/break/stale-and-regression",
+    "author": "Michel Lombardo",
+    "date": "2026-09-28T10:40:41-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/4ce8b0c94dccb60fcd9f39461a56e391fe9849be",
+    "parents": [
+      "f656e4389a2a257c6137a5a033f9500d9ccffa80",
+      "7ba44abacdc81b80873eea5deadde4d7ab4fdae3"
+    ],
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex ff4eab3..2f5527d 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -13,7 +13,7 @@ export const CHECKOUT_PAGE = `\n   <label>Coupon <input data-testid=\"coupon\" /></label>\n   <button data-testid=\"apply-coupon\"\n     onclick=\"document.querySelector('[data-testid=discount]').textContent =\n-      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$5.00' : 'Invalid coupon'\">\n+      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$4.00' : 'Invalid coupon'\">\n     Apply\n   </button>\n   <p data-testid=\"discount\"></p>\n@@ -26,7 +26,7 @@ export const CHECKOUT_PAGE = `\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\"\n+  <button data-testid=\"place-order\" style=\"display:none\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "033eaebcf1825511a1e175250173aaedc5342143",
+    "message": "Revert \"Merge pull request #3 from razohq/break/stale-and-regression\"",
+    "author": "Michel Lombardo",
+    "date": "2026-10-01T12:21:43-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/033eaebcf1825511a1e175250173aaedc5342143",
+    "parents": [
+      "4ce8b0c94dccb60fcd9f39461a56e391fe9849be"
+    ],
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex 2f5527d..ff4eab3 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -13,7 +13,7 @@ export const CHECKOUT_PAGE = `\n   <label>Coupon <input data-testid=\"coupon\" /></label>\n   <button data-testid=\"apply-coupon\"\n     onclick=\"document.querySelector('[data-testid=discount]').textContent =\n-      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$4.00' : 'Invalid coupon'\">\n+      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$5.00' : 'Invalid coupon'\">\n     Apply\n   </button>\n   <p data-testid=\"discount\"></p>\n@@ -26,7 +26,7 @@ export const CHECKOUT_PAGE = `\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\" style=\"display:none\"\n+  <button data-testid=\"place-order\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "93b02a6d8f15bd77fe23bc429d7baae8f041c200",
+    "message": "Merge pull request #4 from razohq/revert/stale-and-regression",
+    "author": "Michel Lombardo",
+    "date": "2026-10-01T12:21:53-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/93b02a6d8f15bd77fe23bc429d7baae8f041c200",
+    "parents": [
+      "4ce8b0c94dccb60fcd9f39461a56e391fe9849be",
+      "033eaebcf1825511a1e175250173aaedc5342143"
+    ],
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex 2f5527d..ff4eab3 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -13,7 +13,7 @@ export const CHECKOUT_PAGE = `\n   <label>Coupon <input data-testid=\"coupon\" /></label>\n   <button data-testid=\"apply-coupon\"\n     onclick=\"document.querySelector('[data-testid=discount]').textContent =\n-      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$4.00' : 'Invalid coupon'\">\n+      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$5.00' : 'Invalid coupon'\">\n     Apply\n   </button>\n   <p data-testid=\"discount\"></p>\n@@ -26,7 +26,7 @@ export const CHECKOUT_PAGE = `\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\" style=\"display:none\"\n+  <button data-testid=\"place-order\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "ee09dd6d7dea335c8d446fcd627ae2d2e9bc9971",
+    "message": "Checkout: reapply the hidden Place order button and the new SAVE10 amount",
+    "author": "Michel Lombardo",
+    "date": "2026-10-04T16:38:58-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/ee09dd6d7dea335c8d446fcd627ae2d2e9bc9971",
+    "parents": [
+      "93b02a6d8f15bd77fe23bc429d7baae8f041c200"
+    ],
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex ff4eab3..2f5527d 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -13,7 +13,7 @@ export const CHECKOUT_PAGE = `\n   <label>Coupon <input data-testid=\"coupon\" /></label>\n   <button data-testid=\"apply-coupon\"\n     onclick=\"document.querySelector('[data-testid=discount]').textContent =\n-      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$5.00' : 'Invalid coupon'\">\n+      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$4.00' : 'Invalid coupon'\">\n     Apply\n   </button>\n   <p data-testid=\"discount\"></p>\n@@ -26,7 +26,7 @@ export const CHECKOUT_PAGE = `\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\"\n+  <button data-testid=\"place-order\" style=\"display:none\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "abb930c16cde56de52ec6368927be0676fd14a5e",
+    "message": "Merge pull request #5 from razohq/break/reopened",
+    "author": "Michel Lombardo",
+    "date": "2026-10-04T16:39:05-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/abb930c16cde56de52ec6368927be0676fd14a5e",
+    "parents": [
+      "93b02a6d8f15bd77fe23bc429d7baae8f041c200",
+      "ee09dd6d7dea335c8d446fcd627ae2d2e9bc9971"
+    ],
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex ff4eab3..2f5527d 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -13,7 +13,7 @@ export const CHECKOUT_PAGE = `\n   <label>Coupon <input data-testid=\"coupon\" /></label>\n   <button data-testid=\"apply-coupon\"\n     onclick=\"document.querySelector('[data-testid=discount]').textContent =\n-      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$5.00' : 'Invalid coupon'\">\n+      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$4.00' : 'Invalid coupon'\">\n     Apply\n   </button>\n   <p data-testid=\"discount\"></p>\n@@ -26,7 +26,7 @@ export const CHECKOUT_PAGE = `\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\"\n+  <button data-testid=\"place-order\" style=\"display:none\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "324b61878913ed8b3ec0dcb0dfbdb44c4467a209",
+    "message": "Revert \"Merge pull request #5 from razohq/break/reopened\"",
+    "author": "Michel Lombardo",
+    "date": "2026-10-05T13:16:09-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/324b61878913ed8b3ec0dcb0dfbdb44c4467a209",
+    "parents": [
+      "abb930c16cde56de52ec6368927be0676fd14a5e"
+    ],
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex 2f5527d..ff4eab3 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -13,7 +13,7 @@ export const CHECKOUT_PAGE = `\n   <label>Coupon <input data-testid=\"coupon\" /></label>\n   <button data-testid=\"apply-coupon\"\n     onclick=\"document.querySelector('[data-testid=discount]').textContent =\n-      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$4.00' : 'Invalid coupon'\">\n+      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$5.00' : 'Invalid coupon'\">\n     Apply\n   </button>\n   <p data-testid=\"discount\"></p>\n@@ -26,7 +26,7 @@ export const CHECKOUT_PAGE = `\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\" style=\"display:none\"\n+  <button data-testid=\"place-order\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "a5ba0a9c5e39dd60577f9b8afe798cc140dc1584",
+    "message": "Merge pull request #6 from razohq/revert/reopened",
+    "author": "Michel Lombardo",
+    "date": "2026-10-05T13:16:17-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/a5ba0a9c5e39dd60577f9b8afe798cc140dc1584",
+    "parents": [
+      "abb930c16cde56de52ec6368927be0676fd14a5e",
+      "324b61878913ed8b3ec0dcb0dfbdb44c4467a209"
+    ],
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex 2f5527d..ff4eab3 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -13,7 +13,7 @@ export const CHECKOUT_PAGE = `\n   <label>Coupon <input data-testid=\"coupon\" /></label>\n   <button data-testid=\"apply-coupon\"\n     onclick=\"document.querySelector('[data-testid=discount]').textContent =\n-      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$4.00' : 'Invalid coupon'\">\n+      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$5.00' : 'Invalid coupon'\">\n     Apply\n   </button>\n   <p data-testid=\"discount\"></p>\n@@ -26,7 +26,7 @@ export const CHECKOUT_PAGE = `\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\" style=\"display:none\"\n+  <button data-testid=\"place-order\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "03f15e60d5091aebe30f9c594c05140b8ec81c82",
+    "message": "ci: morning triage after the nightly run",
+    "author": "Michel Lombardo",
+    "date": "2026-10-07T17:23:23-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/03f15e60d5091aebe30f9c594c05140b8ec81c82",
+    "parents": [
+      "a5ba0a9c5e39dd60577f9b8afe798cc140dc1584"
+    ],
+    "files": [
+      {
+        "filename": ".github/triage/triage.config.yaml",
+        "status": "added",
+        "patch": "diff --git a/.github/triage/triage.config.yaml b/.github/triage/triage.config.yaml\nnew file mode 100644\nindex 0000000..616a004\n--- /dev/null\n+++ b/.github/triage/triage.config.yaml\n@@ -0,0 +1,22 @@\n+# Morning triage for this repository, run by .github/workflows/triage.yml.\n+# Paths are relative to the repository root, where the workflow runs the CLI.\n+baseBranch: main\n+source:\n+  plugin: razo-source\n+  config: { dataDir: .razo }\n+pull:\n+  repo: razohq/razo-demo\n+  token: \"${GITHUB_TOKEN}\"\n+  workflow: e2e.yml\n+  branch: main\n+code:\n+  plugin: github\n+  config: { repo: razohq/razo-demo, token: \"${GITHUB_TOKEN}\" }\n+notifiers:\n+  - plugin: markdown\n+    config: { outDir: triage-reports }\n+  - plugin: http\n+    config: { url: \"https://razo.ar/api/triage/reports\", token: \"${RAZO_INGEST_TOKEN}\" }\n+store:\n+  plugin: json-file\n+  config: { path: .razo/triage-state.json }"
+      },
+      {
+        "filename": ".github/workflows/triage.yml",
+        "status": "added",
+        "patch": "diff --git a/.github/workflows/triage.yml b/.github/workflows/triage.yml\nnew file mode 100644\nindex 0000000..e74ecde\n--- /dev/null\n+++ b/.github/workflows/triage.yml\n@@ -0,0 +1,79 @@\n+name: triage\n+\n+# The morning triage: once the nightly e2e run on main has finished, read the\n+# last two weeks of runs, cluster and classify the failures, and deliver the\n+# report to razo.ar's Triage tab. The engine is @razohq/triage, built from\n+# razohq/razo because it is not published to npm yet.\n+on:\n+  workflow_run:\n+    workflows: [e2e]\n+    types: [completed]\n+    branches: [main]\n+  workflow_dispatch:\n+\n+# One triage at a time: two overlapping runs would each restore the same state\n+# and upload two diverging ones.\n+concurrency:\n+  group: razo-triage\n+  cancel-in-progress: false\n+\n+permissions:\n+  actions: read     # list the e2e runs and download their artifacts and the previous state\n+  contents: read    # compare commits and read their diffs\n+\n+jobs:\n+  triage:\n+    # Only after the nightly, not after every push or PR run of e2e.\n+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.event == 'schedule'\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+\n+      - uses: actions/checkout@v4\n+        with:\n+          repository: razohq/razo\n+          path: .razo-engine\n+\n+      - uses: actions/setup-node@v4\n+        with:\n+          node-version: 20\n+          cache: npm\n+          cache-dependency-path: .razo-engine/package-lock.json\n+\n+      - name: Build the triage engine\n+        working-directory: .razo-engine\n+        env:\n+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'\n+        run: |\n+          npm ci\n+          npm run build -w @razohq/triage\n+\n+      # Restores the previous state from the latest razo-triage-state artifact\n+      # of a main-branch run, then downloads the e2e runs it has not seen yet.\n+      - name: Pull runs and state\n+        env:\n+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n+          RAZO_INGEST_TOKEN: ${{ secrets.RAZO_INGEST_TOKEN }}\n+        run: node .razo-engine/packages/triage/dist/cli.js pull --config .github/triage/triage.config.yaml --since 14d\n+\n+      - name: Triage the last day\n+        env:\n+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n+          RAZO_INGEST_TOKEN: ${{ secrets.RAZO_INGEST_TOKEN }}\n+        run: node .razo-engine/packages/triage/dist/cli.js run --config .github/triage/triage.config.yaml --since 24h --lookback 14d\n+\n+      # Saved only when the morning was delivered: triage run fails before\n+      # saving anything if a notifier fails, and this step does not run then.\n+      - uses: actions/upload-artifact@v4\n+        with:\n+          name: razo-triage-state\n+          path: .razo/triage-state.json\n+          retention-days: 90\n+\n+      - uses: actions/upload-artifact@v4\n+        if: always()\n+        with:\n+          name: triage-report-${{ github.run_id }}\n+          path: triage-reports/\n+          retention-days: 30\n+          if-no-files-found: ignore"
+      }
+    ]
+  },
+  {
+    "sha": "c799daab0e631a2ec367b99bd3acd92e4c6a83cf",
+    "message": "Merge pull request #7 from razohq/ci/triage",
+    "author": "Michel Lombardo",
+    "date": "2026-10-07T17:28:04-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/c799daab0e631a2ec367b99bd3acd92e4c6a83cf",
+    "parents": [
+      "a5ba0a9c5e39dd60577f9b8afe798cc140dc1584",
+      "03f15e60d5091aebe30f9c594c05140b8ec81c82"
+    ],
+    "files": [
+      {
+        "filename": ".github/triage/triage.config.yaml",
+        "status": "added",
+        "patch": "diff --git a/.github/triage/triage.config.yaml b/.github/triage/triage.config.yaml\nnew file mode 100644\nindex 0000000..616a004\n--- /dev/null\n+++ b/.github/triage/triage.config.yaml\n@@ -0,0 +1,22 @@\n+# Morning triage for this repository, run by .github/workflows/triage.yml.\n+# Paths are relative to the repository root, where the workflow runs the CLI.\n+baseBranch: main\n+source:\n+  plugin: razo-source\n+  config: { dataDir: .razo }\n+pull:\n+  repo: razohq/razo-demo\n+  token: \"${GITHUB_TOKEN}\"\n+  workflow: e2e.yml\n+  branch: main\n+code:\n+  plugin: github\n+  config: { repo: razohq/razo-demo, token: \"${GITHUB_TOKEN}\" }\n+notifiers:\n+  - plugin: markdown\n+    config: { outDir: triage-reports }\n+  - plugin: http\n+    config: { url: \"https://razo.ar/api/triage/reports\", token: \"${RAZO_INGEST_TOKEN}\" }\n+store:\n+  plugin: json-file\n+  config: { path: .razo/triage-state.json }"
+      },
+      {
+        "filename": ".github/workflows/triage.yml",
+        "status": "added",
+        "patch": "diff --git a/.github/workflows/triage.yml b/.github/workflows/triage.yml\nnew file mode 100644\nindex 0000000..e74ecde\n--- /dev/null\n+++ b/.github/workflows/triage.yml\n@@ -0,0 +1,79 @@\n+name: triage\n+\n+# The morning triage: once the nightly e2e run on main has finished, read the\n+# last two weeks of runs, cluster and classify the failures, and deliver the\n+# report to razo.ar's Triage tab. The engine is @razohq/triage, built from\n+# razohq/razo because it is not published to npm yet.\n+on:\n+  workflow_run:\n+    workflows: [e2e]\n+    types: [completed]\n+    branches: [main]\n+  workflow_dispatch:\n+\n+# One triage at a time: two overlapping runs would each restore the same state\n+# and upload two diverging ones.\n+concurrency:\n+  group: razo-triage\n+  cancel-in-progress: false\n+\n+permissions:\n+  actions: read     # list the e2e runs and download their artifacts and the previous state\n+  contents: read    # compare commits and read their diffs\n+\n+jobs:\n+  triage:\n+    # Only after the nightly, not after every push or PR run of e2e.\n+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.event == 'schedule'\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+\n+      - uses: actions/checkout@v4\n+        with:\n+          repository: razohq/razo\n+          path: .razo-engine\n+\n+      - uses: actions/setup-node@v4\n+        with:\n+          node-version: 20\n+          cache: npm\n+          cache-dependency-path: .razo-engine/package-lock.json\n+\n+      - name: Build the triage engine\n+        working-directory: .razo-engine\n+        env:\n+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'\n+        run: |\n+          npm ci\n+          npm run build -w @razohq/triage\n+\n+      # Restores the previous state from the latest razo-triage-state artifact\n+      # of a main-branch run, then downloads the e2e runs it has not seen yet.\n+      - name: Pull runs and state\n+        env:\n+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n+          RAZO_INGEST_TOKEN: ${{ secrets.RAZO_INGEST_TOKEN }}\n+        run: node .razo-engine/packages/triage/dist/cli.js pull --config .github/triage/triage.config.yaml --since 14d\n+\n+      - name: Triage the last day\n+        env:\n+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n+          RAZO_INGEST_TOKEN: ${{ secrets.RAZO_INGEST_TOKEN }}\n+        run: node .razo-engine/packages/triage/dist/cli.js run --config .github/triage/triage.config.yaml --since 24h --lookback 14d\n+\n+      # Saved only when the morning was delivered: triage run fails before\n+      # saving anything if a notifier fails, and this step does not run then.\n+      - uses: actions/upload-artifact@v4\n+        with:\n+          name: razo-triage-state\n+          path: .razo/triage-state.json\n+          retention-days: 90\n+\n+      - uses: actions/upload-artifact@v4\n+        if: always()\n+        with:\n+          name: triage-report-${{ github.run_id }}\n+          path: triage-reports/\n+          retention-days: 30\n+          if-no-files-found: ignore"
+      }
+    ]
+  },
+  {
+    "sha": "aabb49ed4ec20cf04b5bc483e1ca8f1cf84735f4",
+    "message": "Checkout: hide Place order until pricing lands and apply the new SAVE10 amount",
+    "author": "Michel Lombardo",
+    "date": "2026-10-07T18:02:23-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/aabb49ed4ec20cf04b5bc483e1ca8f1cf84735f4",
+    "parents": [
+      "c799daab0e631a2ec367b99bd3acd92e4c6a83cf"
+    ],
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex ff4eab3..2f5527d 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -13,7 +13,7 @@ export const CHECKOUT_PAGE = `\n   <label>Coupon <input data-testid=\"coupon\" /></label>\n   <button data-testid=\"apply-coupon\"\n     onclick=\"document.querySelector('[data-testid=discount]').textContent =\n-      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$5.00' : 'Invalid coupon'\">\n+      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$4.00' : 'Invalid coupon'\">\n     Apply\n   </button>\n   <p data-testid=\"discount\"></p>\n@@ -26,7 +26,7 @@ export const CHECKOUT_PAGE = `\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\"\n+  <button data-testid=\"place-order\" style=\"display:none\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "09f567edefcd7cf1886d9c5d538486fb45e19d64",
+    "message": "Merge pull request #8 from razohq/break/analysis-check",
+    "author": "Michel Lombardo",
+    "date": "2026-10-07T18:05:02-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/09f567edefcd7cf1886d9c5d538486fb45e19d64",
+    "parents": [
+      "c799daab0e631a2ec367b99bd3acd92e4c6a83cf",
+      "aabb49ed4ec20cf04b5bc483e1ca8f1cf84735f4"
+    ],
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex ff4eab3..2f5527d 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -13,7 +13,7 @@ export const CHECKOUT_PAGE = `\n   <label>Coupon <input data-testid=\"coupon\" /></label>\n   <button data-testid=\"apply-coupon\"\n     onclick=\"document.querySelector('[data-testid=discount]').textContent =\n-      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$5.00' : 'Invalid coupon'\">\n+      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$4.00' : 'Invalid coupon'\">\n     Apply\n   </button>\n   <p data-testid=\"discount\"></p>\n@@ -26,7 +26,7 @@ export const CHECKOUT_PAGE = `\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\"\n+  <button data-testid=\"place-order\" style=\"display:none\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "67d4c5f71d7147a2dc74b8d222c22f0b9da4e14e",
+    "message": "Revert \"Merge pull request #8 from razohq/break/analysis-check\"",
+    "author": "Michel Lombardo",
+    "date": "2026-10-08T15:14:30-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/67d4c5f71d7147a2dc74b8d222c22f0b9da4e14e",
+    "parents": [
+      "09f567edefcd7cf1886d9c5d538486fb45e19d64"
+    ],
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex 2f5527d..ff4eab3 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -13,7 +13,7 @@ export const CHECKOUT_PAGE = `\n   <label>Coupon <input data-testid=\"coupon\" /></label>\n   <button data-testid=\"apply-coupon\"\n     onclick=\"document.querySelector('[data-testid=discount]').textContent =\n-      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$4.00' : 'Invalid coupon'\">\n+      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$5.00' : 'Invalid coupon'\">\n     Apply\n   </button>\n   <p data-testid=\"discount\"></p>\n@@ -26,7 +26,7 @@ export const CHECKOUT_PAGE = `\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\" style=\"display:none\"\n+  <button data-testid=\"place-order\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "012a04b0f22157b733d325c9060c881beb62b11a",
+    "message": "Merge pull request #9 from razohq/revert/analysis-check",
+    "author": "Michel Lombardo",
+    "date": "2026-10-08T15:14:38-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/012a04b0f22157b733d325c9060c881beb62b11a",
+    "parents": [
+      "09f567edefcd7cf1886d9c5d538486fb45e19d64",
+      "67d4c5f71d7147a2dc74b8d222c22f0b9da4e14e"
+    ],
+    "files": [
+      {
+        "filename": "tests/checkout-page.ts",
+        "status": "modified",
+        "patch": "diff --git a/tests/checkout-page.ts b/tests/checkout-page.ts\nindex 2f5527d..ff4eab3 100644\n--- a/tests/checkout-page.ts\n+++ b/tests/checkout-page.ts\n@@ -13,7 +13,7 @@ export const CHECKOUT_PAGE = `\n   <label>Coupon <input data-testid=\"coupon\" /></label>\n   <button data-testid=\"apply-coupon\"\n     onclick=\"document.querySelector('[data-testid=discount]').textContent =\n-      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$4.00' : 'Invalid coupon'\">\n+      document.querySelector('[data-testid=coupon]').value === 'SAVE10' ? '-$5.00' : 'Invalid coupon'\">\n     Apply\n   </button>\n   <p data-testid=\"discount\"></p>\n@@ -26,7 +26,7 @@ export const CHECKOUT_PAGE = `\n     </tbody>\n   </table>\n \n-  <button data-testid=\"place-order\" style=\"display:none\"\n+  <button data-testid=\"place-order\"\n     onclick=\"document.querySelector('[data-testid=status]').textContent='Order placed'\">\n     Place order\n   </button>"
+      }
+    ]
+  },
+  {
+    "sha": "7202d5e88e3e7beb3fbc6efab244fadb13db9581",
+    "message": "chore(triage): record dashboard decisions before each morning",
+    "author": "Michel Lombardo",
+    "date": "2026-10-08T22:04:11-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/7202d5e88e3e7beb3fbc6efab244fadb13db9581",
+    "parents": [
+      "012a04b0f22157b733d325c9060c881beb62b11a"
+    ],
+    "files": [
+      {
+        "filename": ".github/triage/triage.config.yaml",
+        "status": "modified",
+        "patch": "diff --git a/.github/triage/triage.config.yaml b/.github/triage/triage.config.yaml\nindex 616a004..a4c551d 100644\n--- a/.github/triage/triage.config.yaml\n+++ b/.github/triage/triage.config.yaml\n@@ -20,3 +20,7 @@ notifiers:\n store:\n   plugin: json-file\n   config: { path: .razo/triage-state.json }\n+# Decisions taken on the dashboard's Triage tab; triage pull records them and the next run applies them.\n+decisions:\n+  url: \"https://razo.ar/api/triage/decisions\"\n+  token: \"${RAZO_INGEST_TOKEN}\""
+      }
+    ]
+  },
+  {
+    "sha": "6ba541f14ca8052494c1880921d7518153ae5504",
+    "message": "Merge pull request #10 from razohq/chore/triage-decision-feed",
+    "author": "Michel Lombardo",
+    "date": "2026-10-08T22:12:54-03:00",
+    "url": "https://github.com/razohq/razo-demo/commit/6ba541f14ca8052494c1880921d7518153ae5504",
+    "parents": [
+      "012a04b0f22157b733d325c9060c881beb62b11a",
+      "7202d5e88e3e7beb3fbc6efab244fadb13db9581"
+    ],
+    "files": [
+      {
+        "filename": ".github/triage/triage.config.yaml",
+        "status": "modified",
+        "patch": "diff --git a/.github/triage/triage.config.yaml b/.github/triage/triage.config.yaml\nindex 616a004..a4c551d 100644\n--- a/.github/triage/triage.config.yaml\n+++ b/.github/triage/triage.config.yaml\n@@ -20,3 +20,7 @@ notifiers:\n store:\n   plugin: json-file\n   config: { path: .razo/triage-state.json }\n+# Decisions taken on the dashboard's Triage tab; triage pull records them and the next run applies them.\n+decisions:\n+  url: \"https://razo.ar/api/triage/decisions\"\n+  token: \"${RAZO_INGEST_TOKEN}\""
+      }
+    ]
+  }
+]

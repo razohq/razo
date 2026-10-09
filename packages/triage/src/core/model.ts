@@ -74,6 +74,8 @@ export interface Cluster {
   novelty: 'new' | 'recurring' | 'reopened';
   firstSeenAt: string;
   lastSeenAt: string;
+  /** Start of the latest failing streak on the base branch; days open count from it. Absent when no green precedes the streak. */
+  openSince?: string;
   lastGreenSha?: string;
   firstRedSha?: string;
   suspectCommits: SuspectCommit[];

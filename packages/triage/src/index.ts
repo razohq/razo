@@ -12,8 +12,8 @@ export type { TriageStore } from './ports/store';
 export { JsonFileStore, jsonFileStorePlugin, STATE_SCHEMA_VERSION, type JsonFileStoreConfig } from './adapters/json-store';
 export { clusterFailures, failingTestIds } from './core/cluster';
 export {
-  testHistories, shaRange, stableBefore, retryFlip, sameShaFlips, isFailing, onBaseBranch, DEFAULT_BASE_BRANCH,
-  type TestHistory, type TestOutcome, type HistoryOptions,
+  testHistories, shaRange, openSince, lastStreak, stableBefore, retryFlip, sameShaFlips, isFailing, onBaseBranch, DEFAULT_BASE_BRANCH,
+  type TestHistory, type TestOutcome, type HistoryOptions, type ShaRange, type Streak,
 } from './core/history';
 export {
   needlesFor, changedLines, findSuspects, commitsInRange,
