@@ -105,6 +105,10 @@ export class JsonFileStore implements TriageStore {
   async actionsFor(clusterId: string): Promise<TriageAction[]> {
     return this.read().actions.filter((a) => a.clusterId === clusterId);
   }
+
+  async listActions(): Promise<TriageAction[]> {
+    return this.read().actions;
+  }
 }
 
 export interface JsonFileStoreConfig {

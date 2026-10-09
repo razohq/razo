@@ -41,4 +41,8 @@ export class MemoryStore implements TriageStore {
   async actionsFor(clusterId: string): Promise<TriageAction[]> {
     return structuredClone(this.actions.filter((a) => a.clusterId === clusterId));
   }
+
+  async listActions(): Promise<TriageAction[]> {
+    return structuredClone(this.actions);
+  }
 }
