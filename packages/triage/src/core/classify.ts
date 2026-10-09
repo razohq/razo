@@ -1,6 +1,6 @@
 import { failingTestIds } from './cluster';
 import {
-  isFailing, onBaseBranch, retryFlip, sameShaFlips, shaRange, stableBefore, type TestHistory,
+  isFailing, lastStreak, onBaseBranch, retryFlip, sameShaFlips, shaRange, stableBefore, type ShaRange, type TestHistory,
 } from './history';
 import type { Category, Cluster, Commit, Confidence, Evidence, SuspectCommit, TestRun } from './model';
 import type { UnevaluableFile } from './suspects';
@@ -26,7 +26,7 @@ export interface ClassifyInput {
   clusters: Cluster[];
   runs: TestRun[];
   histories: Map<string, TestHistory>;
-  range: { lastGreenSha?: string; firstRedSha?: string };
+  range: ShaRange;
   commitsInRange: Commit[];
   suspects: SuspectCommit[];
   unevaluable: UnevaluableFile[];
@@ -102,14 +102,20 @@ function relatedTo(history: TestHistory, signature: string): TestHistory {
   return { ...history, outcomes };
 }
 
-/** Every attempt of every outcome in the current base-branch streak failed: nothing passed on retry. */
-function currentStreakAllFailing(history: TestHistory): boolean {
-  let i = history.outcomes.length - 1;
-  while (i >= 0 && history.outcomes[i].status === 'skipped') i--;
-  for (; i >= 0 && isFailing(history.outcomes[i].status); i--) {
-    if (!history.outcomes[i].attempts.every((a) => isFailing(a.status))) return false;
-  }
-  return true;
+/**
+ * Every attempt of every outcome in the latest base-branch streak failed
+ * (nothing passed on retry), and if the streak is over, a different sha
+ * ended it: green again at the same sha says nothing changed in the code.
+ */
+function streakIsHardRed(history: TestHistory): boolean {
+  const streak = lastStreak(history);
+  if (!streak) return false;
+  const { outcomes } = history;
+  if (streak.greenAgain !== undefined && outcomes[streak.greenAgain].sha === outcomes[streak.end].sha) return false;
+  return outcomes
+    .slice(streak.start, streak.end + 1)
+    .filter((o) => isFailing(o.status))
+    .every((o) => o.attempts.every((a) => isFailing(a.status)));
 }
 
 interface TestVerdict {
@@ -158,11 +164,12 @@ function classifyTest(
 
   // 4. regression
   const base = onBaseBranch(history, options);
-  if (stableBefore(history, rules.regression.stableRuns, options) && currentStreakAllFailing(base)) {
-    const firstRed = shaRange(history, options).firstRedSha ?? '';
+  if (stableBefore(history, rules.regression.stableRuns, options) && streakIsHardRed(base)) {
+    const { firstRedSha = '', greenAgainSha } = shaRange(history, options);
+    const until = greenAgainSha ? `until ${short(greenAgainSha)}` : 'since';
     evidence.push({
       kind: 'history',
-      description: `${testId} passed in the ${rules.regression.stableRuns} runs before ${short(firstRed)} and failed every attempt since`,
+      description: `${testId} passed in the ${rules.regression.stableRuns} runs before ${short(firstRedSha)} and failed every attempt ${until}`,
     });
     return { testId, category: 'regression', confidence: overlapping ? 'high' : 'medium', evidence };
   }
@@ -203,6 +210,9 @@ export function classify(input: ClassifyInput, rules: RulesConfig = DEFAULT_RULE
       kind: 'commit',
       description: `${short(u.sha)} ${u.filename} names ${u.components.join(', ')} but is unevaluable (${u.reason})`,
     });
+  }
+  if (range.firstRedSha && range.greenAgainSha) {
+    evidence.push({ kind: 'history', description: `failed from ${short(range.firstRedSha)}, green again since ${short(range.greenAgainSha)}` });
   }
   const overlapping = suspects.some((s) => s.overlappingComponents.length > 0);
 

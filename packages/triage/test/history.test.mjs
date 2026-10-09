@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { testHistories, shaRange, stableBefore, retryFlip, sameShaFlips, isFailing, DEFAULT_BASE_BRANCH } from '../dist/index.js';
+import { testHistories, shaRange, openSince, stableBefore, retryFlip, sameShaFlips, isFailing, DEFAULT_BASE_BRANCH } from '../dist/index.js';
 import { seed } from '../dist/contract.js';
 
 const CHECKOUT = 'tests/checkout.spec.ts::placing the order confirms it';
@@ -104,7 +104,7 @@ test('stableBefore counts only base-branch runs', () => {
 
 test('baseBranch is configurable and defaults to main', () => {
   const h = testHistories(interleaved).get('f::t');
-  assert.deepEqual(shaRange(h, { baseBranch: 'feat/x' }), {}, 'on feat/x the last run passed');
+  assert.deepEqual(shaRange(h, { baseBranch: 'feat/x' }), { firstRedSha: 'p', greenAgainSha: 'q' }, 'on feat/x p failed and q passed');
   assert.deepEqual(shaRange(h, { baseBranch: 'main' }), shaRange(h));
   assert.deepEqual(shaRange(h, { baseBranch: 'release' }), {}, 'no runs on that branch, no range');
   assert.equal(DEFAULT_BASE_BRANCH, 'main');
@@ -117,4 +117,18 @@ test('sameShaFlips keeps seeing every branch', () => {
     branchRun('p3', 's', 'feat/x', 'passed', '03'),
   ];
   assert.equal(sameShaFlips(testHistories(runs).get('f::t'), 10), 2);
+});
+
+test('a closed streak keeps its range and names the sha that turned it green', () => {
+  const h = history(outcome('a', 'passed'), outcome('b', 'failed'), outcome('c', 'skipped'), outcome('d', 'passed'), outcome('e', 'passed'));
+  assert.deepEqual(shaRange(h), { lastGreenSha: 'a', firstRedSha: 'b', greenAgainSha: 'd' });
+  assert.equal(stableBefore(h, 1), true);
+});
+
+test('openSince is the first failing run of the latest streak, unknown without a green before it', () => {
+  const at = (sha, status, finishedAt) => ({ ...outcome(sha, status), finishedAt });
+  const h = history(at('a', 'failed', '1'), at('b', 'passed', '2'), at('c', 'failed', '3'), at('d', 'failed', '4'), at('e', 'passed', '5'));
+  assert.equal(openSince(h), '3');
+  assert.equal(openSince(history(at('a', 'failed', '1'), at('b', 'failed', '2'))), undefined);
+  assert.equal(openSince(history(at('a', 'passed', '1'))), undefined);
 });

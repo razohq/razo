@@ -1,14 +1,14 @@
 import type { CodeContext } from '../ports/code-context';
 import { classify, DEFAULT_RULES, type Classification, type RulesConfig } from './classify';
 import { clusterFailures, failingTestIds } from './cluster';
-import { shaRange, testHistories } from './history';
+import { openSince, shaRange, testHistories, type ShaRange } from './history';
 import type { Cluster, Commit, TestRun, TouchedControl } from './model';
 import { commitsInRange, findSuspects, type UnevaluableFile } from './suspects';
 
 export interface TriageItem {
   cluster: Cluster;
   classification: Classification;
-  range: { lastGreenSha?: string; firstRedSha?: string };
+  range: ShaRange;
   unevaluable: UnevaluableFile[];
 }
 
@@ -56,11 +56,14 @@ export async function analyzeWindow(
   for (const cluster of clusters) {
     // Each test has its own range; the cluster shows the first complete one and
     // its suspects come from the union of every complete range.
-    const ranges = failingTestIds(cluster).map((id) =>
-      shaRange(histories.get(id) ?? { testId: id, file: '', outcomes: [] }, { baseBranch: options.baseBranch }),
-    );
+    const testHistoriesOf = failingTestIds(cluster).map((id) => histories.get(id) ?? { testId: id, file: '', outcomes: [] });
+    const ranges = testHistoriesOf.map((h) => shaRange(h, { baseBranch: options.baseBranch }));
     const complete = ranges.filter((r) => r.lastGreenSha && r.firstRedSha);
-    const range = complete[0] ?? ranges.find((r) => r.firstRedSha) ?? {};
+    const { greenAgainSha, ...chosen }: ShaRange = complete[0] ?? ranges.find((r) => r.firstRedSha) ?? {};
+    const range: ShaRange = chosen;
+    // Green again only when every test of the cluster is.
+    if (greenAgainSha && ranges.every((r) => !r.firstRedSha || r.greenAgainSha)) range.greenAgainSha = greenAgainSha;
+    const starts = testHistoriesOf.map((h) => openSince(h, { baseBranch: options.baseBranch })).filter((s): s is string => !!s);
     const commits: Commit[] = [];
     const seenSha = new Set<string>();
     for (const r of complete) {
@@ -80,6 +83,7 @@ export async function analyzeWindow(
     cluster.lastGreenSha = range.lastGreenSha;
     cluster.firstRedSha = range.firstRedSha;
     cluster.suspectCommits = suspects;
+    if (starts.length > 0) cluster.openSince = starts.reduce((a, b) => (a < b ? a : b));
     items.push({ cluster, classification, range, unevaluable });
   }
   return items;

@@ -233,3 +233,18 @@ test('review 2: a bare 5xx-looking number is not an environment signature', () =
 test("review 3: razo's own locator drift error is a locator signature", () => {
   assert.equal(isLocatorSignature(errorSignature('locator drift: [data-testid="export-v0"] no longer resolves; element found via role=button[name="Export"] — update the locator')), true);
 });
+
+test('a regression already fixed keeps its category: the streak that counts is the latest one, closed or not', () => {
+  const runs = [run(1, { 'f::t': passed }), run(2, { 'f::t': passed }), run(3, { 'f::t': passed }),
+    run(4, { 'f::t': failed(ASSERTION) }), run(5, { 'f::t': passed })];
+  const out = classify(inputFor(runs, () => true));
+  assert.equal(out.category, 'regression');
+  assert.ok(out.evidence.some((e) => e.description === `failed from ${sha(4).slice(0, 7)}, green again since ${sha(5).slice(0, 7)}`));
+});
+
+test('green again at the same sha it failed on is not a fixed regression: nothing changed in the code', () => {
+  const same = { ...run(5, { 'f::t': passed }), sha: sha(4) };
+  const runs = [run(1, { 'f::t': passed }), run(2, { 'f::t': passed }), run(3, { 'f::t': passed }),
+    run(4, { 'f::t': failed(ASSERTION) }), same];
+  assert.equal(classify(inputFor(runs, () => true)).category, 'unknown');
+});

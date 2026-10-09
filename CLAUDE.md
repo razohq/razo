@@ -12,7 +12,7 @@ npm workspaces monorepo, Node >= 20, TypeScript, built with tsup, released with 
 |---|---|---|
 | `packages/razo` | `@razohq/razo` | The framework: the control classes (one per UI widget), narrated assertions, deterministic self-healing locators, the `/reporter` entry that writes `razo-steps.json`, the `/vite` auto-testid plugin. Zero runtime deps. |
 | `packages/razo-analyzer` | `@razohq/razo-analyzer` | `razo-analyze` CLI (+ GitHub Action via `action.yml`) and `razo-upload` CLI. Depends on `@anthropic-ai/sdk` and `openai`. |
-| `packages/triage` | `@razohq/triage` | Morning triage, private until its Phase 5. Phase 1 is done: canonical model, the four ports, the plugin type, a runner-agnostic contract test kit (`/contract` entry) and in-memory fakes (`/fakes` entry). Design in `DESIGN.md` (Spanish). |
+| `packages/triage` | `@razohq/triage` | Morning triage, private until its Phase 5. Phases 1–3 are done: canonical model, ports and contract kits (`/contract` entry), in-memory fakes (`/fakes` entry), deterministic classification, state, the `triage` CLI and its notifiers. Design in `DESIGN.md`. |
 
 ## Commands
 
@@ -107,6 +107,8 @@ Phase 2a adds `adapters/razo-source`, a pure reader of `<dataDir>/runs/<runId>/{
 Phase 2b adds the network edge: `adapters/github` over one `GitHubApi` with an injectable `fetch` (tests replay canned responses, nothing touches the network), `collectors/github-artifacts` behind `triage pull`, the offline `commits-json` code adapter, the Markdown notifier (writes `.md` and `.json`; `readReports` reads them back for the contract kit), YAML config with `${VAR}` expansion and a plugin registry in `config/`, and the CLI: `src/cli.ts` only parses argv, `src/commands.ts` holds `runTriage` and `runPull` so tests drive them without spawning. Config shape and token permissions are in `packages/triage/README.md`. When chaining test runs in a shell, gate on the exit code of `node --test`, not on `grep` output.
 
 Phase 3 adds memory: the `TriageStore` port (`ports/store.ts`, kit in `contract/store.ts`), the `json-file` adapter (`adapters/json-store`, atomic writes, `schemaVersion`, signature algorithm version), `core/state.ts` (`reconcileClusters`: previous state, novelty, resolution), and CI persistence through the `razo-triage-state` artifact (`collectors/state-artifact.ts`, restored by `triage pull` from base-branch runs only; the workflow uploads it). When `errorSignature` changes what it collapses, bump `SIGNATURE_ALGORITHM_VERSION`.
+
+After Phase 3, delivery and decisions: the `http` notifier (`adapters/http-notifier`) POSTs the `TriageReport` to any server implementing the report delivery contract (DESIGN.md §8), and `triage pull` records dashboard decisions from a decision feed (`collectors/decisions.ts`) that `core/decisions.ts` applies after reconciliation. razo-cloud is one such server, not a special case.
 
 ## Conventions
 

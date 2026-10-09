@@ -1,0 +1,50 @@
+{
+  "test": "a valid coupon applies a discount",
+  "file": "tests/checkout.spec.ts",
+  "status": "failed",
+  "durationMs": 5147,
+  "error": "Error: expect(locator).toHaveText(expected) failed\n\nLocator:  getByTestId('discount')\nExpected: \"-$5.00\"\nReceived: \"-$4.00\"\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveText\" with timeout 5000ms\n  - waiting for getByTestId('discount')\n    14 × locator resolved to <p data-testid=\"discount\">-$4.00</p>\n       - unexpected value \"-$4.00\"\n",
+  "steps": [
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Email",
+      "sentence": "Type \"demo@razo.ar\" into field \"Email\"",
+      "detail": "demo@razo.ar",
+      "selector": "[data-testid=\"email\"]",
+      "status": "passed",
+      "timestamp": "2026-10-04T19:39:44.013Z"
+    },
+    {
+      "action": "fill",
+      "controlType": "field",
+      "name": "Coupon",
+      "sentence": "Type \"SAVE10\" into field \"Coupon\"",
+      "detail": "SAVE10",
+      "selector": "[data-testid=\"coupon\"]",
+      "status": "passed",
+      "timestamp": "2026-10-04T19:39:44.020Z"
+    },
+    {
+      "action": "click",
+      "controlType": "button",
+      "name": "Apply coupon",
+      "sentence": "Click button \"Apply coupon\"",
+      "selector": "[data-testid=\"apply-coupon\"]",
+      "status": "passed",
+      "timestamp": "2026-10-04T19:39:44.054Z"
+    },
+    {
+      "action": "assert-text",
+      "controlType": "label",
+      "name": "Discount",
+      "sentence": "Assert label \"Discount\" has text \"-$5.00\"",
+      "expected": "-$5.00",
+      "actual": "-$4.00",
+      "selector": "[data-testid=\"discount\"]",
+      "status": "failed",
+      "error": "expect(locator).toHaveText(expected) failed\n\nLocator:  getByTestId('discount')\nExpected: \"-$5.00\"\nReceived: \"-$4.00\"\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveText\" with timeout 5000ms\n  - waiting for getByTestId('discount')\n    14 × locator resolved to <p data-testid=\"discount\">-$4.00</p>\n       - unexpected value \"-$4.00\"\n",
+      "timestamp": "2026-10-04T19:39:49.064Z"
+    }
+  ]
+}
