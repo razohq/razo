@@ -70,6 +70,16 @@ export function storeContract(factory: StoreFactory): ContractCase[] {
       },
     },
     {
+      name: 'listActions returns every recorded action in recording order, and an empty list on an empty store',
+      async run() {
+        const store = await factory();
+        assert.deepEqual(await store.listActions(), []);
+        await store.recordAction(action('c1', '2026-09-26T07:01:00Z'));
+        await store.recordAction({ ...action('c2', '2026-09-26T07:02:00Z', 'ignore'), id: 'd-2' });
+        assert.deepEqual((await store.listActions()).map((a) => [a.clusterId, a.id]), [['c1', undefined], ['c2', 'd-2']]);
+      },
+    },
+    {
       name: 'signatureVersion is null on an empty store and the current algorithm version after a write',
       async run() {
         const store = await factory();

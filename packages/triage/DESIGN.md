@@ -265,12 +265,15 @@ export interface TriageStore {
   recordRun(run: TriageRunRecord): Promise<void>;
   recordAction(action: TriageAction): Promise<void>;
   actionsFor(clusterId: string): Promise<TriageAction[]>;
+  listActions(): Promise<TriageAction[]>;
 }
 ```
 
+`TriageAction` also carries an optional `id`, set when the action came from a decision feed, and `Cluster` an optional `reopenedAt` (the `lastSeenAt` of the failure that reopened it).
+
 Adapter: `json-file` (Phase 3), one JSON file with atomic writes (temporary file, then rename) and a `schemaVersion` field; a file with an unknown version is refused naming the file and the version, never guessed at. SQLite was the original plan and was replaced because it needs either a native dependency (`better-sqlite3`) or Node 22's experimental `node:sqlite`, and the package promises Node 20 with no native dependencies. The state is small (clusters, runs, actions) and one file is enough for a daily job. Other stores are implemented against the interface only; the core does not change.
 
-The `store` contract kit verifies that `saveClusters` followed by `loadClusters` returns exactly what was saved and replaces the previous set, that `lastTriageAt` is `null` on an empty store and is the latest `generatedAt` after each `recordRun`, that `actionsFor` returns that cluster's actions in recording order, and that what comes back is a copy.
+The `store` contract kit verifies that `saveClusters` followed by `loadClusters` returns exactly what was saved and replaces the previous set, that `lastTriageAt` is `null` on an empty store and is the latest `generatedAt` after each `recordRun`, that `actionsFor` returns that cluster's actions and `listActions` every action, both in recording order, and that what comes back is a copy.
 
 **Persistence in CI.** A CI job has no disk between runs, so the state travels as an artifact:
 
@@ -287,6 +290,7 @@ State rules (`core/state.ts`, applied by `triage run` between `classify` and `re
 - If sending the report fails, `triage run` fails and saves nothing: the state only records mornings that were delivered.
 - A cluster marked `flaky` `flaky.quarantineSuggestAfter` times (default 3, counted from recorded `mark-flaky` actions) gets the proposed action `quarantine` instead of `mark-flaky`.
 - The state records the signature algorithm version; a build with another version warns that previous clusters will not be recognized.
+- Decisions (`core/decisions.ts`) apply after reconciliation, from every recorded action: each cluster takes the state of its latest decision. `ignore` → `ignored`, `mark-flaky` and `quarantine` → `flaky`, `acknowledge` → `acknowledged`. A `resolved` or `ticketed` cluster is left alone. A reopened cluster stays `ignored` or `flaky` if it was decided so, but an acknowledge older than its `reopenedAt` no longer holds. A decision on a cluster the store does not know yet waits in the store and applies when the cluster appears.
 
 ## 8. Integrations (ports)
 
@@ -335,6 +339,15 @@ The engine's output has more than one destination: a Markdown file, razo-cloud's
 - Any non-2xx answer is a failed delivery: `triage run` fails and saves no state, so the morning is retried whole.
 - The destination decides who the project is from the token; the report carries no project id.
 
+### Decision feed contract
+
+People decide about clusters where they read the morning (a dashboard's buttons); the engine learns those decisions from any server implementing this contract. It is the delivery contract's way back, and like it, it is not tied to razo-cloud.
+
+- `GET <url>?since=<ISO 8601>` with `Authorization: Bearer <token>`; the server decides the project from the token.
+- `200` with `{ "decisions": [{ "id", "clusterId", "action", "at" }] }`: every decision with `at >= since`, oldest first. `id` is stable and unique per project; `action` is one of `acknowledge`, `ignore`, `mark-flaky`, `quarantine`; `at` is ISO 8601.
+- `triage pull` asks from the latest decision it has recorded (the epoch on an empty state), records each new `id` once as a `TriageAction` whose `user` is the feed's host, and skips actions it does not know with a warning. Any non-2xx answer or a malformed body fails the pull and records nothing.
+- Decisions are recorded after the state artifact is restored, so they land on the state the next `triage run` reads. A config with `decisions` needs the `json-file` store.
+
 ### Plugins
 
 ```ts
@@ -377,6 +390,10 @@ pull:                # triage pull: GitHub Actions artifacts → dataDir
   token: ${GITHUB_TOKEN}
   workflow: e2e.yml  # optional
   branch: main       # optional
+
+decisions:           # optional; triage pull records them, see the decision feed contract
+  url: https://razo.ar/api/triage/decisions
+  token: ${RAZO_INGEST_TOKEN}
 
 code:
   plugin: github     # or commits-json { path } to run without network

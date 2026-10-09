@@ -15,4 +15,6 @@ export interface TriageStore {
   recordRun(run: TriageRunRecord): Promise<void>;
   recordAction(action: TriageAction): Promise<void>;
   actionsFor(clusterId: string): Promise<TriageAction[]>;
+  /** Every recorded action, in recording order. */
+  listActions(): Promise<TriageAction[]>;
 }

@@ -1,5 +1,7 @@
 export * from './core/model';
 export { errorSignature, clusterIdOf, SIGNATURE_ALGORITHM_VERSION } from './core/signature';
+export { applyDecisions, DECISION_STATES } from './core/decisions';
+export { pullDecisions, type DecisionFeedConfig, type DecisionsSummary, type PullDecisionsOptions, type FeedFetch, type FeedResponse } from './collectors/decisions';
 export { mergeClusters, reconcileClusters, type StateContext } from './core/state';
 export type { ResultSource } from './ports/result-source';
 export type { CodeContext } from './ports/code-context';

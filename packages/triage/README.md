@@ -59,6 +59,9 @@ notifiers:
 store:                     # optional: memory between runs
   plugin: json-file
   config: { path: ./.razo/triage-state.json }
+decisions:                 # optional, needs the json-file store: `triage pull` records the decisions people took on a dashboard
+  url: https://razo.ar/api/triage/decisions   # any server implementing the decision feed contract (DESIGN.md §8)
+  token: ${RAZO_INGEST_TOKEN}
 rules:                     # optional; DESIGN.md §6 defaults, flaky and environment thresholds still provisional
   env: { windowMinutes: 10, minFiles: 5 }
   flaky: { lookbackRuns: 10, quarantineSuggestAfter: 3 }
@@ -128,6 +131,11 @@ clusters will not be recognized.
 npx triage pull --since 7d                       # materialize CI runs into ./.razo
 npx triage run  --since 24h --lookback 14d       # triage the last day with two weeks of history
 ```
+
+With a `decisions` section, `pull` also records the decisions taken since
+the last one it has, and `run` applies them: ignore leaves a cluster
+`ignored`, mark-flaky and quarantine leave it `flaky`, acknowledge leaves it
+`acknowledged`.
 
 `run` writes `triage-<timestamp>.md` plus its `.json` twin to `outDir` and
 prints one line per cluster. `--now <iso>` replays a past morning: runs

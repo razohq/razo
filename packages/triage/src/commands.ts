@@ -1,5 +1,7 @@
 import { GitHubApi } from './adapters/github/api';
 import { pullGithubArtifacts, type PullSummary } from './collectors/github-artifacts';
+import { pullDecisions, type DecisionsSummary, type FeedFetch } from './collectors/decisions';
+import { applyDecisions } from './core/decisions';
 import { restoreState, type RestoreResult } from './collectors/state-artifact';
 import { instantiate } from './config/registry';
 import type { TriageConfig } from './config/schema';
@@ -57,9 +59,10 @@ export async function runTriage(config: TriageConfig, options: RunOptions): Prom
         `warning: the stored state was computed with signature algorithm version ${version}, this build uses ${SIGNATURE_ALGORITHM_VERSION}: previous clusters will not be recognized and will look new`,
       );
     }
-    reconciled = reconcileClusters(await store.loadClusters(), items.map((i) => i.cluster), {
+    // Decisions taken elsewhere (recorded by `triage pull`) apply after time has had its say.
+    reconciled = applyDecisions(reconcileClusters(await store.loadClusters(), items.map((i) => i.cluster), {
       runs, baseBranch: config.baseBranch, resolveAfterRuns: config.rules.state.resolveAfterRuns,
-    });
+    }), await store.listActions());
     const byId = new Map(reconciled.map((c) => [c.id, c]));
     for (const item of items) {
       item.cluster = byId.get(item.cluster.id) ?? item.cluster;
@@ -107,6 +110,8 @@ export interface PullCommandOptions {
 export interface PullResult extends PullSummary {
   /** Present when the config has a json-file store: whether the state artifact was restored into it. */
   state?: RestoreResult;
+  /** Present when the config has a decision feed: how many decisions were recorded. */
+  decisions?: DecisionsSummary;
 }
 
 export async function runPull(config: TriageConfig, options: PullCommandOptions): Promise<PullResult> {
@@ -114,6 +119,7 @@ export async function runPull(config: TriageConfig, options: PullCommandOptions)
   const api = new GitHubApi({ token: config.pull.token, fetch: options.fetch });
   let state: RestoreResult | undefined;
   const storeFile = config.store?.plugin === 'json-file' ? (config.store.config as { path?: string } | undefined)?.path : undefined;
+  if (config.decisions && !storeFile) throw new Error('decisions need a json-file store: configure "store" so they have somewhere to be recorded');
   if (storeFile && options.resetState) {
     new JsonFileStore(storeFile).reset();
     state = { restored: false, reset: true };
@@ -135,5 +141,13 @@ export async function runPull(config: TriageConfig, options: PullCommandOptions)
     artifactPrefix: config.pull.artifactPrefix,
     log: options.log,
   });
-  return state ? { ...summary, state } : summary;
+  let decisions: DecisionsSummary | undefined;
+  if (config.decisions && storeFile) {
+    // After the restore, so the decisions land on the state the next run reads.
+    decisions = await pullDecisions({
+      ...config.decisions, store: new JsonFileStore(storeFile), log: options.log, fetch: options.fetch as unknown as FeedFetch | undefined,
+    });
+    options.log?.(`recorded ${decisions.recorded} new decision(s) from ${new URL(config.decisions.url).host}`);
+  }
+  return { ...summary, ...(state ? { state } : {}), ...(decisions ? { decisions } : {}) };
 }

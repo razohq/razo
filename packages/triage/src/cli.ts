@@ -69,6 +69,7 @@ async function main(): Promise<void> {
     const summary = await runPull(config, { since, dataDir, resetState: flags['reset-state'] === 'true', log: (line) => console.error(line) });
     if (summary.state && !summary.state.restored) console.log('warning: no triage state artifact found, starting from an empty state');
     console.log(`pulled ${summary.pulled.length} run(s), skipped ${summary.skipped.length}`);
+    if (summary.decisions) console.log(`recorded ${summary.decisions.recorded} decision(s)${summary.decisions.skipped ? `, skipped ${summary.decisions.skipped}` : ''}`);
     for (const s of summary.skipped) console.log(`  skipped ${s.runId}: ${s.reason}${s.detail ? ` (${s.detail})` : ''}`);
     return;
   }

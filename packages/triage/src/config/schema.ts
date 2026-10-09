@@ -1,4 +1,5 @@
 import { githubConfigSchema } from '../adapters/github';
+import type { DecisionFeedConfig } from '../collectors/decisions';
 import { DEFAULT_RULES, type RulesConfig } from '../core/classify';
 
 export interface PluginRef {
@@ -23,6 +24,8 @@ export interface TriageConfig {
   /** Optional memory between runs. Without it every morning starts from scratch. */
   store?: PluginRef;
   pull?: PullConfig;
+  /** A decision feed (see DESIGN.md, decision feed contract) that `triage pull` records into the store. */
+  decisions?: DecisionFeedConfig;
   rules: RulesConfig;
 }
 
@@ -98,5 +101,14 @@ export function parseConfig(raw: unknown, env: Env = process.env): TriageConfig 
       if (typeof cfg.pull[key] === 'string') out.pull[key] = cfg.pull[key] as string;
     }
   }
+  if (cfg.decisions !== undefined) out.decisions = parseDecisions(cfg.decisions);
   return out;
+}
+
+function parseDecisions(input: unknown): DecisionFeedConfig {
+  if (!isObject(input)) throw new Error('decisions: expected { url, token }');
+  const { url, token } = input;
+  if (typeof url !== 'string' || !/^https?:\/\//.test(url)) throw new Error('decisions: "url" must be an http(s) URL');
+  if (typeof token !== 'string' || token.length === 0) throw new Error('decisions: a non-empty "token" is required');
+  return { url, token };
 }

@@ -79,6 +79,8 @@ export interface Cluster {
   suspectCommits: SuspectCommit[];
   linkedIssue?: IssueRef;
   state: ClusterState;
+  /** lastSeenAt of the failure that reopened it; a decision older than this one predates the reopen. */
+  reopenedAt?: string;
 }
 
 export interface FailureRef {
@@ -153,6 +155,8 @@ export interface TriageRunRecord {
 
 /** A person's decision about a cluster, recorded before anything acts on it. */
 export interface TriageAction {
+  /** Set when the action came from a decision feed: the feed's id, used to record each decision once. */
+  id?: string;
   clusterId: string;
   action: ProposedAction['type'] | 'acknowledge';
   user: string;

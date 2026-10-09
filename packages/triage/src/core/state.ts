@@ -24,6 +24,7 @@ export function mergeClusters(previous: Cluster[], current: Cluster[]): Cluster[
       state: before.state,
       firstSeenAt: before.firstSeenAt < cluster.firstSeenAt ? before.firstSeenAt : cluster.firstSeenAt,
       ...(before.linkedIssue ? { linkedIssue: before.linkedIssue } : {}),
+      ...(before.reopenedAt ? { reopenedAt: before.reopenedAt } : {}),
     };
   });
   for (const cluster of previous) {
@@ -54,7 +55,7 @@ export function reconcileClusters(previous: Cluster[], current: Cluster[], conte
   const baseRuns = context.runs.filter((r) => r.branch === baseBranch);
   return mergeClusters(previous, current).map((cluster) => {
     if (present.has(cluster.id)) {
-      if (cluster.state === 'resolved') return { ...cluster, novelty: 'reopened', state: 'new' };
+      if (cluster.state === 'resolved') return { ...cluster, novelty: 'reopened', state: 'new', reopenedAt: cluster.lastSeenAt };
       return { ...cluster, novelty: known.has(cluster.id) ? 'recurring' : 'new' };
     }
     if (cluster.state === 'resolved') return cluster;
