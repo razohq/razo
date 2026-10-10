@@ -22,8 +22,8 @@ jobs:
           node-version: 20
           cache: npm
 
-      # npm trusted publishing (OIDC, no stored token) needs npm 11.5.1 or later;
-      # Node 20 ships npm 10. Each package lists this repo and release.yml as a
+      # npm trusted publishing (OIDC, no stored token) and `npm stage` need npm
+      # 11.5.1 or later; Node 20 ships npm 10. Each package lists this repo and release.yml as a
       # trusted publisher on npmjs.com.
       - run: npm install -g npm@11.20.0
 
@@ -31,10 +31,13 @@ jobs:
 
       - run: npm run build -w @razohq/razo -w @razohq/razo-analyzer
 
-      - name: Create release PR or publish
+      # Without pending changesets this stages the new versions on npm instead of
+      # publishing them: a maintainer approves each one with 2FA
+      # (`npm stage approve <id>` or npmjs.com). See scripts/stage-publish.mjs.
+      - name: Create release PR or stage
         uses: changesets/action@v1
         with:
-          publish: npx changeset publish
+          publish: node scripts/stage-publish.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true

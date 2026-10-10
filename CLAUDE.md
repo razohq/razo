@@ -112,7 +112,7 @@ After Phase 3, delivery and decisions: the `http` notifier (`adapters/http-notif
 
 ## Conventions
 
-- Contributions need a changeset (`npx changeset`) with the PR. The release workflow publishes on merge to `main`.
+- Contributions need a changeset (`npx changeset`) with the PR. On merge to `main` the release workflow opens a "Version Packages" PR; merging that one stages the new versions on npm (`scripts/stage-publish.mjs`, trusted publishing with stage-only permission), and a maintainer approves each with 2FA (`npm stage approve <id>` or npmjs.com). A staged version is recognized by its `<name>@<version>` git tag; delete the tag to stage a rejected version again.
 - `.changeset/config.json` says `access: restricted` but each package's `publishConfig.access` is `public`; the package setting wins at publish time.
 - `docs/superpowers/` and `.superpowers/` are local planning notes and are gitignored. Do not reference them from shipped code or READMEs.
 - README examples in `packages/razo/README.md` and the root README are the public contract for sentences and the `StepEvent` shape. Update them when the grammar or the JSON changes.
