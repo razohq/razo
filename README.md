@@ -58,7 +58,7 @@ Docs: [razo.ar/docs](https://razo.ar/docs)
 
 PRs welcome. `npm ci && npm test` runs everything (typecheck, builds, package checks, the Playwright suites and a tarball consumption smoke test).
 
-Releases flow through [changesets](https://github.com/changesets/changesets): add a changeset with your PR and CI publishes on merge.
+Releases flow through [changesets](https://github.com/changesets/changesets): add a changeset with your PR. CI turns merged changesets into a "Version Packages" PR, and merging that one stages the new versions on npm for a maintainer to approve with 2FA.
 
 ## License
 
