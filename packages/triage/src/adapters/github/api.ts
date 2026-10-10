@@ -8,7 +8,7 @@ export interface FetchResponseLike {
 
 export type FetchLike = (
   url: string,
-  init?: { headers?: Record<string, string>; redirect?: 'follow' },
+  init?: { method?: 'GET' | 'POST'; headers?: Record<string, string>; redirect?: 'follow'; body?: string },
 ) => Promise<FetchResponseLike>;
 
 export class GitHubApiError extends Error {
@@ -18,9 +18,12 @@ export class GitHubApiError extends Error {
   }
 }
 
+/** Read permissions across the collector, the code adapter and the tracker; each needs a subset. */
+const PERMISSIONS = 'actions:read, contents:read, and issues:read for the tracker';
+
 /** What a person can do about a 401 or 403, from the headers GitHub sends with them. */
 function explain(response: FetchResponseLike): string {
-  if (response.status === 401) return 'check the token (it needs actions:read and contents:read on the repository)';
+  if (response.status === 401) return `check the token (it needs ${PERMISSIONS} on the repository)`;
   if (response.status !== 403 && response.status !== 429) return '';
   const retryAfter = response.headers.get('retry-after');
   if (retryAfter) return `retry after ${retryAfter}s`;
@@ -28,7 +31,7 @@ function explain(response: FetchResponseLike): string {
   if (response.headers.get('x-ratelimit-remaining') === '0' && reset) {
     return `rate limit exhausted, resets at ${new Date(Number(reset) * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')}`;
   }
-  return 'forbidden: check the token permissions (actions:read and contents:read)';
+  return `forbidden: check the token permissions (${PERMISSIONS})`;
 }
 
 export interface GitHubApiOptions {
@@ -61,8 +64,11 @@ export class GitHubApi {
     };
   }
 
-  private async request(path: string): Promise<FetchResponseLike> {
-    const response = await this.fetchImpl(`${this.baseUrl}${path}`, { headers: this.headers(), redirect: 'follow' });
+  private async request(path: string, post?: unknown): Promise<FetchResponseLike> {
+    const init = post === undefined
+      ? { headers: this.headers(), redirect: 'follow' as const }
+      : { method: 'POST' as const, headers: { ...this.headers(), 'Content-Type': 'application/json' }, body: JSON.stringify(post) };
+    const response = await this.fetchImpl(`${this.baseUrl}${path}`, init);
     if (!response.ok) {
       let detail = '';
       try {
@@ -88,6 +94,11 @@ export class GitHubApi {
       all.push(...items);
       if (items.length < perPage) return all;
     }
+  }
+
+  /** The only write in the package: the tracker's create and comment, which the morning never calls. */
+  async postJson<T>(path: string, body: unknown): Promise<T> {
+    return (await this.request(path, body)).json() as Promise<T>;
   }
 
   async getBinary(path: string): Promise<Buffer> {

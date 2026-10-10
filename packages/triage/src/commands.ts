@@ -5,11 +5,12 @@ import { applyDecisions } from './core/decisions';
 import { restoreState, type RestoreResult } from './collectors/state-artifact';
 import { instantiate } from './config/registry';
 import type { TriageConfig } from './config/schema';
-import type { TriageReport } from './core/model';
+import type { IssueDraft, TriageReport } from './core/model';
 import { analyzeWindow } from './core/pipeline';
 import { buildReport } from './core/report';
 import { SIGNATURE_ALGORITHM_VERSION } from './core/signature';
 import { pruneResolved, reconcileClusters } from './core/state';
+import { linkIssues } from './core/tickets';
 import type { TriageAction } from './core/model';
 import { JsonFileStore } from './adapters/json-store';
 import type { FetchLike } from './adapters/github/api';
@@ -44,7 +45,7 @@ export interface RunResult {
 
 /** The whole morning: read the runs, analyze the window, build the report, send it everywhere. */
 export async function runTriage(config: TriageConfig, options: RunOptions): Promise<RunResult> {
-  const { source, code, notifiers, store } = instantiate(config);
+  const { source, code, notifiers, store, tracker, trackerName } = instantiate(config);
   const startedAt = Date.now();
   const runs = await source.fetchRuns(options.lookback);
   const items = await analyzeWindow(runs, code, config.rules, { baseBranch: config.baseBranch, since: options.since, until: options.now });
@@ -70,6 +71,20 @@ export async function runTriage(config: TriageConfig, options: RunOptions): Prom
     }
   }
 
+  // Read only: which of this morning's failures already have an issue. A failed lookup never stops the morning.
+  if (tracker && trackerName) {
+    const ids = items.map((i) => i.cluster.id);
+    const { clusters, failed } = await linkIssues(reconciled ?? items.map((i) => i.cluster), ids, {
+      name: trackerName, find: (signature) => tracker.findBySignature(signature),
+    });
+    if (failed.length > 0) {
+      options.log?.(`warning: issue lookup failed for ${failed.length} cluster(s): ${failed[0].error}`);
+    }
+    const byId = new Map(clusters.map((c) => [c.id, c]));
+    for (const item of items) item.cluster = byId.get(item.cluster.id) ?? item.cluster;
+    if (reconciled) reconciled = clusters;
+  }
+
   // Totals describe the window; the lookback only feeds history.
   const windowRuns = runs.filter((run) => {
     const at = Date.parse(run.finishedAt);
@@ -82,6 +97,7 @@ export async function runTriage(config: TriageConfig, options: RunOptions): Prom
     generatedAt: options.now.toISOString(),
     actions,
     quarantineSuggestAfter: config.rules.flaky.quarantineSuggestAfter,
+    ...(tracker?.newIssueUrl ? { issueUrl: (draft: IssueDraft) => tracker.newIssueUrl!(draft) } : {}),
   });
   for (const notifier of notifiers) await notifier.send(report);
   if (store && reconciled) {

@@ -132,6 +132,8 @@ export interface IssueDraft {
   body: string;
   signature: string;
   labels: string[];
+  /** Where a person creates this issue themselves, prefilled, when the tracker offers one. */
+  url?: string;
 }
 
 export interface TriageReport {

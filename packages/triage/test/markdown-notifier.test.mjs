@@ -70,3 +70,12 @@ test('hardening: a signature containing backticks renders as valid inline code',
   const edge = renderMarkdown({ ...seed.report, items: [{ ...seed.report.items[0], cluster: { ...seed.report.items[0].cluster, signature: '`x`' } }] });
   assert.ok(edge.includes('`` `x` ``'), 'a signature starting or ending with a backtick gets padding spaces');
 });
+
+test('the Markdown links a cluster\'s issue, and a proposed issue to the form that creates it', () => {
+  const report = structuredClone(seed.report);
+  report.items[0].cluster.linkedIssue = { tracker: 'github', key: '#7', url: 'https://github.com/o/r/issues/7', status: 'open' };
+  report.items[0].proposedActions = [{ type: 'create-issue', draft: { title: 'T', body: 'B', signature: 's', labels: [], url: 'https://github.com/o/r/issues/new?title=T' } }];
+  const md = renderMarkdown(report);
+  assert.match(md, /Issue: \[#7\]\(https:\/\/github\.com\/o\/r\/issues\/7\) \(open\)/);
+  assert.match(md, /- create-issue: T — \[open it in the tracker\]\(https:\/\/github\.com\/o\/r\/issues\/new\?title=T\)/);
+});

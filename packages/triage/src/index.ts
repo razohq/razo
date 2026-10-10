@@ -3,6 +3,7 @@ export { errorSignature, clusterIdOf, SIGNATURE_ALGORITHM_VERSION } from './core
 export { applyDecisions, DECISION_STATES } from './core/decisions';
 export { pullDecisions, type DecisionFeedConfig, type DecisionsSummary, type PullDecisionsOptions, type FeedFetch, type FeedResponse } from './collectors/decisions';
 export { mergeClusters, pruneResolved, reconcileClusters, type StateContext } from './core/state';
+export { linkIssues, type IssueLookup, type LinkResult } from './core/tickets';
 export type { ResultSource } from './ports/result-source';
 export type { CodeContext } from './ports/code-context';
 export type { IssueTracker } from './ports/issue-tracker';
@@ -34,6 +35,7 @@ export {
 } from './adapters/markdown-notifier';
 export {
   GitHubApi, GitHubApiError, GitHubCodeContext, githubCodePlugin, githubConfigSchema,
+  GitHubIssueTracker, githubTrackerPlugin, issueMarker,
   type FetchLike, type FetchResponseLike, type GitHubApiOptions, type GitHubConfig,
 } from './adapters/github';
 export { CommitsJsonCodeContext, commitsJsonCodePlugin, type CommitsJsonConfig } from './adapters/commits-json';

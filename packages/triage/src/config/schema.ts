@@ -23,6 +23,8 @@ export interface TriageConfig {
   notifiers: PluginRef[];
   /** Optional memory between runs. Without it every morning starts from scratch. */
   store?: PluginRef;
+  /** Optional issue tracker, read only: which failures already have an issue. */
+  tracker?: PluginRef;
   pull?: PullConfig;
   /** A decision feed (see DESIGN.md, decision feed contract) that `triage pull` records into the store. */
   decisions?: DecisionFeedConfig;
@@ -88,6 +90,7 @@ export function parseConfig(raw: unknown, env: Env = process.env): TriageConfig 
     rules: mergeRules(cfg.rules),
   };
   if (cfg.store !== undefined) out.store = pluginRef(cfg.store, 'store');
+  if (cfg.tracker !== undefined) out.tracker = pluginRef(cfg.tracker, 'tracker');
   if (cfg.pull !== undefined) {
     if (!isObject(cfg.pull)) throw new Error('pull: expected { repo, token, workflow?, branch?, artifactPrefix? }');
     let repoAndToken: { repo: string; token: string };
