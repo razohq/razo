@@ -243,3 +243,37 @@ test('a merge commit whose merged commits are not in the range stays a suspect',
   });
   assert.deepEqual(suspects.map((s) => s.sha), [merge.sha]);
 });
+
+test('a commit touching the control whose step failed outranks a newer one touching a control only used along the way', async () => {
+  const commit = (sha, date, line) => ({
+    sha, message: sha, author: 'x', date, files: [{ filename: 'checkout.html', patch: `--- a/checkout.html\n+++ b/checkout.html\n@@\n${line}\n` }],
+  });
+  const commits = [
+    commit('a'.repeat(40), '2026-10-01T00:00:00Z', '+<p data-testid="discount"></p>'),
+    commit('b'.repeat(40), '2026-10-02T00:00:00Z', '+<input data-testid="coupon" />'),
+  ];
+  const code = new MemoryCodeContext(commits);
+  const { suspects } = await findSuspects({
+    controls: [
+      { controlType: 'field', name: 'Coupon', selector: '[data-testid="coupon"]' },
+      { controlType: 'label', name: 'Discount', selector: '[data-testid="discount"]', failed: true },
+    ],
+    commits, changedFiles: (sha) => code.changedFiles(sha),
+  });
+  assert.deepEqual(suspects.map((s) => s.sha[0]), ['a', 'b']);
+  assert.ok(suspects[0].score > suspects[1].score);
+});
+
+test('the control whose step failed is listed first among a commit\'s overlapping components', async () => {
+  const commits = [{ sha: 'c'.repeat(40), message: 'm', author: 'x', date: '2026-10-01T00:00:00Z',
+    files: [{ filename: 'x.html', patch: '+<input data-testid="coupon" /><p data-testid="discount"></p>' }] }];
+  const code = new MemoryCodeContext(commits);
+  const { suspects } = await findSuspects({
+    controls: [
+      { controlType: 'field', name: 'Coupon', selector: '[data-testid="coupon"]' },
+      { controlType: 'label', name: 'Discount', selector: '[data-testid="discount"]', failed: true },
+    ],
+    commits, changedFiles: (sha) => code.changedFiles(sha),
+  });
+  assert.deepEqual(suspects[0].overlappingComponents, ['label "Discount"', 'field "Coupon"']);
+});

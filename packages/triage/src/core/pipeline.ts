@@ -28,7 +28,12 @@ function controlsOf(cluster: Cluster, runs: TestRun[]): TouchedControl[] {
   for (const run of runs) {
     for (const result of run.results) {
       if (!ids.has(result.testId)) continue;
-      for (const c of result.controls ?? []) seen.set(`${c.controlType}\u0000${c.name}\u0000${c.selector}`, c);
+      for (const c of result.controls ?? []) {
+        const key = `${c.controlType}\u0000${c.name}\u0000${c.selector}`;
+        // Failed in any run of the window counts: that is the control the cluster broke on.
+        const failed = c.failed || seen.get(key)?.failed;
+        seen.set(key, failed ? { ...c, failed: true } : c);
+      }
     }
   }
   return [...seen.values()];

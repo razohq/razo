@@ -50,6 +50,8 @@ export interface TouchedControl {
   controlType: string;
   name: string;
   selector: string;
+  /** A step on this control failed: the assertion or action the test broke on, not a control used along the way. */
+  failed?: boolean;
 }
 
 export interface TestError {

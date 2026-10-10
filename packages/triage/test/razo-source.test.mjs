@@ -170,7 +170,7 @@ describe('mapping', () => {
     assert.deepEqual(result.touchedComponents, ['field "Email"', 'button "Place order"']);
     assert.deepEqual(result.controls, [
       { controlType: 'field', name: 'Email', selector: '[data-testid="email"]' },
-      { controlType: 'button', name: 'Place order', selector: '[data-testid="place-order"]' },
+      { controlType: 'button', name: 'Place order', selector: '[data-testid="place-order"]', failed: true },
       { controlType: 'button', name: 'Place order', selector: 'role=button[name="Place order"]' },
     ]);
     assert.deepEqual(result.healedLocators, [{ from: '[data-testid="place-order"]', to: 'role=button[name="Place order"]' }]);

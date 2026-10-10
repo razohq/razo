@@ -3,6 +3,14 @@ import type { ChangedFile, Commit, SuspectCommit, TouchedControl } from './model
 
 const MIN_NEEDLE = 4;
 
+/**
+ * What a control adds to a commit's score. The control a step failed on is
+ * what the test broke on; a control merely used along the way is weaker
+ * evidence, so a commit touching the former outranks one touching the latter.
+ */
+const FAILED_CONTROL_WEIGHT = 2;
+const USED_CONTROL_WEIGHT = 1;
+
 /** Tokens that name a kind of thing, not a specific control; they would match half a codebase. */
 const GENERIC = new Set([
   'btn', 'button', 'buttons', 'input', 'field', 'link', 'label', 'table', 'row', 'cell', 'item', 'items',
@@ -94,8 +102,9 @@ export interface SuspectSearch {
 }
 
 /**
- * Commits whose diff names a control the test drove, best first: by number
- * of overlapping controls, then most recent. A commit that names nothing is
+ * Commits whose diff names a control the test drove, best first: by score
+ * (each overlapping control counts, the one a step failed on counts double),
+ * then most recent. A commit that names nothing is
  * not a suspect; the caller shows the sha range as evidence instead. Files
  * without a patch, or removed, that carry a component's name in their own
  * name are reported as unevaluable rather than guessed at.
@@ -130,17 +139,21 @@ export async function findSuspects(input: SuspectInput, max = 3): Promise<Suspec
       lines.push(...changedLines(file.patch!));
     }
     if (lines.length === 0) continue;
-    const overlapping = new Set<string>();
+    // One weight per described control, the failed one if any of its selectors failed; failed controls listed first.
+    const overlapping = new Map<string, number>();
     for (const { control, needles: ns } of needles) {
-      if (lines.some((line) => ns.some((n) => containsToken(line, n)))) overlapping.add(describe(control));
+      if (!lines.some((line) => ns.some((n) => containsToken(line, n)))) continue;
+      const weight = control.failed ? FAILED_CONTROL_WEIGHT : USED_CONTROL_WEIGHT;
+      overlapping.set(describe(control), Math.max(weight, overlapping.get(describe(control)) ?? 0));
     }
     if (overlapping.size > 0) {
+      const ranked = [...overlapping.entries()].sort((a, b) => b[1] - a[1]);
       suspects.push({
         sha: commit.sha,
         message: commit.message,
         author: commit.author,
-        overlappingComponents: [...overlapping],
-        score: overlapping.size,
+        overlappingComponents: ranked.map(([component]) => component),
+        score: ranked.reduce((sum, [, weight]) => sum + weight, 0),
       });
     }
   }
