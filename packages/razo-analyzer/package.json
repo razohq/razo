@@ -15,9 +15,9 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "razo-analyze": "./dist/cli.js",
-    "razo-analyzer": "./dist/cli.js",
-    "razo-upload": "./dist/upload-cli.js"
+    "razo-analyze": "dist/cli.js",
+    "razo-analyzer": "dist/cli.js",
+    "razo-upload": "dist/upload-cli.js"
   },
   "exports": {
     ".": {
