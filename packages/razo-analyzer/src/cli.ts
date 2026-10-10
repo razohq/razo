@@ -7,11 +7,11 @@ import { loadFailedReports } from './reports';
 
 const USAGE = `Usage: razo-analyze [target] [options]
 
-Analyzes razo razo-steps.json artifacts of failed tests with Claude and
-prints a business-level failure analysis in Markdown.
+Analyzes razo razo-steps.json artifacts of failed tests with Claude (default)
+or an OpenAI model and prints a business-level failure analysis in Markdown.
 
 Arguments:
-  target              An razo-steps.json file or a directory to scan
+  target              A razo-steps.json file or a directory to scan
                       (default: test-results)
 
 Options:
