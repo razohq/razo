@@ -1,6 +1,6 @@
 # razo-analyzer
 
-**AI failure analysis for [razo](https://www.npmjs.com/package/@razohq/razo) test artifacts.** Feeds failed tests' `razo-steps.json` to Claude and returns, in business terms: which action failed, a root-cause hypothesis (app bug, outdated expectation, missing precondition, flake), and a suggested fix.
+**AI failure analysis for [razo](https://www.npmjs.com/package/@razohq/razo) test artifacts.** Feeds failed tests' `razo-steps.json` to Claude (default) or an OpenAI model and returns, in business terms: which action failed, a root-cause hypothesis (app bug, outdated expectation, missing precondition, flake), and a suggested fix.
 
 Because razo narrates every action and assertion structurally (sentence, control name, expected vs actual), the model doesn't guess from stack traces — it reads the story.
 
@@ -13,7 +13,12 @@ export ANTHROPIC_API_KEY=sk-ant-...
 npx razo-analyze                     # scans test-results/ for razo-steps.json
 npx razo-analyze path/to/razo-steps.json --out analysis.md
 npx razo-analyze --dry-run           # print the prompt without calling the API
+
+# OpenAI instead of Claude: the model id is required, no default is assumed
+OPENAI_API_KEY=sk-... npx razo-analyze --provider openai --model <model-id>
 ```
+
+The analysis prompt is designed and tested with Claude; verdict quality with other models may vary.
 
 In a GitHub Actions PR context, `--pr-comment` posts (or updates) the analysis as a PR comment.
 
@@ -24,7 +29,7 @@ The package ships two binaries. Both accept `-h`/`--help`.
 ### `razo-analyze [target] [options]`
 
 Analyzes the failed tests found in razo `razo-steps.json` artifacts with Claude
-and prints a business-level failure analysis in Markdown to stdout.
+(default) or an OpenAI model and prints a business-level failure analysis in Markdown to stdout.
 
 | Argument / option | Default | Meaning |
 |---|---|---|
@@ -80,6 +85,8 @@ failed, `2` usage error.
     results-dir: test-results
 ```
 
+With OpenAI: `provider: openai`, `openai-api-key: ${{ secrets.OPENAI_API_KEY }}` and `model: <model-id>` (required). The analysis is posted as a PR comment by default (`pr-comment: 'false'` to only print it) with the workflow's own token, so the job needs `permissions: pull-requests: write`; pass `github-token` to use another one.
+
 ## Example output
 
 Against razo's demo failure (an export attempted without ever choosing a quality):
@@ -92,7 +99,7 @@ Against razo's demo failure (an export attempted without ever choosing a quality
 
 ## Cost
 
-Each analysis is a single Claude call (model: `claude-opus-4-8`, ~$5/M input, $25/M output tokens). A typical failed-test analysis uses a few thousand tokens — around $0.05–0.15 per run. Use `--model` to override.
+Each analysis is a single model call. With the default (Claude `claude-opus-4-8`, ~$5/M input, $25/M output tokens) a typical failed-test analysis uses a few thousand tokens — around $0.05–0.15 per run. Use `--model` to override; with `--provider openai` the cost is that model's pricing.
 
 ## Size limits
 

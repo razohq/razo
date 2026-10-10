@@ -1,14 +1,26 @@
 name: 'razo failure analysis'
 description: >-
   Feeds failed tests' razo-steps.json (produced by the razo Playwright reporter)
-  to Claude and posts a business-level failure analysis as a PR comment.
+  to Claude (default) or an OpenAI model and posts a business-level failure
+  analysis as a PR comment.
 branding:
   icon: 'search'
   color: 'purple'
 inputs:
+  provider:
+    description: 'Model provider: anthropic or openai'
+    required: false
+    default: 'anthropic'
   anthropic-api-key:
-    description: 'Anthropic API key used to call Claude'
-    required: true
+    description: 'Anthropic API key, for the anthropic provider'
+    required: false
+  openai-api-key:
+    description: 'OpenAI API key, for the openai provider'
+    required: false
+  model:
+    description: 'Model id. Defaults to claude-opus-4-8 with anthropic; required with openai'
+    required: false
+    default: ''
   results-dir:
     description: 'Directory scanned for razo-steps.json artifacts'
     required: false
@@ -17,10 +29,10 @@ inputs:
     description: 'Post/update the analysis as a PR comment'
     required: false
     default: 'true'
-  model:
-    description: 'Claude model id'
+  github-token:
+    description: 'Token used to post the PR comment (needs pull-requests: write)'
     required: false
-    default: 'claude-opus-4-8'
+    default: '${{ github.token }}'
 runs:
   using: 'composite'
   steps:
@@ -28,7 +40,16 @@ runs:
       shell: bash
       env:
         ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        RAZO_PROVIDER: ${{ inputs.provider }}
+        RAZO_MODEL: ${{ inputs.model }}
+        RAZO_RESULTS_DIR: ${{ inputs.results-dir }}
+        RAZO_PR_COMMENT: ${{ inputs.pr-comment }}
+      # Inputs arrive as environment variables, not interpolated into the
+      # script, so no input value is ever parsed as shell.
       run: |
-        EXTRA=""
-        if [ "${{ inputs.pr-comment }}" = "true" ]; then EXTRA="--pr-comment"; fi
-        npx --yes razo-analyzer "${{ inputs.results-dir }}" --model "${{ inputs.model }}" $EXTRA
+        ARGS=("$RAZO_RESULTS_DIR" --provider "$RAZO_PROVIDER")
+        if [ -n "$RAZO_MODEL" ]; then ARGS+=(--model "$RAZO_MODEL"); fi
+        if [ "$RAZO_PR_COMMENT" = "true" ]; then ARGS+=(--pr-comment); fi
+        npx --yes --package @razohq/razo-analyzer razo-analyze "${ARGS[@]}"
