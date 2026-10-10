@@ -1,6 +1,6 @@
 {
   "name": "@razohq/razo-analyzer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AI failure analysis for razo test artifacts: feeds razo-steps.json to Claude or an OpenAI model and returns which business action failed, a root-cause hypothesis, and a suggested fix.",
   "license": "MIT",
   "author": "Mitchell Lombardo <razohq@gmail.com>",
