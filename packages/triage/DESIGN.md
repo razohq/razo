@@ -25,7 +25,7 @@ Out of scope for this document (they live in razo-cloud):
 
 - Model-assisted diagnosis over an already computed summary.
 - Interactive notifications and execution of approved actions.
-- Issue trackers (duplicate search, creation and comments with approval). The `IssueTracker` port and its contract kit are part of the engine; the real adapters are not.
+- Creating issues and commenting on them, with approval. The engine reads trackers (the `github` tracker, §8) but never writes to them.
 - Postgres store and the collector that reads runs from razo-cloud.
 
 Out of scope in general:
@@ -174,6 +174,7 @@ export interface IssueDraft {
   body: string;
   signature: string;
   labels: string[];
+  url?: string;                 // the tracker's prefilled form where a person creates it
 }
 
 export interface TriageReport {
@@ -316,10 +317,11 @@ export interface ChangedFile {
   status?: 'added' | 'modified' | 'removed' | 'renamed';  // as the VCS reports it; removed never scores
 }
 
-export interface IssueTracker {   // port and contract kit in the engine; the real adapters live in razo-cloud
+export interface IssueTracker {
   findBySignature(signature: string): Promise<IssueRef[]>;
-  create(draft: IssueDraft): Promise<IssueRef>;               // requires approval
-  comment(issue: IssueRef, body: string): Promise<void>;      // requires approval
+  create(draft: IssueDraft): Promise<IssueRef>;               // requires approval; the morning never calls it
+  comment(issue: IssueRef, body: string): Promise<void>;      // requires approval; the morning never calls it
+  newIssueUrl?(draft: IssueDraft): string;                    // optional: a prefilled form a person submits
 }
 
 export interface Notifier {
@@ -334,6 +336,16 @@ export interface Commit {
   url?: string;
 }
 ```
+
+### GitHub issues tracker (read only)
+
+Decided on 2026-10-10, replacing "trackers live in razo-cloud" for reading: the engine may look issues up, never create or comment on them.
+
+- An issue belongs to a failure when its body has the line `razo-triage: <clusterId>`. The id derives from the signature, so the lookup is exact. A label would also be exact, but GitHub's prefilled new-issue form ignores labels that do not exist yet, and one label per failure would have to be created by hand.
+- `findBySignature` uses the search API (`repo:<repo> is:issue in:body "<marker>"`) and keeps only issues whose body has the marker as a whole line. Search indexes a new issue within minutes, which a once-a-morning lookup does not notice.
+- `core/tickets.ts` runs after decisions, for the window's clusters only. An open issue links the cluster (`linkedIssue`) and makes a `new` or `acknowledged` one `ticketed`; `ignored` and `flaky` stand. With only a closed issue the cluster is linked but not `ticketed`: the failure outlived its issue. A cluster this tracker had linked and no longer finds is unlinked. A failed lookup keeps the cluster as it was, the CLI warns, and the morning is delivered.
+- A cluster with an open issue proposes no new one, and its next step points at the issue. Every other proposed issue carries `draft.url`, GitHub's new-issue form prefilled with the title, the body plus the marker, and the labels: a person reviews and submits it, and the next morning finds it. The body is shortened to keep the URL under 8,000 characters, never the marker.
+- `create` and `comment` exist for the contract kit and for callers acting after a recorded approval. The morning never calls them, and with an Issues: read token they fail at GitHub.
 
 ### Report delivery contract
 
@@ -422,11 +434,17 @@ rules:
   flaky: { lookbackRuns: 10, quarantineSuggestAfter: 3 }
   regression: { stableRuns: 3 }
   state: { resolveAfterRuns: 3, pruneResolvedAfterDays: 90 }
+
+tracker:             # optional, read only: which failures already have an issue
+  plugin: github
+  config:
+    repo: owner/repo
+    token: ${GITHUB_TOKEN}
 ```
 
-The `tracker` and `llm` sections and the interactive notifiers are razo-cloud extensions; the engine only accepts keys it does not know when a registered plugin claims them.
+The `llm` section and the interactive notifiers are razo-cloud extensions; the engine only accepts keys it does not know when a registered plugin claims them.
 
-The GitHub token needs two read permissions on the repository: **Actions: read** (list runs, list and download artifacts) and **Contents: read** (compare commits and read their diffs). It is referenced from the config as `${GITHUB_TOKEN}`; an unset variable is an error, never an empty string. The package README has the full guide.
+The GitHub token needs read permissions on the repository: **Actions: read** (list runs, list and download artifacts), **Contents: read** (compare commits and read their diffs) and, with the tracker, **Issues: read** (search issues). It is referenced from the config as `${GITHUB_TOKEN}`; an unset variable is an error, never an empty string. The package README has the full guide.
 
 ## 10. Package structure
 

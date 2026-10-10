@@ -1,11 +1,12 @@
 import type { ConfigSchema, TriagePlugin } from '../../ports/plugin';
 import { GitHubApi } from './api';
 import { GitHubCodeContext } from './code-context';
+import { GitHubIssueTracker } from './issue-tracker';
 
 export interface GitHubConfig {
   /** owner/name */
   repo: string;
-  /** Fine-grained token with contents:read (and actions:read for the collector). */
+  /** Fine-grained token with contents:read (actions:read for the collector, issues:read for the tracker). */
   token: string;
 }
 
@@ -26,5 +27,14 @@ export const githubCodePlugin: TriagePlugin<'code', GitHubConfig> = {
   create: (config) => new GitHubCodeContext(new GitHubApi({ token: config.token }), config.repo),
 };
 
+/** Reads GitHub Issues: which failures already have an issue, and the form to create one. */
+export const githubTrackerPlugin: TriagePlugin<'tracker', GitHubConfig> = {
+  name: 'github',
+  kind: 'tracker',
+  configSchema: githubConfigSchema,
+  create: (config) => new GitHubIssueTracker(new GitHubApi({ token: config.token }), config.repo),
+};
+
+export { GitHubIssueTracker, issueMarker } from './issue-tracker';
 export { GitHubApi, GitHubApiError, type FetchLike, type FetchResponseLike, type GitHubApiOptions } from './api';
 export { GitHubCodeContext } from './code-context';

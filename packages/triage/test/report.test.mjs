@@ -73,3 +73,23 @@ test('totals.failures counts only failures of the runs in the window, even when 
   const all = buildReport({ items: withHistory, runs: [green, red], window: { from: green.startedAt, to: red.finishedAt } });
   assert.equal(all.totals.failures, 2);
 });
+
+test('a proposed issue carries the link where a person creates it, when a tracker offers one', async () => {
+  const { runs, items } = await demo();
+  const report = buildReport({ items, runs, window: { from: runs[0].startedAt, to: runs[1].finishedAt }, issueUrl: (draft) => `https://example/new?title=${encodeURIComponent(draft.title)}` });
+  const [action] = report.items.find((i) => i.cluster.category === 'stale-test').proposedActions;
+  assert.match(action.draft.url, /^https:\/\/example\/new\?title=%5Btriage%5D/);
+  const without = buildReport({ items, runs, window: { from: runs[0].startedAt, to: runs[1].finishedAt } });
+  assert.equal(without.items.find((i) => i.cluster.category === 'stale-test').proposedActions[0].draft.url, undefined);
+});
+
+test('a cluster with an open issue proposes no new one and points at it', async () => {
+  const { runs, items } = await demo();
+  const stale = items.find((i) => i.classification.category === 'stale-test');
+  stale.cluster.linkedIssue = { tracker: 'github', key: '#7', url: 'https://github.com/o/r/issues/7', status: 'open' };
+  stale.cluster.state = 'ticketed';
+  const report = buildReport({ items, runs, window: { from: runs[0].startedAt, to: runs[1].finishedAt } });
+  const item = report.items.find((i) => i.cluster.id === stale.cluster.id);
+  assert.deepEqual(item.proposedActions, []);
+  assert.equal(item.verdict.nextStep, 'Tracked in #7 (https://github.com/o/r/issues/7); follow it there.');
+});

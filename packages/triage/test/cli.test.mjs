@@ -147,3 +147,46 @@ code: { plugin: commits-json, config: { path: ./commits.json } }
     (e) => e.status === 2 && /pull/.test(e.stderr) && !/unknown flag/.test(e.stderr),
   );
 });
+
+// --- tracker ---
+import { fakeIssues } from './helpers/fake-github-issues.mjs';
+
+function withTracker(outDir) {
+  return parseConfig({
+    source: { plugin: 'razo-source', config: { dataDir: DEMO } },
+    code: { plugin: 'commits-json', config: { path: path.join(DEMO, 'commits.json') } },
+    notifiers: [{ plugin: 'markdown', config: { outDir } }],
+    tracker: { plugin: 'github', config: { repo: 'o/r', token: 't' } },
+  }, {});
+}
+
+async function withFetch(fetch, fn) {
+  const original = globalThis.fetch;
+  globalThis.fetch = fetch;
+  try { return await fn(); } finally { globalThis.fetch = original; }
+}
+
+test('runTriage links a failure to its open GitHub issue and offers the others a prefilled one', async () => {
+  const now = new Date('2026-08-04T07:00:00Z');
+  const opts = { now, since: parseDuration('2d', now), lookback: parseDuration('30d', now) };
+  const first = await runTriage(demoConfig(tmp()), opts);
+  const stale = first.report.items.find((i) => i.verdict.category === 'stale-test').cluster;
+  const fake = fakeIssues([{ signature: stale.signature, ref: { status: 'open' } }]);
+  const result = await withFetch(fake.fetch, () => runTriage(withTracker(tmp()), opts));
+  const linked = result.report.items.find((i) => i.cluster.id === stale.id);
+  assert.equal(linked.cluster.state, 'ticketed');
+  assert.equal(linked.cluster.linkedIssue.key, '#1');
+  assert.deepEqual(linked.proposedActions, []);
+  assert.ok(fake.calls.every((c) => c.method === 'GET'), 'the morning never writes to the tracker');
+});
+
+test('a tracker that fails leaves the morning delivered and says which lookups failed', async () => {
+  const outDir = tmp();
+  const now = new Date('2026-08-04T07:00:00Z');
+  const logs = [];
+  const failing = async () => ({ ok: false, status: 502, headers: { get: () => null }, json: async () => ({ message: 'Bad Gateway' }), arrayBuffer: async () => new ArrayBuffer(0) });
+  const result = await withFetch(failing, () => runTriage(withTracker(outDir), { now, since: parseDuration('2d', now), lookback: parseDuration('30d', now), log: (m) => logs.push(m) }));
+  assert.equal(result.report.items.length, 2);
+  assert.equal(readReports(outDir).length, 1);
+  assert.ok(logs.some((m) => /warning: issue lookup failed for 2 cluster/.test(m)), logs.join('\n'));
+});

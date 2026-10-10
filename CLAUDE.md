@@ -110,6 +110,8 @@ Phase 3 adds memory: the `TriageStore` port (`ports/store.ts`, kit in `contract/
 
 After Phase 3, delivery and decisions: the `http` notifier (`adapters/http-notifier`) POSTs the `TriageReport` to any server implementing the report delivery contract (DESIGN.md §8), and `triage pull` records dashboard decisions from a decision feed (`collectors/decisions.ts`) that `core/decisions.ts` applies after reconciliation. razo-cloud is one such server, not a special case.
 
+The `github` tracker (`adapters/github/issue-tracker.ts`) is read only: `core/tickets.ts` links the window's clusters to issues whose body has the line `razo-triage: <clusterId>` (open issue → `ticketed`), and proposed issues carry `draft.url`, GitHub's prefilled new-issue form, for a person to submit. Its `create` and `comment` exist for the contract kit; the morning never calls them.
+
 ## Conventions
 
 - Contributions need a changeset (`npx changeset`) with the PR. On merge to `main` the release workflow opens a "Version Packages" PR; merging that one stages the new versions on npm (`scripts/stage-publish.mjs`, trusted publishing with stage-only permission), and a maintainer approves each with 2FA (`npm stage approve <id>` or npmjs.com). A staged version is recognized by its `<name>@<version>` git tag; delete the tag to stage a rejected version again.

@@ -116,3 +116,13 @@ test('store: optional; json-file builds a JsonFileStore, absent means no store',
   assert.ok(built.store instanceof JsonFileStore);
   assert.throws(() => parseConfig({ ...minimal, store: 'json-file' }, {}), /store/);
 });
+
+test('tracker: optional; github builds a GitHubIssueTracker, absent means no tracker', async () => {
+  const { GitHubIssueTracker } = await import('../dist/index.js');
+  assert.equal(instantiate(parseConfig(minimal, {})).tracker, undefined);
+  const cfg = parseConfig({ ...minimal, tracker: { plugin: 'github', config: { repo: 'o/r', token: '${GITHUB_TOKEN}' } } }, { GITHUB_TOKEN: 't' });
+  const built = instantiate(cfg);
+  assert.ok(built.tracker instanceof GitHubIssueTracker);
+  assert.equal(built.trackerName, 'github');
+  assert.throws(() => parseConfig({ ...minimal, tracker: 'github' }, {}), /tracker/);
+});

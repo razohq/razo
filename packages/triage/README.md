@@ -16,14 +16,16 @@ npm run build -w @razohq/triage
 
 ## Token
 
-`triage pull` and the `github` code adapter use a GitHub token with two
-read permissions on the repository:
+`triage pull`, the `github` code adapter and the `github` tracker use a GitHub
+token with read permissions on the repository:
 
 - **Actions: read**, to list workflow runs and to list and download artifacts.
 - **Contents: read**, to compare commits and read their diffs.
+- **Issues: read**, only with the tracker, to find the issues that track a failure.
 
 A fine-grained personal access token scoped to the repository with exactly
-those two permissions is enough. Put it in the environment (`GITHUB_TOKEN`)
+those permissions is enough. In a workflow, the job's `GITHUB_TOKEN` with
+`permissions: { actions: read, contents: read, issues: read }` works too. Put it in the environment (`GITHUB_TOKEN`)
 and reference it from the config as `${GITHUB_TOKEN}`; the config file never
 holds the token itself, and an unset variable is an error rather than an
 empty token.
@@ -59,6 +61,9 @@ notifiers:
 store:                     # optional: memory between runs
   plugin: json-file
   config: { path: ./.razo/triage-state.json }
+tracker:                   # optional, read only: links failures to the GitHub issues that track them
+  plugin: github
+  config: { repo: razohq/razo-demo, token: "${GITHUB_TOKEN}" }
 decisions:                 # optional, needs the json-file store: `triage pull` records the decisions people took on a dashboard
   url: https://razo.ar/api/triage/decisions   # any server implementing the decision feed contract (DESIGN.md §8)
   token: ${RAZO_INGEST_TOKEN}
@@ -71,6 +76,13 @@ rules:                     # optional; DESIGN.md §6 defaults, flaky and environ
 
 Offline: `code: { plugin: commits-json, config: { path: ./commits.json } }`
 reads a commits list shaped like the ones under `fixtures/`.
+
+With the tracker, an issue belongs to a failure when its body has the line
+`razo-triage: <cluster id>`. The report's "open it in the tracker" link opens
+GitHub's new-issue form with that line already in the body; to link an issue
+that already exists, add the line to it. A failure with an open issue becomes
+`ticketed` and stops proposing a new one. The triage never creates or edits
+issues itself.
 
 ## State between runs in CI
 

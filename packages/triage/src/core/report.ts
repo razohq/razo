@@ -12,6 +12,8 @@ export interface ReportInput {
   actions?: Map<string, TriageAction[]>;
   /** A cluster marked flaky this many times gets quarantine proposed instead. Default: 3. */
   quarantineSuggestAfter?: number;
+  /** From the tracker: where a person creates a proposed issue themselves. */
+  issueUrl?: (draft: IssueDraft) => string;
 }
 
 const short = (sha: string) => sha.slice(0, 7);
@@ -25,7 +27,7 @@ function titleOf(item: TriageItem, runs: TestRun[]): string {
   return testId;
 }
 
-function draftFor(item: TriageItem, runs: TestRun[]): IssueDraft {
+function draftFor(item: TriageItem, runs: TestRun[], issueUrl?: (draft: IssueDraft) => string): IssueDraft {
   const { cluster, classification } = item;
   const lines = [
     `Category: ${classification.category} (${classification.confidence})`,
@@ -42,20 +44,23 @@ function draftFor(item: TriageItem, runs: TestRun[]): IssueDraft {
     lines.push('', 'Suspects:', ...cluster.suspectCommits.map((s) => `- ${short(s.sha)} ${s.message} (${s.overlappingComponents.join(', ')})`));
   }
   lines.push('', 'Evidence:', ...classification.evidence.map((e) => `- [${e.kind}] ${e.description}`));
-  return {
+  const draft: IssueDraft = {
     title: `[triage] ${classification.category}: ${titleOf(item, runs)}`,
     body: lines.join('\n'),
     signature: cluster.signature,
     labels: ['triage', classification.category],
   };
+  return issueUrl ? { ...draft, url: issueUrl(draft) } : draft;
 }
+
+const tracked = (item: TriageItem) => item.cluster.linkedIssue?.status === 'open';
 
 /** A regression or stale test that green runs already closed: nothing left to fix unless the fix was temporary. */
 const fixedAlready = (item: TriageItem): boolean =>
   !!item.range.greenAgainSha && (item.classification.category === 'regression' || item.classification.category === 'stale-test');
 
 function actionsFor(item: TriageItem, runs: TestRun[], input: ReportInput): ProposedAction[] {
-  if (fixedAlready(item)) return [];
+  if (fixedAlready(item) || tracked(item)) return [];
   switch (item.classification.category) {
     case 'flaky': {
       const marks = (input.actions?.get(item.cluster.id) ?? []).filter((a) => a.action === 'mark-flaky').length;
@@ -63,13 +68,15 @@ function actionsFor(item: TriageItem, runs: TestRun[], input: ReportInput): Prop
     }
     case 'environment': return [{ type: 'ignore' }];
     case 'regression':
-    case 'stale-test': return [{ type: 'create-issue', draft: draftFor(item, runs) }];
+    case 'stale-test': return [{ type: 'create-issue', draft: draftFor(item, runs, input.issueUrl) }];
     default: return [];
   }
 }
 
 function nextStepFor(item: TriageItem): string {
   const suspect = item.cluster.suspectCommits[0];
+  const issue = item.cluster.linkedIssue;
+  if (issue && tracked(item)) return `Tracked in ${issue.key} (${issue.url}); follow it there.`;
   if (fixedAlready(item)) {
     const broke = item.range.firstRedSha ? `It broke at ${short(item.range.firstRedSha)}` : 'It broke earlier';
     const who = suspect ? `, suspect ${short(suspect.sha)} (${suspect.message})` : '';

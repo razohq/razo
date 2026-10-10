@@ -29,14 +29,17 @@ export function issueTrackerContract(factory: IssueTrackerFactory): ContractCase
 
   return [
     {
+      // Keys and urls are assigned by the tracker (GitHub numbers its issues), so the
+      // seeded issue is recognized as the only one found, not by the seed's own key.
       name: 'findBySignature returns the seeded issue for its signature',
       async run() {
         const { tracker, name } = await fresh();
         const got = await tracker.findBySignature(known.signature);
         assert.equal(got.length, 1);
-        assert.equal(got[0].key, known.ref.key);
-        assert.equal(got[0].url, known.ref.url);
         assert.equal(got[0].tracker, name);
+        assert.ok(got[0].key.length > 0, 'key');
+        assert.ok(got[0].url.length > 0, 'url');
+        assert.equal(got[0].status, known.ref.status);
       },
     },
     {

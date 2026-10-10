@@ -10,4 +10,6 @@ export interface IssueTracker {
   findBySignature(signature: string): Promise<IssueRef[]>;
   create(draft: IssueDraft): Promise<IssueRef>;
   comment(issue: IssueRef, body: string): Promise<void>;
+  /** Optional: a link where a person creates the issue themselves, prefilled with the draft. */
+  newIssueUrl?(draft: IssueDraft): string;
 }

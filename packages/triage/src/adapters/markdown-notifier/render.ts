@@ -22,7 +22,7 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 function actionLine(action: ProposedAction): string {
   switch (action.type) {
-    case 'create-issue': return `create-issue: ${action.draft.title}`;
+    case 'create-issue': return `create-issue: ${action.draft.title}${action.draft.url ? ` — [open it in the tracker](${action.draft.url})` : ''}`;
     case 'comment-issue': return `comment-issue on ${action.issue.key}: ${action.body}`;
     default: return action.type;
   }
@@ -58,6 +58,9 @@ export function renderMarkdown(report: TriageReport): string {
       code(cluster.signature), '', verdict.summary, '', `**Next:** ${verdict.nextStep}`, '',
     );
     lines.push('Tests:', ...[...new Set(cluster.failures.map((f) => f.testId))].map((t) => `- ${t}`), '');
+    if (cluster.linkedIssue) {
+      lines.push(`Issue: [${cluster.linkedIssue.key}](${cluster.linkedIssue.url}) (${cluster.linkedIssue.status})`, '');
+    }
     if (cluster.lastGreenSha && cluster.firstRedSha) {
       lines.push(`Range: ${short(cluster.lastGreenSha)}..${short(cluster.firstRedSha)}`, '');
     }
