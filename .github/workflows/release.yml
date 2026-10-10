@@ -22,6 +22,11 @@ jobs:
           node-version: 20
           cache: npm
 
+      # npm trusted publishing (OIDC, no stored token) needs npm 11.5.1 or later;
+      # Node 20 ships npm 10. Each package lists this repo and release.yml as a
+      # trusted publisher on npmjs.com.
+      - run: npm install -g npm@11.20.0
+
       - run: npm ci
 
       - run: npm run build -w @razohq/razo -w @razohq/razo-analyzer
@@ -32,5 +37,4 @@ jobs:
           publish: npx changeset publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
