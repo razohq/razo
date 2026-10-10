@@ -52,15 +52,18 @@ function groupByTest(runId: string, reports: StoredReport[]): Map<string, Stored
 
 function controlsOf(reports: RazoReport[]): TouchedControl[] {
   const seen = new Map<string, TouchedControl>();
-  const add = (controlType: string, name: string, selector: string) => {
+  const add = (controlType: string, name: string, selector: string, failed: boolean) => {
     const key = `${controlType}\u0000${name}\u0000${selector}`;
-    if (!seen.has(key)) seen.set(key, { controlType, name, selector });
+    const known = seen.get(key);
+    if (!known) seen.set(key, { controlType, name, selector, ...(failed ? { failed } : {}) });
+    else if (failed) known.failed = true;
   };
   for (const report of reports) {
     for (const step of report.steps ?? []) {
+      const failed = step.status === 'failed';
       // The pre-heal selector is what the test source names; keep it for suspects.
-      if (step.healed) add(step.controlType, step.name, step.healed.from);
-      add(step.controlType, step.name, step.selector);
+      if (step.healed) add(step.controlType, step.name, step.healed.from, failed);
+      add(step.controlType, step.name, step.selector, failed);
     }
   }
   return [...seen.values()];

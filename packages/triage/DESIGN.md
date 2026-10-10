@@ -102,6 +102,7 @@ export interface TouchedControl {
   controlType: string;
   name: string;
   selector: string;
+  failed?: boolean;             // a step on this control failed: what the test broke on
 }
 
 export interface TestError {
@@ -232,11 +233,12 @@ A cluster groups by signature, and several tests may share it with different his
 ### Suspect commits
 
 - Range: `lastGreenSha..firstRedSha` through `CodeContext.commitsBetween`.
-- Score: number of overlapping components between the test's `controls` and the commit's files. The reference logic is `matchControlsToDiff` in razo-cloud (private repo); `core/suspects.ts` reimplements it over `ChangedFile.patch` without importing anything from razo-cloud, with these rules:
+- Score: the overlapping components between the test's `controls` and the commit's files, each worth 1, or 2 when a step on that control failed (the assertion or action the test broke on, not a control used along the way). Ties go to the newest commit, and a suspect lists its failed control first. The reference logic is `matchControlsToDiff` in razo-cloud (private repo); `core/suspects.ts` reimplements it over `ChangedFile.patch` without importing anything from razo-cloud, with these rules:
   - A control's needles are its name and the quoted values of its selector (testid, role name). Needles shorter than 4 characters and generic ones (`btn`, `button`, `input`, `row`, `item`, `text`…) are dropped: they would turn every commit into a suspect.
   - A needle matches only as a whole token on a `+`/`-` line, case-insensitively; letters, digits, `-` and `_` glue a token, so `order` matches neither `reorder` nor `order-row`.
   - A file without a patch (binary or truncated) or a removed file whose name carries a component's tokens in sequence (`PlaceOrder.tsx`, `place_order_form.ts`; not `reorder.ts` for `Order`) is marked **unevaluable** and goes into the verdict's evidence, without a score. A file without a patch that names nothing is ignored.
 - At most 3 commits are reported per cluster.
+- A `stale-test` verdict without a healed locator is narrated from the failed control: `button "Place order" stopped responding at <firstRedSha>; <suspect> (<message>) changed it`. That sentence is the summary, not the signature.
 
 ## 7. State and memory
 
@@ -613,8 +615,8 @@ On 2026-10-07 the breakage was reapplied (razo-demo PR #8) and reverted the next
 - Drop a merge commit from the suspects when the commits it merges are already in the range (finding 2). ✅ 2026-10-02
 - Accumulate `FailureRef`s across mornings, deduplicated by run and test, so a cluster carries its whole history (finding 3); take `firstSeenAt` from the earliest failure in the lookback, not in the window (finding 4). ✅ 2026-10-02
 - Take the range, suspects and regression rule from the latest red streak even when green runs already closed it, and say so in the evidence (finding 6); count days open from the start of the current red streak (`openSince`), not from the first sighting (finding 7). ✅ 2026-10-08
-- Weigh controls whose assertion failed over controls only used along the way when scoring suspects (finding 1).
-- Narrate a stale-test summary from the suspect or the healed locator instead of repeating the signature (finding 5).
+- Weigh controls whose assertion failed over controls only used along the way when scoring suspects (finding 1). ✅ 2026-10-10: it reorders competing commits; it does not change finding 1 itself, where the asserted `discount` testid is on no changed line.
+- Narrate a stale-test summary from the suspect or the healed locator instead of repeating the signature (finding 5). ✅ 2026-10-10
 - Prune old resolved clusters from the state: a cluster resolved for longer than a configurable number of days (and with no recorded actions worth keeping) leaves `triage_clusters`, so the state artifact stays small over months. Until then the state grows by one entry per distinct failure ever seen.
 
 ## 12. Metrics

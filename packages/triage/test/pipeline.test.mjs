@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { analyzeWindow, RazoSource } from '../dist/index.js';
+import { analyzeWindow, buildReport, RazoSource } from '../dist/index.js';
 import { MemoryCodeContext } from '../dist/fakes.js';
 
 const FIXTURES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../fixtures');
@@ -131,4 +131,17 @@ test('a cluster is green again only when all of its tests are', async () => {
   assert.deepEqual(item.range, { lastGreenSha: sha(1), firstRedSha: sha(2) }, 'b is still red');
   assert.ok(!item.classification.evidence.some((e) => /green again/.test(e.description)));
   assert.equal(item.cluster.openSince, '2026-01-02T00:05:00Z');
+});
+
+test('a stale test that is still red is narrated from the control that stopped responding and the commit that changed it', async () => {
+  const runs = await new RazoSource(DEMO).fetchRuns(new Date(0));
+  const items = await analyzeWindow(runs, demoCode());
+  const order = items.find((i) => i.cluster.failures[0].testId.endsWith('placing the order confirms it'));
+  const [suspect] = order.cluster.suspectCommits;
+  const report = buildReport({ items, runs, window: { from: runs[0].startedAt, to: runs[1].finishedAt } });
+  const verdict = report.items.find((i) => i.cluster.id === order.cluster.id).verdict;
+  assert.equal(
+    verdict.summary,
+    `button "Place order" stopped responding at ${runs[1].sha.slice(0, 7)}; ${suspect.sha.slice(0, 7)} (${suspect.message}) changed it`,
+  );
 });

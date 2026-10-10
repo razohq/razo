@@ -118,6 +118,26 @@ function streakIsHardRed(history: TestHistory): boolean {
     .every((o) => o.attempts.every((a) => isFailing(a.status)));
 }
 
+/**
+ * A stale test in words: the control its failing step was on, the commit it
+ * went red at, and the suspect that changed that control. Undefined when the
+ * test's controls do not say which one failed.
+ */
+function staleNarrative(testId: string, input: ClassifyInput, options: { baseBranch?: string }): string | undefined {
+  const failed = input.runs
+    .flatMap((run) => run.results)
+    .filter((r) => r.testId === testId)
+    .flatMap((r) => r.controls ?? [])
+    .find((c) => c.failed);
+  if (!failed) return undefined;
+  const control = `${failed.controlType} "${failed.name}"`;
+  const history = input.histories.get(testId);
+  const firstRed = history ? shaRange(history, options).firstRedSha : undefined;
+  const suspect = input.suspects.find((s) => s.overlappingComponents.includes(control));
+  return `${control} stopped responding${firstRed ? ` at ${short(firstRed)}` : ''}`
+    + (suspect ? `; ${short(suspect.sha)} (${suspect.message}) changed it` : '');
+}
+
 interface TestVerdict {
   testId: string;
   category: Category;
@@ -157,6 +177,9 @@ function classifyTest(
     if (overlapping || healed) {
       if (healed) {
         evidence.push({ kind: 'history', description: `${testId}: a locator already healed from ${healed[0].from} to ${healed[0].to}` });
+      } else {
+        const said = staleNarrative(testId, input, options);
+        if (said) evidence.push({ kind: 'history', description: said });
       }
       return { testId, category: 'stale-test', confidence: 'medium', evidence };
     }
