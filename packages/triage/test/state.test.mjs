@@ -208,3 +208,43 @@ test('mergeClusters unions the failures of a known cluster, deduplicated by run 
   assert.deepEqual(merged.failures.map((f) => f.runId), ['r1', 'r2', 'r3']);
   assert.equal(merged.firstSeenAt, '2026-09-01T00:00:00Z');
 });
+
+// --- pruning ---
+import { pruneResolved, DEFAULT_RULES } from '../dist/index.js';
+
+const NOW = new Date('2026-12-31T00:00:00Z');
+const old = (id, extra = {}) => ({ ...base(), id, state: 'resolved', lastSeenAt: '2026-09-01T00:00:00Z', ...extra });
+const decided = (clusterId, action, at = '2026-08-30T00:00:00Z') => ({ clusterId, action, at });
+
+test('pruning drops a cluster resolved for longer than pruneResolvedAfterDays since its last failure', () => {
+  const recent = old('recent', { lastSeenAt: '2026-12-01T00:00:00Z' });
+  const open = old('open', { state: 'acknowledged' });
+  const { kept, pruned } = pruneResolved([old('gone'), recent, open], [], { now: NOW, afterDays: 90 });
+  assert.deepEqual(kept.map((c) => c.id), ['recent', 'open']);
+  assert.deepEqual(pruned, ['gone']);
+});
+
+test('pruning keeps a resolved cluster whose latest decision survives a reopen, or that has an issue', () => {
+  const clusters = [old('ignored'), old('flaky'), old('acked'), old('ticketed', { linkedIssue: { tracker: 'github', key: '#1', url: 'u', status: 'open' } })];
+  const actions = [decided('ignored', 'ignore'), decided('flaky', 'mark-flaky'), decided('acked', 'ignore'), decided('acked', 'acknowledge', '2026-08-31T00:00:00Z')];
+  const { kept, pruned } = pruneResolved(clusters, actions, { now: NOW, afterDays: 90 });
+  assert.deepEqual(kept.map((c) => c.id), ['ignored', 'flaky', 'ticketed']);
+  assert.deepEqual(pruned, ['acked'], 'the latest decision was an acknowledge, which a reopen drops anyway');
+});
+
+test('pruneResolvedAfterDays 0 never prunes, and the default is 90', () => {
+  assert.deepEqual(pruneResolved([old('gone')], [], { now: NOW, afterDays: 0 }).pruned, []);
+  assert.equal(DEFAULT_RULES.state.pruneResolvedAfterDays, 90);
+});
+
+test('runTriage prunes old resolved clusters from the store and says how many', async () => {
+  const stateFile = path.join(tmp(), 'triage-state.json');
+  const store = new JsonFileStore(stateFile);
+  const logs = [];
+  const now = new Date('2026-08-04T07:00:00Z');
+  const ancient = old('ancient', { lastSeenAt: '2026-04-01T00:00:00Z' });
+  await store.saveClusters([ancient]);
+  await runTriage(demoConfig(stateFile), { now, since: parseDuration('2d', now), lookback: parseDuration('30d', now), log: (m) => logs.push(m) });
+  assert.ok(!(await store.loadClusters()).some((c) => c.id === 'ancient'));
+  assert.ok(logs.some((m) => /pruned 1 resolved cluster/.test(m)), logs.join('\n'));
+});

@@ -9,7 +9,7 @@ import type { TriageReport } from './core/model';
 import { analyzeWindow } from './core/pipeline';
 import { buildReport } from './core/report';
 import { SIGNATURE_ALGORITHM_VERSION } from './core/signature';
-import { reconcileClusters } from './core/state';
+import { pruneResolved, reconcileClusters } from './core/state';
 import type { TriageAction } from './core/model';
 import { JsonFileStore } from './adapters/json-store';
 import type { FetchLike } from './adapters/github/api';
@@ -85,7 +85,13 @@ export async function runTriage(config: TriageConfig, options: RunOptions): Prom
   });
   for (const notifier of notifiers) await notifier.send(report);
   if (store && reconciled) {
-    await store.saveClusters(reconciled);
+    const { kept, pruned } = pruneResolved(reconciled, await store.listActions(), {
+      now: options.now, afterDays: config.rules.state.pruneResolvedAfterDays,
+    });
+    if (pruned.length > 0) {
+      options.log?.(`pruned ${pruned.length} resolved cluster(s) with no failure for ${config.rules.state.pruneResolvedAfterDays} days`);
+    }
+    await store.saveClusters(kept);
     await store.recordRun({
       id: `triage-${report.generatedAt}`,
       generatedAt: report.generatedAt,

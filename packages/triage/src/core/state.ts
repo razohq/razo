@@ -1,4 +1,5 @@
-import type { Cluster, TestRun } from './model';
+import { DECISION_STATES } from './decisions';
+import type { Cluster, TestRun, TriageAction } from './model';
 
 /**
  * Combines the clusters the store remembers with the ones this run produced.
@@ -63,4 +64,39 @@ export function reconcileClusters(previous: Cluster[], current: Cluster[], conte
     const quiet = baseRuns.filter((r) => Date.parse(r.finishedAt) > since).length;
     return quiet >= context.resolveAfterRuns ? { ...cluster, state: 'resolved' } : cluster;
   });
+}
+
+/** Decisions that survive a reopen (core/decisions.ts): pruning such a cluster would forget them. */
+const KEEPS_ACROSS_REOPEN = new Set(['ignored', 'flaky']);
+
+/**
+ * Drops clusters that are resolved and have not failed for `afterDays`, so
+ * the state does not grow with every failure ever seen. A cluster stays when
+ * it links an issue or when its latest decision is one a reopen keeps
+ * (ignore, flaky): pruned, it would come back as new and lose it. Recorded
+ * actions are left alone. `afterDays` 0 keeps everything.
+ */
+export function pruneResolved(
+  clusters: Cluster[],
+  actions: TriageAction[],
+  options: { now: Date; afterDays: number },
+): { kept: Cluster[]; pruned: string[] } {
+  if (options.afterDays <= 0) return { kept: clusters, pruned: [] };
+  const latest = new Map<string, TriageAction>();
+  for (const action of actions) {
+    if (!(action.action in DECISION_STATES)) continue;
+    const before = latest.get(action.clusterId);
+    if (!before || Date.parse(action.at) >= Date.parse(before.at)) latest.set(action.clusterId, action);
+  }
+  const cutoff = options.now.getTime() - options.afterDays * 86_400_000;
+  const kept: Cluster[] = [];
+  const pruned: string[] = [];
+  for (const cluster of clusters) {
+    const decision = latest.get(cluster.id);
+    const sticky = decision !== undefined && KEEPS_ACROSS_REOPEN.has(DECISION_STATES[decision.action]);
+    const prunable = cluster.state === 'resolved' && Date.parse(cluster.lastSeenAt) < cutoff && !cluster.linkedIssue && !sticky;
+    if (prunable) pruned.push(cluster.id);
+    else kept.push(cluster);
+  }
+  return { kept, pruned };
 }

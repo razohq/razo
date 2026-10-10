@@ -9,7 +9,8 @@ export interface RulesConfig {
   env: { windowMinutes: number; minFiles: number };
   flaky: { lookbackRuns: number; quarantineSuggestAfter: number };
   regression: { stableRuns: number };
-  state: { resolveAfterRuns: number };
+  /** pruneResolvedAfterDays: a resolved cluster leaves the store this long after its last failure; 0 keeps every cluster. */
+  state: { resolveAfterRuns: number; pruneResolvedAfterDays: number };
 }
 
 /** DESIGN.md §6/§10 defaults. The flaky and environment thresholds are provisional until calibrated on real nights. */
@@ -17,7 +18,7 @@ export const DEFAULT_RULES: RulesConfig = {
   env: { windowMinutes: 10, minFiles: 5 },
   flaky: { lookbackRuns: 10, quarantineSuggestAfter: 3 },
   regression: { stableRuns: 3 },
-  state: { resolveAfterRuns: 3 },
+  state: { resolveAfterRuns: 3, pruneResolvedAfterDays: 90 },
 };
 
 export interface ClassifyInput {
