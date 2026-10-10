@@ -66,6 +66,7 @@ rules:                     # optional; DESIGN.md §6 defaults, flaky and environ
   env: { windowMinutes: 10, minFiles: 5 }
   flaky: { lookbackRuns: 10, quarantineSuggestAfter: 3 }
   regression: { stableRuns: 3 }
+  state: { resolveAfterRuns: 3, pruneResolvedAfterDays: 90 }   # 0 never prunes resolved clusters
 ```
 
 Offline: `code: { plugin: commits-json, config: { path: ./commits.json } }`

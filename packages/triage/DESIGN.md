@@ -291,6 +291,7 @@ State rules (`core/state.ts`, applied by `triage run` between `classify` and `re
 - A cluster in state `ignored` or `flaky` is not reported as new; it appears in a compact "Known" section of the report, with its days open.
 - Days open count from `openSince`, the start of the current red streak, and from `firstSeenAt` only when that start is unknown. `firstSeenAt` stays the first sighting ever; it never moves.
 - A cluster with no failures for `state.resolveAfterRuns` base-branch runs (default 3) after its last failure becomes `resolved`. PR-branch runs do not count. A resolved cluster that fails again is `reopened`: state `new`, novelty `reopened`, history kept; the report counts reopened clusters at the top, lists them first and marks their heading.
+- A `resolved` cluster leaves the store `state.pruneResolvedAfterDays` days (default 90; 0 keeps everything) after its last failure, so the state does not grow with every failure ever seen. It stays when it links an issue or when its latest decision is ignore or flaky: those survive a reopen, and a pruned cluster that fails again comes back as `new`, not `reopened`. Recorded actions are never pruned; `triage run` logs how many clusters it dropped.
 - If sending the report fails, `triage run` fails and saves nothing: the state only records mornings that were delivered.
 - A cluster marked `flaky` `flaky.quarantineSuggestAfter` times (default 3, counted from recorded `mark-flaky` actions) gets the proposed action `quarantine` instead of `mark-flaky`.
 - A `regression` or `stale-test` cluster that is green again (every test's latest streak closed) proposes no action: its next step names the green SHA, where it broke and the suspect, and suggests an issue only if the fix was a temporary revert.
@@ -420,7 +421,7 @@ rules:
   env: { windowMinutes: 10, minFiles: 5 }
   flaky: { lookbackRuns: 10, quarantineSuggestAfter: 3 }
   regression: { stableRuns: 3 }
-  state: { resolveAfterRuns: 3 }
+  state: { resolveAfterRuns: 3, pruneResolvedAfterDays: 90 }
 ```
 
 The `tracker` and `llm` sections and the interactive notifiers are razo-cloud extensions; the engine only accepts keys it does not know when a registered plugin claims them.
@@ -617,7 +618,7 @@ On 2026-10-07 the breakage was reapplied (razo-demo PR #8) and reverted the next
 - Take the range, suspects and regression rule from the latest red streak even when green runs already closed it, and say so in the evidence (finding 6); count days open from the start of the current red streak (`openSince`), not from the first sighting (finding 7). ✅ 2026-10-08
 - Weigh controls whose assertion failed over controls only used along the way when scoring suspects (finding 1). ✅ 2026-10-10: it reorders competing commits; it does not change finding 1 itself, where the asserted `discount` testid is on no changed line.
 - Narrate a stale-test summary from the suspect or the healed locator instead of repeating the signature (finding 5). ✅ 2026-10-10
-- Prune old resolved clusters from the state: a cluster resolved for longer than a configurable number of days (and with no recorded actions worth keeping) leaves `triage_clusters`, so the state artifact stays small over months. Until then the state grows by one entry per distinct failure ever seen.
+- Prune old resolved clusters from the state: a cluster resolved for longer than a configurable number of days (and with no recorded actions worth keeping) leaves `triage_clusters`, so the state artifact stays small over months. ✅ 2026-10-10 (`state.pruneResolvedAfterDays`, §7)
 
 ## 12. Metrics
 
