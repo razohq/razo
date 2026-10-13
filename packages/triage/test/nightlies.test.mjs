@@ -60,12 +60,16 @@ test('days open count from the start of the current failing streak, not from the
   assert.match(markdown, /open for 0 days/);
 });
 
-test('a failure already green again proposes no issue and says so in the next step', async () => {
+test('a failure already green again still offers an issue, and the next step says it is only for a temporary fix', async () => {
   const { runs, items } = await morningAfterRevert();
-  const report = buildReport({ items, runs, window: { from: '2026-10-07T19:00:00Z', to: '2026-10-08T19:00:00Z' } });
+  const report = buildReport({
+    items, runs, window: { from: '2026-10-07T19:00:00Z', to: '2026-10-08T19:00:00Z' }, issueUrl: (d) => `https://example.test/new?title=${encodeURIComponent(d.title)}`,
+  });
   for (const { verdict, proposedActions } of report.items) {
-    assert.deepEqual(proposedActions, [], verdict.category);
+    assert.deepEqual(proposedActions.map((a) => a.type), ['create-issue'], verdict.category);
+    assert.match(proposedActions[0].draft.url, /^https:\/\/example\.test\/new\?title=/, 'a person can still open it from the form');
     assert.match(verdict.nextStep, new RegExp(`^Green again since ${REVERT}`), verdict.nextStep);
+    assert.match(verdict.nextStep, /open an issue only if the fix was a temporary revert/);
     assert.match(verdict.nextStep, new RegExp(COMMIT), 'the commit that broke it stays visible');
   }
 });
