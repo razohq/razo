@@ -55,12 +55,15 @@ function draftFor(item: TriageItem, runs: TestRun[], issueUrl?: (draft: IssueDra
 
 const tracked = (item: TriageItem) => item.cluster.linkedIssue?.status === 'open';
 
-/** A regression or stale test that green runs already closed: nothing left to fix unless the fix was temporary. */
+/**
+ * A regression or stale test that green runs already closed: nothing left to fix unless the fix was temporary.
+ * It still proposes its issue, for a person who wants a record; the next step says when that is worth it.
+ */
 const fixedAlready = (item: TriageItem): boolean =>
   !!item.range.greenAgainSha && (item.classification.category === 'regression' || item.classification.category === 'stale-test');
 
 function actionsFor(item: TriageItem, runs: TestRun[], input: ReportInput): ProposedAction[] {
-  if (fixedAlready(item) || tracked(item)) return [];
+  if (tracked(item)) return [];
   switch (item.classification.category) {
     case 'flaky': {
       const marks = (input.actions?.get(item.cluster.id) ?? []).filter((a) => a.action === 'mark-flaky').length;
