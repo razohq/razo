@@ -12,7 +12,7 @@ npm workspaces monorepo, Node >= 20, TypeScript, built with tsup, released with 
 |---|---|---|
 | `packages/razo` | `@razohq/razo` | The framework: the control classes (one per UI widget), narrated assertions, deterministic self-healing locators, the `/reporter` entry that writes `razo-steps.json`, the `/vite` auto-testid plugin. Zero runtime deps. |
 | `packages/razo-analyzer` | `@razohq/razo-analyzer` | `razo-analyze` CLI (+ GitHub Action via `action.yml`) and `razo-upload` CLI. Depends on `@anthropic-ai/sdk` and `openai`. |
-| `packages/triage` | `@razohq/triage` | Morning triage, private until its Phase 5. Phases 1–3 are done: canonical model, ports and contract kits (`/contract` entry), in-memory fakes (`/fakes` entry), deterministic classification, state, the `triage` CLI and its notifiers. Design in `DESIGN.md`. |
+| `packages/triage` | `@razohq/triage` | Morning triage, public since 0.1.0 (Phase 4, the plugin SDK, still pending). Phases 1–3 are done: canonical model, ports and contract kits (`/contract` entry), in-memory fakes (`/fakes` entry), deterministic classification, state, the `triage` CLI and its notifiers. Design in `DESIGN.md`. |
 
 ## Commands
 
