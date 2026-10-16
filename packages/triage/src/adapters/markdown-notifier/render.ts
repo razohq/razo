@@ -40,6 +40,7 @@ export function renderMarkdown(report: TriageReport): string {
   ];
   if (report.items.length === 0) {
     lines.push('No failures in this window.', '');
+    atRiskSection(report, lines);
     return lines.join('\n');
   }
   // Reopened clusters first: a fix that stopped working outranks anything else this morning.
@@ -78,5 +79,17 @@ export function renderMarkdown(report: TriageReport): string {
     }
     lines.push('');
   }
+  atRiskSection(report, lines);
   return lines.join('\n');
+}
+
+/** Green tests trending unstable: advisory, after everything that failed. */
+function atRiskSection(report: TriageReport, lines: string[]): void {
+  const atRisk = report.atRisk ?? [];
+  if (atRisk.length === 0) return;
+  lines.push('## At risk', '', 'Green this morning, but their recent history on the base branch is trending unstable. Nothing to do yet; worth a look before they fail.', '');
+  for (const t of atRisk) {
+    lines.push(`- ${Math.round(t.risk * 100)}% · ${t.title} (${t.file}): ${t.reasons.map((r) => r.detail).join('; ')}`);
+  }
+  lines.push('');
 }

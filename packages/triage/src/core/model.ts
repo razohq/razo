@@ -141,6 +141,23 @@ export interface TriageReport {
   window: { from: string; to: string };
   totals: { tests: number; failures: number; clusters: number };
   items: Array<{ cluster: Cluster; verdict: Verdict; proposedActions: ProposedAction[] }>;
+  /** Tests green in the latest base-branch run whose history is trending unstable, riskiest first. Absent in reports before 0.2.0. */
+  atRisk?: AtRiskTest[];
+}
+
+export type ForecastSignal = 'outcome-instability' | 'retry-trend' | 'duration-variance' | 'duration-drift';
+
+/** An advisory forecast: it never changes a verdict and proposes no action. */
+export interface AtRiskTest {
+  testId: string;
+  title: string;
+  file: string;
+  /** 0..1, rounded to two decimals. */
+  risk: number;
+  /** Base-branch runs the forecast looked at. */
+  runs: number;
+  /** Strongest first; `weight` is what the signal added to the risk, rounded. */
+  reasons: Array<{ signal: ForecastSignal; detail: string; weight: number }>;
 }
 
 export type ProposedAction =

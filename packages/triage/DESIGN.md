@@ -182,6 +182,16 @@ export interface TriageReport {
   window: { from: string; to: string };
   totals: { tests: number; failures: number; clusters: number };
   items: Array<{ cluster: Cluster; verdict: Verdict; proposedActions: ProposedAction[] }>;
+  atRisk?: AtRiskTest[];        // flake forecast, section 6; absent in reports before 0.2.0
+}
+
+export interface AtRiskTest {   // green now, history trending unstable; advisory, proposes nothing
+  testId: string;
+  title: string;
+  file: string;
+  risk: number;                 // 0..1, two decimals
+  runs: number;                 // base-branch runs looked at
+  reasons: Array<{ signal: 'outcome-instability' | 'retry-trend' | 'duration-variance' | 'duration-drift'; detail: string; weight: number }>;
 }
 
 export type ProposedAction =
@@ -218,6 +228,21 @@ Evaluated in this order; the first rule that applies decides the category. Every
 
 5. **unknown**
    - No rule applies, or there is not enough history.
+
+### Flake forecast
+
+The five rules judge failures. The forecast looks at the tests that did **not** fail: those that passed on their first attempt in the latest base-branch run and are not in any of the window's clusters. It is advisory: it never changes a verdict, proposes no action and goes into the report's `atRisk`, riskiest first. Deterministic, like the rules. The algorithm is adapted from playwright-smart-reporter's flake forecast (MIT, see `THIRD-PARTY-NOTICES.md`).
+
+- History: the test's last `forecast.lookbackRuns` (20) non-skipped outcomes on `baseBranch`; fewer than `forecast.minRuns` (5, never below 3) is not enough.
+- Four signals, each a strength in 0..1, recent runs weighted more (`0.5^(age / forecast.halfLifeRuns)`, half-life 3 runs):
+  - **outcome-instability**: pass/fail flips between consecutive outcomes. A flip on the same SHA weighs 1; a flip across a commit weighs `forecast.crossShaFlipWeight` (0.25), because a commit that breaks main and the one that fixes it flip the test twice without it being flaky. Full strength at a weighted flip rate of 0.35.
+  - **retry-trend**: outcomes that needed more than one attempt, whatever their final status. Full strength at a weighted rate of 0.25.
+  - **duration-variance**: the spread (MAD × 1.4826) of the recent half of the passed runs' durations, relative to its median, widened over the older half's. A failure's duration is a timeout, so failed runs are left out.
+  - **duration-drift**: the median of the recent half rose over the older half's by more than 20%.
+  Both duration signals need four passed runs per half and an absolute change of at least `forecast.minDurationChangeMs` (250): below that it is CI jitter, whatever the percentage.
+- Combination: noisy-OR with a cap per signal (instability 0.9, retries 0.8, variance 0.7, drift 0.5): `risk = 1 − Π(1 − cap × strength)`. One strong signal can flag a test; weak ones only together. A reason adding less than 0.05 is left out.
+- A test is at risk when `risk ≥ forecast.threshold` (0.5). At most `forecast.maxTests` (10) are reported; 0 turns the forecast off.
+- Differences from smart-reporter: the base branch only, the cross-commit flip discount, passed durations only and the 250 ms floor (smart-reporter: 50 ms spread, 100 ms rise). The caps and full-strength rates are named constants in `core/forecast.ts`; the thresholds a project tunes are in the config.
 
 ### Base branch
 
@@ -352,7 +377,8 @@ Decided on 2026-10-10, replacing "trackers live in razo-cloud" for reading: the 
 The engine's output has more than one destination: a Markdown file, razo-cloud's dashboard, qano-cloud or any other server, and whatever comes later. A destination is not a plugin of its own; it implements this contract and the `http` notifier delivers to it.
 
 - `POST <url>` with `Authorization: Bearer <token>` and `Content-Type: application/json`; the body is the `TriageReport` of section 5, verbatim.
-- Caps, which the notifier trims below and a destination may reject above: 200 clusters per report, 500 failures and 10 suspects per cluster, 50 evidence entries per verdict, 2048 characters per text field (1024 for signatures), 2 MB per body.
+- Caps, which the notifier trims below and a destination may reject above: 200 clusters per report, 500 failures and 10 suspects per cluster, 50 evidence entries per verdict, 50 at-risk tests, 2048 characters per text field (1024 for signatures), 2 MB per body.
+- `atRisk` is optional (added in 0.2.0): a destination that does not know it must accept the report and may ignore the field.
 - Idempotent per `generatedAt`: a destination upserts by project and `generatedAt` and answers 201 on creation and 200 on a replay; the notifier treats both as delivered.
 - Any non-2xx answer is a failed delivery: `triage run` fails and saves no state, so the morning is retried whole.
 - The destination decides who the project is from the token; the report carries no project id.
@@ -434,6 +460,7 @@ rules:
   flaky: { lookbackRuns: 10, quarantineSuggestAfter: 3 }
   regression: { stableRuns: 3 }
   state: { resolveAfterRuns: 3, pruneResolvedAfterDays: 90 }
+  forecast: { lookbackRuns: 20, minRuns: 5, threshold: 0.5, crossShaFlipWeight: 0.25, halfLifeRuns: 3, maxTests: 10, minDurationChangeMs: 250 }
 
 tracker:             # optional, read only: which failures already have an issue
   plugin: github
@@ -465,7 +492,8 @@ packages/triage/
       classify.ts         DEFAULT_RULES, classify(): section 6 rules and mixed-cluster resolution
       pipeline.ts         analyzeWindow(): cluster → history → suspects → classify, window [since, until]
       state.ts            mergeClusters(), reconcileClusters(): previous state, novelty, resolution
-      report.ts           buildReport(): TriageReport with verdicts and proposed actions
+      forecast.ts         forecastAtRisk(): the flake forecast of section 6
+      report.ts           buildReport(): TriageReport with verdicts, proposed actions and atRisk
     ports/
       result-source.ts
       code-context.ts
@@ -628,6 +656,13 @@ On 2026-10-07 the breakage was reapplied (razo-demo PR #8) and reverted the next
 7. Both clusters showed `open for 10 days`: days open counted from `firstSeenAt`, the first failure in the 14-day lookback (09-28), across two resolved gaps.
 
 `fixtures/razo-demo-nightlies` holds these real runs, 09-26 to 10-09, and `test/nightlies.test.mjs` replays that morning.
+
+**Flake forecast, 2026-10-16.** Replayed over razo-demo `main`, 37 runs from 09-26 to 10-16, one morning per day (21 mornings). The two tests that razo-demo breaks on purpose went red five times and flip ten times each, every flip across a commit.
+
+8. With every flip weighing 1, as in smart-reporter, the broken tests are flagged on the nightlies fixture: a break and its revert read as flakiness. The cross-commit weight of 0.25 keeps them out (`test/nightlies.test.mjs`).
+9. One morning (10-01) flagged a test that never failed: `duration-variance` at 0.58, for a 108–256 ms test whose spread went from ±10% to ±36%, about 60 ms of runner jitter. smart-reporter's 50 ms floor let it through; `forecast.minDurationChangeMs` (250) keeps it out.
+
+With both, no morning flags anything, which is right for a suite with no flaky test. The thresholds are provisional like the flaky ones: razo-demo has no genuinely flaky test to confirm the forecast flags one.
 
 ### Backlog
 

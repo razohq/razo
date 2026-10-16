@@ -11,6 +11,17 @@ export interface RulesConfig {
   regression: { stableRuns: number };
   /** pruneResolvedAfterDays: a resolved cluster leaves the store this long after its last failure; 0 keeps every cluster. */
   state: { resolveAfterRuns: number; pruneResolvedAfterDays: number };
+  /** Flake forecast for tests still green (§6, "Flake forecast"). maxTests: 0 turns it off. */
+  forecast: {
+    lookbackRuns: number;
+    minRuns: number;
+    threshold: number;
+    crossShaFlipWeight: number;
+    halfLifeRuns: number;
+    maxTests: number;
+    /** A duration spread or rise smaller than this is CI jitter, whatever its percentage. */
+    minDurationChangeMs: number;
+  };
 }
 
 /** DESIGN.md §6/§10 defaults. The flaky and environment thresholds are provisional until calibrated on real nights. */
@@ -19,6 +30,7 @@ export const DEFAULT_RULES: RulesConfig = {
   flaky: { lookbackRuns: 10, quarantineSuggestAfter: 3 },
   regression: { stableRuns: 3 },
   state: { resolveAfterRuns: 3, pruneResolvedAfterDays: 90 },
+  forecast: { lookbackRuns: 20, minRuns: 5, threshold: 0.5, crossShaFlipWeight: 0.25, halfLifeRuns: 3, maxTests: 10, minDurationChangeMs: 250 },
 };
 
 export interface ClassifyInput {

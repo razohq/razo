@@ -29,6 +29,7 @@ export {
   type Classification, type ClassifyInput, type RulesConfig,
 } from './core/classify';
 export { analyzeWindow, type TriageItem, type AnalyzeOptions } from './core/pipeline';
+export { forecastAtRisk, type ForecastConfig, type ForecastOptions } from './core/forecast';
 export { buildReport, type ReportInput } from './core/report';
 export {
   MarkdownNotifier, markdownNotifierPlugin, renderMarkdown, readReports, type MarkdownNotifierConfig,
@@ -50,6 +51,6 @@ export { MAX_REPORT_BYTES } from './collectors/unzip';
 export {
   HttpNotifier, httpNotifierPlugin, prepareReportForUpload,
   MAX_CLUSTERS_PER_REPORT, MAX_FAILURES_PER_CLUSTER, MAX_EVIDENCE_PER_VERDICT, MAX_SUSPECTS_PER_CLUSTER,
-  MAX_TEXT_CHARS, MAX_SIGNATURE_CHARS, MAX_UPLOAD_BYTES,
+  MAX_TEXT_CHARS, MAX_SIGNATURE_CHARS, MAX_UPLOAD_BYTES, MAX_AT_RISK_PER_REPORT,
   type HttpNotifierConfig, type PostLike,
 } from './adapters/http-notifier';

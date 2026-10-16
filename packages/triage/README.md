@@ -100,6 +100,7 @@ rules:                     # optional; DESIGN.md §6 defaults, flaky and environ
   flaky: { lookbackRuns: 10, quarantineSuggestAfter: 3 }
   regression: { stableRuns: 3 }
   state: { resolveAfterRuns: 3, pruneResolvedAfterDays: 90 }   # 0 never prunes resolved clusters
+  forecast: { threshold: 0.5, maxTests: 10 }   # flake forecast; maxTests: 0 turns it off. All keys in DESIGN.md §6
 ```
 
 Offline: `code: { plugin: commits-json, config: { path: ./commits.json } }`
@@ -179,9 +180,17 @@ the last one it has, and `run` applies them: ignore leaves a cluster
 `acknowledged`.
 
 `run` writes `triage-<timestamp>.md` plus its `.json` twin to `outDir` and
-prints one line per cluster. `--now <iso>` replays a past morning: runs
+prints one line per cluster, then one per test at risk. `--now <iso>` replays a past morning: runs
 finished after it are left out. Exit codes: 0 on a report (failures or
 not), 1 on a broken setup, 2 on a usage error.
+
+The report ends with the flake forecast, **At risk**: tests that passed this
+morning on their first attempt but whose recent history on `baseBranch`
+keeps flipping, retrying or getting slower and more erratic. It is advice,
+not a verdict: no action is proposed and it never changes what the rules
+decided. A flip that came with a new commit counts a quarter of one on the
+same commit, so a break and its revert do not look flaky. How the risk is
+computed and every threshold are in DESIGN.md §6, "Flake forecast".
 
 ## Entry points
 

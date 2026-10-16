@@ -112,6 +112,8 @@ After Phase 3, delivery and decisions: the `http` notifier (`adapters/http-notif
 
 The `github` tracker (`adapters/github/issue-tracker.ts`) is read only: `core/tickets.ts` links the window's clusters to issues whose body has the line `razo-triage: <clusterId>` (open issue → `ticketed`), and proposed issues carry `draft.url`, GitHub's prefilled new-issue form, for a person to submit. Its `create` and `comment` exist for the contract kit; the morning never calls them.
 
+The flake forecast (`core/forecast.ts`, DESIGN.md §6 "Flake forecast") scores the tests that did not fail: green on their first attempt in the latest base-branch run, history trending unstable. It fills `TriageReport.atRisk`, never touches a verdict and proposes no action; its thresholds are `rules.forecast`.
+
 ## Conventions
 
 - Contributions need a changeset (`npx changeset`) with the PR. On merge to `main` the release workflow opens a "Version Packages" PR; merging that one stages the new versions on npm (`scripts/stage-publish.mjs`, trusted publishing with stage-only permission), and a maintainer approves each with 2FA (`npm stage approve <id>` or npmjs.com). A staged version is recognized by its `<name>@<version>` git tag; delete the tag to stage a rejected version again.

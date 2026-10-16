@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { analyzeWindow, buildReport, CommitsJsonCodeContext, DEFAULT_RULES, RazoSource, renderMarkdown } from '../dist/index.js';
+import { analyzeWindow, buildReport, CommitsJsonCodeContext, DEFAULT_RULES, forecastAtRisk, RazoSource, renderMarkdown } from '../dist/index.js';
 
 // Real razo-demo main runs, 09-26 → 10-09: three red streaks (09-28, 10-04, 10-07), each reverted.
 const DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../fixtures/razo-demo-nightlies');
@@ -72,4 +72,14 @@ test('a failure already green again still offers an issue, and the next step say
     assert.match(verdict.nextStep, /open an issue only if the fix was a temporary revert/);
     assert.match(verdict.nextStep, new RegExp(COMMIT), 'the commit that broke it stays visible');
   }
+});
+
+// Calibration: three red streaks, each a commit that broke main and a revert
+// that fixed it. None of that is flakiness, so the forecast stays quiet.
+test('the forecast flags nothing on the real nightlies: a break and its revert are not flakiness', async () => {
+  const runs = await new RazoSource(DIR).fetchRuns(new Date(0));
+  assert.deepEqual(forecastAtRisk(runs, DEFAULT_RULES.forecast), []);
+  // The same history weighted as if every flip were on one commit would flag the tests that broke.
+  const asIfFlaky = forecastAtRisk(runs, { ...DEFAULT_RULES.forecast, crossShaFlipWeight: 1 });
+  assert.ok(asIfFlaky.length > 0, 'the discount is what keeps them out');
 });

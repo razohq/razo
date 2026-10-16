@@ -8,6 +8,8 @@ import type { TriageConfig } from './config/schema';
 import type { IssueDraft, TriageReport } from './core/model';
 import { analyzeWindow } from './core/pipeline';
 import { buildReport } from './core/report';
+import { forecastAtRisk } from './core/forecast';
+import { failingTestIds } from './core/cluster';
 import { SIGNATURE_ALGORITHM_VERSION } from './core/signature';
 import { pruneResolved, reconcileClusters } from './core/state';
 import { linkIssues } from './core/tickets';
@@ -90,8 +92,13 @@ export async function runTriage(config: TriageConfig, options: RunOptions): Prom
     const at = Date.parse(run.finishedAt);
     return at >= options.since.getTime() && at <= options.now.getTime();
   });
+  // Advisory: tests still green whose history on the base branch is trending unstable. The window's failures are already items.
+  const atRisk = forecastAtRisk(runs.filter((run) => Date.parse(run.finishedAt) <= options.now.getTime()), config.rules.forecast, {
+    baseBranch: config.baseBranch, exclude: items.flatMap((i) => failingTestIds(i.cluster)),
+  });
   const report = buildReport({
     items,
+    atRisk,
     runs: windowRuns,
     window: { from: options.since.toISOString(), to: options.now.toISOString() },
     generatedAt: options.now.toISOString(),
