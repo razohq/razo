@@ -1,5 +1,6 @@
 export {
   Control,
+  MASKED,
   type ControlOptions,
   type LocatorSpec,
   type StepAction,

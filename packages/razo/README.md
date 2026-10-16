@@ -114,6 +114,26 @@ Each step in `razo-steps.json` is a `StepEvent` — the artifact contract AI too
 
 The sentence grammar lives in one place — fixed templates per verb — so the narration is predictable and parseable.
 
+### Secrets in fields
+
+What a test types into a password field never reaches the narration. When the
+`<input>` is `type="password"` or has `autocomplete` set to `current-password`,
+`new-password` or `one-time-code`, the value is shown as `********` (exported as
+`MASKED`) in the sentence, `detail`, `expected` and `actual`, and removed from
+the error message:
+
+```ts
+await password.fill('hunter2');                        // Type "********" into field "Password"
+await apiToken.fill(token, { sensitive: true });       // a secret in an ordinary text input
+await demoPassword.fill('demo', { sensitive: false }); // a password you want to read in the report
+```
+
+Detection looks at the page without waiting, so a field that is not there yet
+is not detected; pass `sensitive: true` when it matters. Playwright's own
+`Fill "…"` step, nested under razo's sentence in the HTML report and in traces,
+still shows the value: that is Playwright's, and razo cannot change it. Keep
+traces of runs with real credentials private.
+
 ## Auto `data-testid` (Vite plugin)
 
 The other half: a stable hook with zero maintenance. A component declares who it is and the plugin generates the testid in dev/test:

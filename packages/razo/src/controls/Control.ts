@@ -3,6 +3,9 @@ import { emitStepEvent, stripAnsi, type StepEvent } from '../reporting/events';
 
 type StepEventExtras = Pick<StepEvent, 'healed' | 'domCandidates' | 'actual'>;
 
+/** What the narration shows instead of a sensitive value. Fixed length, so it reveals nothing. */
+export const MASKED = '********';
+
 interface SentenceContext {
   controlType: string;
   name: string;
@@ -103,6 +106,11 @@ export interface StepOptions {
   readActual?: () => Promise<string>;
   /** Sentence override for business-level narration ("Confirm the export") */
   as?: string;
+  /**
+   * The value is a secret: `detail`, `expected` and the value actually found
+   * are narrated as MASKED, and removed from the error message.
+   */
+  sensitive?: boolean;
 }
 
 export interface ControlOptions {
@@ -262,11 +270,15 @@ export abstract class Control {
     options: StepOptions,
     fn: () => Promise<T>,
   ): Promise<T> {
+    const secrets = options.sensitive
+      ? [options.detail, options.expected].filter((v): v is string => typeof v === 'string' && v.length > 0)
+      : [];
+    const shown = (value: string | undefined) => (options.sensitive && value !== undefined ? MASKED : value);
     const context: SentenceContext = {
       controlType: this.controlType,
       name: this.name,
-      detail: options.detail,
-      expected: options.expected,
+      detail: shown(options.detail),
+      expected: shown(options.expected),
     };
     const baseSentence = SENTENCES[action](context);
     const scoped = this.parent
@@ -278,16 +290,25 @@ export abstract class Control {
       controlType: this.controlType,
       name: this.name,
       sentence,
-      detail: options.detail,
-      expected: options.expected,
+      detail: shown(options.detail),
+      expected: shown(options.expected),
     };
     const fail = (error: unknown, extra: Partial<StepEventExtras> = {}) => {
+      let message = stripAnsi(error instanceof Error ? error.message : String(error));
+      if (options.sensitive) {
+        const found = extra.actual ? [extra.actual] : [];
+        // Longest first, so a value never leaves a fragment of a longer one behind.
+        for (const value of [...secrets, ...found].sort((a, b) => b.length - a.length)) {
+          message = message.split(value).join(MASKED);
+        }
+        if (extra.actual !== undefined) extra = { ...extra, actual: MASKED };
+      }
       emitStepEvent({
         ...base,
         ...extra,
         selector: this.selector,
         status: 'failed',
-        error: stripAnsi(error instanceof Error ? error.message : String(error)),
+        error: message,
         timestamp: new Date().toISOString(),
       });
     };
