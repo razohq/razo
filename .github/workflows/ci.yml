@@ -11,9 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node 22: Node 20's npm 10.8.2 crashes ("reading 'edgesOut'") resolving
+      # vite >= 8.3's peer set, which breaks the tarball smoke test's install.
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
