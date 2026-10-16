@@ -29,7 +29,7 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run build -w @razohq/razo -w @razohq/razo-analyzer
+      - run: npm run build -w @razohq/razo -w @razohq/razo-analyzer -w @razohq/triage
 
       # Without pending changesets this stages the new versions on npm instead of
       # publishing them: a maintainer approves each one with 2FA

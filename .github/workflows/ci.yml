@@ -25,7 +25,7 @@ jobs:
       - run: npm run build
 
       - name: Package checks (publint + attw)
-        run: npm run check:package -w @razohq/razo
+        run: npm run check:package -w @razohq/razo -w @razohq/triage
 
       - name: Resolve Playwright version
         id: pw

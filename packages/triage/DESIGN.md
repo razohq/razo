@@ -451,7 +451,7 @@ The GitHub token needs read permissions on the repository: **Actions: read** (li
 ```
 packages/triage/
   DESIGN.md
-  package.json            private until Phase 4; entries: ., ./contract, ./fakes
+  package.json            public since 0.1.0; entries: ., ./contract, ./fakes
   src/
     index.ts              model, ports, TriagePlugin, errorSignature, clusterIdOf
     contract.ts           entry @razohq/triage/contract
@@ -647,4 +647,4 @@ On 2026-10-07 the breakage was reapplied (razo-demo PR #8) and reverted the next
 ## 13. Open decisions
 
 - Criteria for extracting the triage as a product independent of razo.
-- When to publish `@razohq/triage` to npm: at the close of Phase 4, with the SDK documented.
+- ~~When to publish `@razohq/triage` to npm: at the close of Phase 4, with the SDK documented.~~ Decided 2026-10-15: 0.1.0 is published before Phase 4, with the bundled plugins only, so a project can install the triage without cloning this repo. The plugin SDK (loading third-party plugins from the config, its docs and template) follows in Phase 4.

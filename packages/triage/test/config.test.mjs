@@ -81,15 +81,24 @@ test('an unknown plugin, or one of the wrong kind, is an error naming it', () =>
   assert.throws(() => instantiate(parseConfig({ ...minimal, code: { plugin: 'markdown', config: { outDir: 'x' } } }, {})), /markdown.*code|code.*markdown/);
 });
 
-test('review 2b-2: the README config snippet parses and expands', () => {
+test('review 2b-2: the README config snippets parse and expand', () => {
   const readme = fs.readFileSync(path.resolve(path.dirname(new URL(import.meta.url).pathname), '../README.md'), 'utf8');
-  const yaml = readme.match(/```yaml\n([\s\S]*?)```/)[1];
-  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'triage-readme-')), 'triage.config.yaml');
-  fs.writeFileSync(file, yaml);
-  const cfg = loadConfig(file, { GITHUB_TOKEN: 'ghp_test', RAZO_INGEST_TOKEN: 'rz_test' });
-  assert.equal(cfg.pull.token, 'ghp_test');
-  assert.equal(cfg.pull.repo, 'razohq/razo-demo');
-  assert.equal(cfg.code.config.token, 'ghp_test');
+  const configs = [...readme.matchAll(/```yaml\n([\s\S]*?)```/g)].map((m) => m[1]).filter((y) => /^\s*source:/m.test(y));
+  assert.equal(configs.length, 2, 'the quickstart config and the full one');
+  const load = (yaml) => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'triage-readme-')), 'triage.config.yaml');
+    fs.writeFileSync(file, yaml);
+    const cfg = loadConfig(file, { GITHUB_TOKEN: 'ghp_test', RAZO_INGEST_TOKEN: 'rz_test' });
+    instantiate(cfg); // every plugin it names is bundled and accepts its config
+    return cfg;
+  };
+  const quick = load(configs[0].replaceAll('<owner>/<repo>', 'acme/shop'));
+  assert.equal(quick.pull.repo, 'acme/shop');
+  assert.equal(quick.pull.token, 'ghp_test');
+  const full = load(configs[1]);
+  assert.equal(full.pull.token, 'ghp_test');
+  assert.equal(full.pull.repo, 'razohq/razo-demo');
+  assert.equal(full.code.config.token, 'ghp_test');
 });
 
 test('review 2b-3: an empty or malformed pull token or repo is rejected', () => {

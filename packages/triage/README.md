@@ -5,14 +5,42 @@ artifacts of recent CI runs, clusters the failures by cause, classifies each
 cluster (regression, flaky, environment, stale-test, unknown), names the
 suspect commits, and writes a Markdown report.
 
-Private package: not published yet.
+Grouping, classifying and naming suspects is deterministic: the triage calls
+no model, and it only reads GitHub, never writes to it.
 
-## Setup
+## Install
 
 ```bash
-npm i                                   # from the repo root; the package is a workspace
-npm run build -w @razohq/triage
+npm i -D @razohq/triage
 ```
+
+The test suite has to use [`@razohq/razo`](../razo) and its reporter, which
+writes the `razo-steps.json` artifacts the triage reads. Node 20 or later.
+
+## Quickstart
+
+1. Have the CI workflow upload `test-results/` on every run (see [Token](#token)).
+2. Write `triage.config.yaml` (see [Config](#config)); the smallest one reads
+   from GitHub and writes Markdown:
+
+   ```yaml
+   source: { plugin: razo-source, config: { dataDir: ./.razo } }
+   pull: { repo: <owner>/<repo>, token: "${GITHUB_TOKEN}" }
+   code: { plugin: github, config: { repo: <owner>/<repo>, token: "${GITHUB_TOKEN}" } }
+   notifiers:
+     - plugin: markdown
+       config: { outDir: ./triage-reports }
+   ```
+
+3. Run it:
+
+   ```bash
+   export GITHUB_TOKEN=...                       # read-only, see Token
+   npx triage pull --since 14d                   # download the last two weeks of runs
+   npx triage run  --since 24h --lookback 14d    # triage the last day
+   ```
+
+To run it every morning in CI, see [State between runs in CI](#state-between-runs-in-ci).
 
 ## Token
 
@@ -115,8 +143,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
-      - run: npm ci
-      - run: npx triage pull --since 7d
+      - run: npm ci                    # @razohq/triage is a devDependency
+      - run: npx triage pull --since 14d
         env: { GITHUB_TOKEN: ${{ secrets.TRIAGE_TOKEN }} }
       - run: npx triage run --since 24h --lookback 14d
         env: { GITHUB_TOKEN: ${{ secrets.TRIAGE_TOKEN }} }
@@ -141,7 +169,7 @@ clusters will not be recognized.
 ## Commands
 
 ```bash
-npx triage pull --since 7d                       # materialize CI runs into ./.razo
+npx triage pull --since 14d                      # materialize CI runs into ./.razo
 npx triage run  --since 24h --lookback 14d       # triage the last day with two weeks of history
 ```
 
@@ -155,9 +183,22 @@ prints one line per cluster. `--now <iso>` replays a past morning: runs
 finished after it are left out. Exit codes: 0 on a report (failures or
 not), 1 on a broken setup, 2 on a usage error.
 
+## Entry points
+
+- `@razohq/triage`: the engine (`analyzeWindow`, `buildReport`, the adapters) and the `triage` CLI.
+- `@razohq/triage/contract`: the contract test kit each kind of adapter must pass.
+- `@razohq/triage/fakes`: in-memory adapters for tests.
+
+The CLI loads only the plugins bundled in the package; loading third-party
+plugins from the config is planned (`DESIGN.md`, Phase 4).
+
 ## Development
 
+From a clone of [razohq/razo](https://github.com/razohq/razo); the package is a workspace:
+
 ```bash
+npm i                                   # from the repo root
+npm run build -w @razohq/triage
 npm test -w @razohq/triage              # builds, then node --test
 node scripts/capture-razo-demo.mjs      # regenerate the razo-demo fixture
 node fixtures/generator/generate.mjs    # regenerate the synthetic fixtures

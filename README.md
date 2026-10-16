@@ -28,6 +28,7 @@ Every action and assertion produces two outputs at once: a human sentence in the
 |---|---|
 | [`@razohq/razo`](packages/razo) | The framework: 20 controls, narrated assertions, deterministic self-healing locators, the `@razohq/razo/reporter` that writes `razo-steps.json` per test, and the `@razohq/razo/vite` auto-testid plugin. Zero runtime dependencies. |
 | [`@razohq/razo-analyzer`](packages/razo-analyzer) | CLIs + GitHub Action: `razo-analyze` feeds failed tests to an AI model and returns a business-level verdict; `razo-upload` ships artifacts to a [razo dashboard](https://razo.ar). |
+| [`@razohq/triage`](packages/triage) | Morning triage: `npx triage` clusters the last day's CI failures by cause, classifies each cluster (regression, flaky, environment, stale test), names the suspect commits and reports them as Markdown or to a dashboard. Deterministic, no model calls. |
 
 ## Quickstart
 
