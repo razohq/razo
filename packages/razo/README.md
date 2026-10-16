@@ -114,6 +114,29 @@ Each step in `razo-steps.json` is a `StepEvent` — the artifact contract AI too
 
 The sentence grammar lives in one place — fixed templates per verb — so the narration is predictable and parseable.
 
+### Page signals
+
+Besides the steps, razo records what the page did that no step asked for: console errors, uncaught exceptions, failed requests and 5xx answers. It listens to the page's own events, so no trace is needed. A report with any carries them, and a failed one also names the first before the failure:
+
+```json
+"signals": [
+  { "kind": "http-error", "method": "POST", "url": "https://shop.test/api/orders", "status": 500,
+    "text": "POST https://shop.test/api/orders → 500", "timestamp": "…", "afterStep": "Click button \"Place order\"" }
+],
+"firstAnomaly": { "kind": "http-error", "status": 500, "afterStep": "Click button \"Place order\"", "…": "…" }
+```
+
+| Field | Meaning |
+|---|---|
+| `kind` | `console-error`, `page-error` (uncaught exception), `request-failed`, `http-error` (5xx) |
+| `text` | One readable line, up to 500 characters |
+| `method`, `url`, `status` | Requests only; `status` for `http-error` |
+| `afterStep` | The last step that had finished: usually the action that set it off, since a click returns before its request is answered |
+
+A cancelled request and Chromium's `Failed to load resource` echo of a failed load are not signals; 4xx answers are not either, since a test often expects them. A test keeps at most 50 (`MAX_SIGNALS_PER_TEST`).
+
+Listening starts the first time a control touches a page. To catch the initial load, call `observePage(page)` before `page.goto`. Requests a test makes with `request.*`, outside the browser, are not seen.
+
 ### Secrets in fields
 
 What a test types into a password field never reaches the narration. When the

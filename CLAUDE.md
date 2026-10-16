@@ -80,6 +80,8 @@ Healing is deterministic: explicit `fallbacks` in order, then an implicit `{ rol
 
 ### Reporter (`src/reporting/AiReporter.ts`)
 
+Page signals (`src/reporting/signals.ts`): `Control.step` calls `observePage` on first use of a page, which records console errors, uncaught exceptions, failed requests and 5xx answers as `ai-signal` attachments. The reporter writes them as `signals`, each with the `afterStep` it followed, plus `firstAnomaly` for a failed test.
+
 Collects the `ai-step` attachments in `onTestEnd` and writes `<outputDir>/<file-slug>-<title-slug>[-retryN]/razo-steps.json` as an `AiTestReport`. `outputDir` is resolved relative to the Playwright config file, not `rootDir`. The package's default export must stay a class so `reporter: [['@razohq/razo/reporter']]` works from both CJS and ESM; the tarball smoke test is the only check that catches that interop regressing.
 
 ### Auto testid (`src/tooling/autoTestId.ts`)

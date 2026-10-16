@@ -82,3 +82,15 @@ test('prepareUploadReports is a no-op for small suites', () => {
   assert.equal(trimmedReports, 0);
   assert.equal(JSON.stringify(out), JSON.stringify(reports));
 });
+
+test('signals are capped per report and their long texts are cut', async () => {
+  const { MAX_SIGNALS_PER_REPORT, MAX_FIELD_CHARS } = await import('../dist/index.js');
+  const signals = Array.from({ length: MAX_SIGNALS_PER_REPORT + 7 }, (_, i) => ({
+    kind: 'console-error', text: `e${i}` + 'x'.repeat(MAX_FIELD_CHARS + 50), timestamp: '2026-07-14T00:00:00.000Z',
+  }));
+  const { report: out, trimmed } = truncateReport(report({ signals, firstAnomaly: signals[0] }));
+  assert.equal(trimmed, true);
+  assert.equal(out.signals.length, MAX_SIGNALS_PER_REPORT);
+  assert.ok(out.signals[0].text.length <= MAX_FIELD_CHARS);
+  assert.ok(out.firstAnomaly.text.length <= MAX_FIELD_CHARS);
+});

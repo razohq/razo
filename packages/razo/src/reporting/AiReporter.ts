@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { FullConfig, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 import { AI_STEP_ATTACHMENT, stripAnsi, type StepEvent } from './events';
+import { AI_SIGNAL_ATTACHMENT, attributeSignals, type PageSignal } from './signals';
 
 /** Per-test artifact: the full narration, ready for an AI analyzer. */
 export interface AiTestReport {
@@ -12,6 +13,10 @@ export interface AiTestReport {
   /** Test-level error (failure outside a narrated step, or failure summary) */
   error?: string;
   steps: StepEvent[];
+  /** Console errors, uncaught exceptions, failed requests and 5xx answers, oldest first. Absent when there were none. */
+  signals?: PageSignal[];
+  /** The first signal at or before the failure: a hint at the cause, never a verdict. */
+  firstAnomaly?: PageSignal;
 }
 
 function slug(text: string): string {
@@ -52,6 +57,10 @@ export default class AiReporter implements Reporter {
     const steps = result.attachments
       .filter((a) => a.name === AI_STEP_ATTACHMENT && a.body)
       .map((a) => JSON.parse(a.body!.toString()) as StepEvent);
+    const raw = result.attachments
+      .filter((a) => a.name === AI_SIGNAL_ATTACHMENT && a.body)
+      .map((a) => JSON.parse(a.body!.toString()) as PageSignal);
+    const { signals, firstAnomaly } = attributeSignals(raw, steps);
 
     const report: AiTestReport = {
       test: test.title,
@@ -60,6 +69,9 @@ export default class AiReporter implements Reporter {
       durationMs: result.duration,
       error: result.error?.message ? stripAnsi(result.error.message) : undefined,
       steps,
+      ...(signals.length > 0 ? { signals } : {}),
+      // Only a failure has a cause to hint at.
+      ...(firstAnomaly && result.status !== 'passed' && result.status !== 'skipped' ? { firstAnomaly } : {}),
     };
 
     const retrySuffix = result.retry > 0 ? `-retry${result.retry}` : '';

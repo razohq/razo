@@ -2,7 +2,7 @@
 // playwright-smart-reporter (src/agent/redact.ts), MIT License,
 // Copyright (c) 2024 Gary Parker (full text in THIRD-PARTY-NOTICES.md).
 // The per-step masking of sensitive controls is razo's own.
-import type { AiTestReport, StepEvent } from './types';
+import type { AiTestReport, PageSignal, StepEvent } from './types';
 
 export const REDACTED = '[REDACTED]';
 
@@ -104,9 +104,18 @@ function redactStep(step: StepEvent, redactor: Redactor): StepEvent {
 export function redactReport(report: AiTestReport, redactor: Redactor = createRedactor()): AiTestReport {
   const steps = report.steps.map((s) => redactStep(s, redactor));
   const values = report.steps.flatMap(sensitiveValues);
+  const text = (value: string) => redactor.string(maskValues(value, values));
+  const signal = (sig: PageSignal): PageSignal => ({
+    ...sig,
+    text: text(sig.text),
+    ...(sig.url !== undefined ? { url: text(sig.url) } : {}),
+    ...(sig.afterStep !== undefined ? { afterStep: text(sig.afterStep) } : {}),
+  });
   return {
     ...report,
-    ...(report.error !== undefined ? { error: redactor.string(maskValues(report.error, values)) } : {}),
+    ...(report.error !== undefined ? { error: text(report.error) } : {}),
     steps,
+    ...(report.signals ? { signals: report.signals.map(signal) } : {}),
+    ...(report.firstAnomaly ? { firstAnomaly: signal(report.firstAnomaly) } : {}),
   };
 }

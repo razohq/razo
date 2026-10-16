@@ -71,3 +71,17 @@ test('the upload payload carries no secret', () => {
   for (const secret of [GH, ANTHROPIC, JWT, ENV_SECRET, 'hunter2-hunter2']) assert.ok(!body.includes(secret), secret.slice(0, 8));
   assert.equal(payload.run.branch, 'main');
 });
+
+test('page signals are redacted too: a token in a request URL, a JWT in a console error', () => {
+  const r = redactReport({
+    ...report(),
+    signals: [
+      { kind: 'http-error', method: 'GET', url: `https://api.example.com/v1?access_token=${JWT}`, status: 500, text: `GET https://api.example.com/v1?access_token=${JWT} → 500`, timestamp: '2026-10-16T00:00:01.000Z' },
+      { kind: 'console-error', text: `auth failed for ${GH}`, timestamp: '2026-10-16T00:00:02.000Z' },
+    ],
+    firstAnomaly: { kind: 'console-error', text: `auth failed for ${GH}`, timestamp: '2026-10-16T00:00:02.000Z' },
+  }, createRedactor(env));
+  const all = JSON.stringify(r);
+  for (const secret of [JWT, GH]) assert.ok(!all.includes(secret), secret.slice(0, 8));
+  assert.equal(r.signals[0].status, 500, 'the rest of the signal is kept');
+});

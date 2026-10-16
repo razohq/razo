@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { emitStepEvent, stripAnsi, type StepEvent } from '../reporting/events';
+import { observePage } from '../reporting/signals';
 
 type StepEventExtras = Pick<StepEvent, 'healed' | 'domCandidates' | 'actual'>;
 
@@ -270,6 +271,7 @@ export abstract class Control {
     options: StepOptions,
     fn: () => Promise<T>,
   ): Promise<T> {
+    observePage(this.page);
     const secrets = options.sensitive
       ? [options.detail, options.expected].filter((v): v is string => typeof v === 'string' && v.length > 0)
       : [];

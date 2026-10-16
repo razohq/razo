@@ -1,4 +1,4 @@
-import type { AiTestReport, StepEvent } from './types';
+import type { AiTestReport, PageSignal, StepEvent } from './types';
 
 /**
  * Mirrors of the hosted ingest's zod caps (apps/web/src/lib/ingest-validation.ts).
@@ -16,6 +16,8 @@ export const MAX_SENTENCE_CHARS = 1_024;
 export const MAX_NAME_CHARS = 256;
 export const MAX_TEST_CHARS = 512;
 export const MAX_SELECTOR_CHARS = 512;
+export const MAX_SIGNALS_PER_REPORT = 50;
+export const MAX_URL_CHARS = 2_048;
 
 const TRUNCATION_SUFFIX = '… [truncated]';
 /** Headroom for the run metadata and JSON framing around the reports array. */
@@ -101,6 +103,15 @@ function truncateStep(step: StepEvent): StepEvent {
   };
 }
 
+function truncateSignal(signal: PageSignal): PageSignal {
+  return {
+    ...signal,
+    text: cut(signal.text, MAX_FIELD_CHARS),
+    ...(signal.url !== undefined ? { url: cut(signal.url, MAX_URL_CHARS) } : {}),
+    ...(signal.afterStep !== undefined ? { afterStep: cut(signal.afterStep, MAX_SENTENCE_CHARS) } : {}),
+  };
+}
+
 /** Truncates every oversized field and collapses oversized step lists. */
 export function truncateReport(
   report: AiTestReport,
@@ -111,6 +122,8 @@ export function truncateReport(
     file: cut(report.file, MAX_TEST_CHARS),
     error: cutOptional(report.error, MAX_ERROR_CHARS),
     steps: trimStepsTo(report.steps, MAX_STEPS_PER_REPORT).map(truncateStep),
+    ...(report.signals ? { signals: report.signals.slice(0, MAX_SIGNALS_PER_REPORT).map(truncateSignal) } : {}),
+    ...(report.firstAnomaly ? { firstAnomaly: truncateSignal(report.firstAnomaly) } : {}),
   };
   const trimmed = JSON.stringify(out) !== JSON.stringify(report);
   return { report: trimmed ? out : report, trimmed };

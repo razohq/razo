@@ -22,6 +22,18 @@ export interface StepEvent {
   timestamp: string;
 }
 
+/** What the page did unasked: console errors, uncaught exceptions, failed requests, 5xx answers. */
+export interface PageSignal {
+  kind: 'console-error' | 'page-error' | 'request-failed' | 'http-error';
+  text: string;
+  method?: string;
+  url?: string;
+  status?: number;
+  timestamp: string;
+  /** The last step that had finished when it happened. */
+  afterStep?: string;
+}
+
 export interface AiTestReport {
   test: string;
   file: string;
@@ -29,4 +41,7 @@ export interface AiTestReport {
   durationMs: number;
   error?: string;
   steps: StepEvent[];
+  signals?: PageSignal[];
+  /** The first signal at or before the failure. */
+  firstAnomaly?: PageSignal;
 }
