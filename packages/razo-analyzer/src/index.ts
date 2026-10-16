@@ -12,6 +12,9 @@ export {
   MAX_PAYLOAD_BYTES,
   MAX_REPORTS,
   MAX_STEPS_PER_REPORT,
+  MAX_SIGNALS_PER_REPORT,
+  MAX_URL_CHARS,
+  MAX_FIELD_CHARS,
   prepareUploadReports,
   trimStepsTo,
   truncateReport,
@@ -30,4 +33,4 @@ export { findReportFiles, loadFailedReports } from './reports';
 export { upsertPrComment } from './github';
 export { buildUploadPayload, loadAllReports, uploadReports } from './upload';
 export type { UploadPayload, UploadRunMeta } from './upload';
-export type { AiTestReport, StepEvent } from './types';
+export type { AiTestReport, PageSignal, StepEvent } from './types';

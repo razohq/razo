@@ -30,6 +30,15 @@ Locator drift signals:
   If none is plausible, say the element likely no longer exists — a possible
   product regression, not a selector problem.
 
+Page signals:
+- "Page signals" lists what the page did that no step asked for: console
+  errors, uncaught exceptions, failed requests and 5xx answers, each with the
+  step it followed. The one marked as the first anomaly before the failure is
+  a strong hint, not proof.
+- A 5xx answer or an uncaught exception before the failure points to the
+  application or its backend, not the test. A request that could not connect
+  points to the environment. Say which signal you relied on.
+
 Be concise. Answer in Markdown. Ground every claim in specific steps from
 the narration.`;
 
@@ -66,6 +75,15 @@ export function renderReport(report: AiTestReport): string {
     })
     .join('\n');
 
+  const first = report.firstAnomaly;
+  const signals = (report.signals ?? [])
+    .map((sig) => {
+      const after = sig.afterStep ? ` (after: ${sig.afterStep})` : '';
+      const isFirst = first && sig.timestamp === first.timestamp && sig.text === first.text;
+      return `- [${sig.kind}] ${sig.text.split('\n')[0]}${after}${isFirst ? ' ← first anomaly before the failure' : ''}`;
+    })
+    .join('\n');
+
   return [
     `## Test: ${report.test}`,
     `File: ${report.file} — status: ${report.status}`,
@@ -73,6 +91,7 @@ export function renderReport(report: AiTestReport): string {
     'Narrated steps:',
     steps || '(no narrated steps — the test failed before any control was used)',
     '',
+    signals ? `Page signals:\n${signals}\n` : '',
     report.error ? `Test-level error:\n${report.error}` : '',
   ]
     .filter(Boolean)

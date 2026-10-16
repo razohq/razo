@@ -28,3 +28,4 @@ export { Menu } from './controls/Menu';
 export { Tooltip } from './controls/Tooltip';
 export { Editor } from './controls/Editor';
 export { type StepEvent, AI_STEP_ATTACHMENT, emitStepEvent } from './reporting/events';
+export { type PageSignal, AI_SIGNAL_ATTACHMENT, MAX_SIGNALS_PER_TEST, observePage } from './reporting/signals';

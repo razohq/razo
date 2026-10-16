@@ -97,6 +97,8 @@ Against razo's demo failure (an export attempted without ever choosing a quality
 >
 > **Fix:** add `quality.select('Standard')` before the export, or if quality became optional, update the expected status text.
 
+When the page raised [signals](../razo/README.md#page-signals) (a 5xx, an uncaught exception, a console error), the prompt lists them with the step each one followed and marks the first before the failure, so the model can tell an app that broke from a test that went stale.
+
 ## Cost
 
 Each analysis is a single model call. With the default (Claude `claude-opus-4-8`, ~$5/M input, $25/M output tokens) a typical failed-test analysis uses a few thousand tokens — around $0.05–0.15 per run. Use `--model` to override; with `--provider openai` the cost is that model's pricing.
@@ -106,7 +108,7 @@ Each analysis is a single model call. With the default (Claude `claude-opus-4-8`
 Both CLIs mask secrets before anything leaves the machine, in the prompt
 sent to the model and in the payload sent to the dashboard:
 
-- Known credential shapes anywhere in a step or error: `Authorization`
+- Known credential shapes anywhere in a step, an error or a page signal (a request URL, a console message): `Authorization`
   and `Cookie` headers, bearer tokens, JWTs, credentials in URLs, token-like
   query parameters, private keys, and Anthropic, OpenAI, GitHub, AWS, Slack,
   Stripe, GitLab and razo.ar tokens.
@@ -132,7 +134,8 @@ Both CLIs are safe on pathological suites, and never trim silently:
   "… N steps omitted …" marker; failed steps are never dropped.
 - **`razo-upload`** truncates to the dashboard's ingest limits before
   sending (error text 20k chars, 500 steps/test, 2MB payload, 200 reports)
-  instead of letting the server reject the whole run. Failed reports are
+  instead of letting the server reject the whole run; page signals are capped
+  at 50 per test. Failed reports are
   always kept; oversized passed reports are dropped first and the CLI says
   so. The `razo-steps.json` files on disk are never modified.
 

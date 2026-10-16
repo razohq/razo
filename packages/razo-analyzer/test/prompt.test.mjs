@@ -156,3 +156,29 @@ test('analyzeFailures makes one API call per batch and concatenates in order', a
   assert.ok(calls.length > 1);
   assert.match(result, /analysis 1[\s\S]*analysis 2/);
 });
+
+const ORDER_500 = {
+  kind: 'http-error', method: 'POST', url: 'https://shop.test/api/orders', status: 500,
+  text: 'POST https://shop.test/api/orders → 500', timestamp: '2026-07-10T00:00:01.000Z',
+  afterStep: 'Type "mi-llavero" into field "Filename"',
+};
+const withSignals = {
+  ...failedReport,
+  signals: [ORDER_500, { kind: 'console-error', text: 'order failed: 500', timestamp: '2026-07-10T00:00:01.100Z', afterStep: ORDER_500.afterStep }],
+  firstAnomaly: ORDER_500,
+};
+
+test('buildPrompt lists the page signals with the step they followed and marks the first anomaly', () => {
+  const prompt = buildPrompt([withSignals]);
+  assert.match(prompt, /Page signals:\n- \[http-error\] POST https:\/\/shop\.test\/api\/orders → 500 \(after: Type "mi-llavero" into field "Filename"\) ← first anomaly before the failure\n- \[console-error\] order failed: 500 \(after: Type "mi-llavero"/);
+});
+
+test('buildPrompt says nothing about signals when the page raised none', () => {
+  assert.doesNotMatch(buildPrompt([failedReport]), /Page signals/);
+});
+
+test('the system prompt tells the model what a signal before the failure means', async () => {
+  const { SYSTEM_PROMPT } = await import('../dist/index.js');
+  assert.match(SYSTEM_PROMPT, /Page signals/);
+  assert.match(SYSTEM_PROMPT, /5xx/);
+});
