@@ -1,6 +1,6 @@
 {
   "name": "@razohq/triage",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Morning triage for Playwright runs narrated by razo: clusters CI failures by cause, classifies them (regression, flaky, environment, stale test), names the suspect commits, and reports them. Deterministic, no model calls.",
   "license": "MIT",
   "author": "Mitchell Lombardo <razohq@gmail.com>",
