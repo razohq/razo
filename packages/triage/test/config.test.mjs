@@ -24,6 +24,8 @@ test('rules are deep-merged over the defaults and unknown keys are errors', () =
   assert.equal(cfg.rules.env.windowMinutes, 10);
   assert.deepEqual(cfg.rules.flaky, DEFAULT_RULES.flaky);
   assert.throws(() => parseConfig({ ...minimal, rules: { env: { minfiles: 8 } } }, {}), /rules\.env\.minfiles/);
+  const forecast = parseConfig({ ...minimal, rules: { forecast: { threshold: 0.7, maxTests: 0 } } }, {}).rules.forecast;
+  assert.deepEqual(forecast, { ...DEFAULT_RULES.forecast, threshold: 0.7, maxTests: 0 });
 });
 
 test('${VAR} expands from the environment anywhere in a string', () => {

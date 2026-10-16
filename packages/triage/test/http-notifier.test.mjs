@@ -1,8 +1,8 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  HttpNotifier, httpNotifierPlugin, prepareReportForUpload,
-  MAX_CLUSTERS_PER_REPORT, MAX_FAILURES_PER_CLUSTER, MAX_EVIDENCE_PER_VERDICT, MAX_UPLOAD_BYTES,
+  HttpNotifier, httpNotifierPlugin, prepareReportForUpload, MAX_AT_RISK_PER_REPORT,
+  MAX_CLUSTERS_PER_REPORT, MAX_FAILURES_PER_CLUSTER, MAX_EVIDENCE_PER_VERDICT, MAX_UPLOAD_BYTES, MAX_TEXT_CHARS,
 } from '../dist/index.js';
 import { notifierContract, pluginContract, runContract, seed } from '../dist/contract.js';
 
@@ -95,4 +95,17 @@ test('prepareReportForUpload fits the byte budget by shrinking the heaviest clus
   assert.equal(report.items[0].cluster.id, 'c0', 'the first clusters, the ones the report ranks highest, survive');
   const last = report.items[0].cluster.failures;
   assert.equal(last[last.length - 1].runId, `r${MAX_FAILURES_PER_CLUSTER + 9}`, 'shrinking keeps the most recent failures');
+});
+
+test('prepareReportForUpload caps the forecast and its texts, keeping the riskiest', () => {
+  const atRisk = Array.from({ length: MAX_AT_RISK_PER_REPORT + 5 }, (_, i) => ({
+    testId: `f::t${i}`, title: `t${i}`, file: 'f', risk: 0.9, runs: 10,
+    reasons: [{ signal: 'retry-trend', detail: 'x'.repeat(MAX_TEXT_CHARS + 10), weight: 0.8 }],
+  }));
+  const { report, trimmed } = prepareReportForUpload({ ...seed.report, atRisk });
+  assert.equal(trimmed, true);
+  assert.equal(report.atRisk.length, MAX_AT_RISK_PER_REPORT);
+  assert.equal(report.atRisk[0].testId, 'f::t0');
+  assert.ok(report.atRisk[0].reasons[0].detail.length <= MAX_TEXT_CHARS);
+  assert.equal(prepareReportForUpload({ ...seed.report, atRisk: atRisk.slice(0, 2).map((t) => ({ ...t, reasons: [] })) }).trimmed, false);
 });

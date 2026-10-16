@@ -93,3 +93,11 @@ test('a cluster with an open issue proposes no new one and points at it', async 
   assert.deepEqual(item.proposedActions, []);
   assert.equal(item.verdict.nextStep, 'Tracked in #7 (https://github.com/o/r/issues/7); follow it there.');
 });
+
+test('the forecast travels in the report as given, and an absent one is an empty list', async () => {
+  const { runs, items } = await demo();
+  const window = { from: runs[0].startedAt, to: runs[1].finishedAt };
+  const atRisk = [{ testId: 'f::t', title: 't', file: 'f', risk: 0.62, runs: 9, reasons: [{ signal: 'retry-trend', detail: 'Retried in 2 of the last 9 runs, most recently this run', weight: 0.62 }] }];
+  assert.deepEqual(buildReport({ items, runs, window, atRisk }).atRisk, atRisk);
+  assert.deepEqual(buildReport({ items, runs, window }).atRisk, []);
+});

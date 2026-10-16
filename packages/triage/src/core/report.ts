@@ -1,5 +1,5 @@
 import { failingTestIds } from './cluster';
-import type { IssueDraft, ProposedAction, TestRun, TriageAction, TriageReport } from './model';
+import type { AtRiskTest, IssueDraft, ProposedAction, TestRun, TriageAction, TriageReport } from './model';
 import type { TriageItem } from './pipeline';
 
 export interface ReportInput {
@@ -14,6 +14,8 @@ export interface ReportInput {
   quarantineSuggestAfter?: number;
   /** From the tracker: where a person creates a proposed issue themselves. */
   issueUrl?: (draft: IssueDraft) => string;
+  /** The flake forecast (`forecastAtRisk`), carried as is. */
+  atRisk?: AtRiskTest[];
 }
 
 const short = (sha: string) => sha.slice(0, 7);
@@ -128,5 +130,6 @@ export function buildReport(input: ReportInput): TriageReport {
       },
       proposedActions: actionsFor(item, input.runs, input),
     })),
+    atRisk: input.atRisk ?? [],
   };
 }

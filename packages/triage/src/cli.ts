@@ -82,6 +82,7 @@ async function main(): Promise<void> {
     const title = first.includes('::') ? first.split('::')[1] : first;
     console.log(`  ${item.verdict.category} · ${item.verdict.confidence} · ${title}`);
   }
+  for (const t of report.atRisk ?? []) console.log(`  at risk · ${Math.round(t.risk * 100)}% · ${t.title}`);
   console.log(`sent to ${result.notified} notifier${result.notified === 1 ? '' : 's'}${result.stored ? ', state recorded' : ''}`);
 }
 

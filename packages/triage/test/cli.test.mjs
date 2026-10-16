@@ -190,3 +190,65 @@ test('a tracker that fails leaves the morning delivered and says which lookups f
   assert.equal(readReports(outDir).length, 1);
   assert.ok(logs.some((m) => /warning: issue lookup failed for 2 cluster/.test(m)), logs.join('\n'));
 });
+
+test('forecast: runTriage reports a test that is green this morning but kept flipping on main, and leaves the window\'s failures out', async () => {
+  const dir = tmp();
+  const { writeSeedLayout } = await import('./helpers/razo-layout.mjs');
+  const SHA = 'f'.repeat(40);
+  // Day 1..8 on one commit: `login` flips, `cart` is steady, `export` fails this morning.
+  const login = ['passed', 'failed', 'passed', 'failed', 'passed', 'failed', 'passed', 'passed'];
+  const runs = login.map((status, i) => {
+    const day = String(i + 1).padStart(2, '0');
+    const result = (t, s) => ({
+      testId: `tests/${t}.spec.ts::${t}`, title: t, file: `tests/${t}.spec.ts`, status: s, durationMs: 1000,
+      attempts: [{ status: s, durationMs: 1000, ...(s === 'failed' ? { error: { message: `Error: ${t} broke`, signature: '' } } : {}) }],
+    });
+    return {
+      id: `night-${day}`, sha: SHA, branch: 'main', source: 's',
+      startedAt: `2026-03-${day}T03:00:00Z`, finishedAt: `2026-03-${day}T03:05:00Z`,
+      results: [result('login', status), result('cart', 'passed'), result('export', i === 7 ? 'failed' : 'passed')],
+    };
+  });
+  writeSeedLayout(dir, runs);
+  const commits = path.join(dir, 'commits.json');
+  fs.writeFileSync(commits, JSON.stringify([{ sha: SHA, message: 'one commit', author: 'a', date: '2026-03-01T00:00:00Z', url: 'https://example.test/c', files: [] }]));
+  const outDir = tmp();
+  const cfg = parseConfig({
+    source: { plugin: 'razo-source', config: { dataDir: dir } },
+    code: { plugin: 'commits-json', config: { path: commits } },
+    notifiers: [{ plugin: 'markdown', config: { outDir } }],
+  }, {});
+  const now = new Date('2026-03-08T07:00:00Z');
+  const { report } = await runTriage(cfg, { now, since: parseDuration('24h', now), lookback: parseDuration('30d', now) });
+  assert.deepEqual(report.atRisk.map((t) => t.testId), ['tests/login.spec.ts::login']);
+  assert.equal(report.items.length, 1, 'export is triaged as a failure, not forecast');
+  const [written] = readReports(outDir);
+  assert.deepEqual(written.atRisk, report.atRisk, 'the JSON twin carries the forecast');
+  const md = fs.readFileSync(path.join(outDir, fs.readdirSync(outDir).find((f) => f.endsWith('.md'))), 'utf8');
+  assert.match(md, /## At risk/);
+  assert.match(md, /login/);
+
+  const yaml = path.join(dir, 'triage.config.yaml');
+  fs.writeFileSync(yaml, `
+source: { plugin: razo-source, config: { dataDir: ${JSON.stringify(dir)} } }
+code: { plugin: commits-json, config: { path: ${JSON.stringify(commits)} } }
+notifiers: [{ plugin: markdown, config: { outDir: ${JSON.stringify(tmp())} } }]
+`);
+  const out = execFileSync('node', [CLI, 'run', '--config', yaml, '--since', '24h', '--lookback', '30d', '--now', now.toISOString()], { encoding: 'utf8' });
+  assert.match(out, new RegExp(`at risk · ${Math.round(report.atRisk[0].risk * 100)}% · login`));
+});
+
+test('forecast: rules.forecast.maxTests 0 turns it off and the report says nothing about it', async () => {
+  const outDir = tmp();
+  const cfg = parseConfig({
+    source: { plugin: 'razo-source', config: { dataDir: DEMO } },
+    code: { plugin: 'commits-json', config: { path: path.join(DEMO, 'commits.json') } },
+    notifiers: [{ plugin: 'markdown', config: { outDir } }],
+    rules: { forecast: { maxTests: 0 } },
+  }, {});
+  const now = new Date('2026-08-04T07:00:00Z');
+  const { report } = await runTriage(cfg, { now, since: parseDuration('2d', now), lookback: parseDuration('30d', now) });
+  assert.deepEqual(report.atRisk, []);
+  const md = fs.readFileSync(path.join(outDir, fs.readdirSync(outDir).find((f) => f.endsWith('.md'))), 'utf8');
+  assert.doesNotMatch(md, /At risk/);
+});

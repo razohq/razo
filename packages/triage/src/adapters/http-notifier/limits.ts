@@ -13,6 +13,7 @@ export const MAX_SUSPECTS_PER_CLUSTER = 10;
 export const MAX_TEXT_CHARS = 2_048;
 export const MAX_SIGNATURE_CHARS = 1_024;
 export const MAX_UPLOAD_BYTES = 2_000_000;
+export const MAX_AT_RISK_PER_REPORT = 50;
 
 const SUFFIX = '… [truncated]';
 const cut = (text: string, max: number) => (text.length <= max ? text : text.slice(0, max - SUFFIX.length) + SUFFIX);
@@ -53,8 +54,12 @@ const bytes = (value: unknown) => Buffer.byteLength(JSON.stringify(value));
  */
 export function prepareReportForUpload(report: TriageReport): { report: TriageReport; trimmed: boolean } {
   const items = report.items.slice(0, MAX_CLUSTERS_PER_REPORT).map(trimItem);
+  // The forecast comes riskiest first, so the cap keeps the ones worth a look.
+  const atRisk = report.atRisk?.slice(0, MAX_AT_RISK_PER_REPORT).map((t) => ({
+    ...t, reasons: t.reasons.map((r) => ({ ...r, detail: cut(r.detail, MAX_TEXT_CHARS) })),
+  }));
   const budget = MAX_UPLOAD_BYTES - 1_000; // headroom for the report's own framing
-  while (bytes({ ...report, items }) > budget) {
+  while (bytes({ ...report, items, atRisk }) > budget) {
     const heaviest = items.reduce((a, b) => (bytes(a) >= bytes(b) ? a : b));
     const n = heaviest.cluster.failures.length;
     if (n > 1) {
@@ -65,6 +70,6 @@ export function prepareReportForUpload(report: TriageReport): { report: TriageRe
       throw new Error(`one triage cluster is ${bytes(heaviest)} bytes on its own; the delivery contract allows up to ${MAX_UPLOAD_BYTES} per report`);
     }
   }
-  const out: TriageReport = { ...report, items };
+  const out: TriageReport = { ...report, items, ...(atRisk ? { atRisk } : {}) };
   return JSON.stringify(report) === JSON.stringify(out) ? { report, trimmed: false } : { report: out, trimmed: true };
 }

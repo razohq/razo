@@ -34,7 +34,8 @@
   },
   "files": [
     "dist",
-    "DESIGN.md"
+    "DESIGN.md",
+    "THIRD-PARTY-NOTICES.md"
   ],
   "engines": {
     "node": ">=20"
