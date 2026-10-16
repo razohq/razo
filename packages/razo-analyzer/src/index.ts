@@ -25,6 +25,7 @@ export {
   type OpenAiClient,
   type ProviderName,
 } from './analyze';
+export { createRedactor, redactReport, REDACTED, type Redactor } from './redact';
 export { findReportFiles, loadFailedReports } from './reports';
 export { upsertPrComment } from './github';
 export { buildUploadPayload, loadAllReports, uploadReports } from './upload';

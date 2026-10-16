@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import { prepareUploadReports } from './limits';
+import { createRedactor, redactReport } from './redact';
 import { findReportFiles } from './reports';
 import type { AiTestReport } from './types';
 
@@ -15,7 +16,10 @@ export interface UploadPayload {
   reports: AiTestReport[];
 }
 
-/** Builds the ingest payload, reading CI metadata from GitHub Actions env vars. */
+/**
+ * Builds the ingest payload, reading CI metadata from GitHub Actions env vars.
+ * Secrets are masked before anything leaves the machine (see redact.ts).
+ */
 export function buildUploadPayload(
   reports: AiTestReport[],
   env: Record<string, string | undefined> = process.env,
@@ -31,7 +35,8 @@ export function buildUploadPayload(
   // Always fit the server's hard limits: an oversized payload is rejected
   // whole (400) and the entire run would be lost. Idempotent, so callers
   // that already prepared the reports pay nothing.
-  return { run, reports: prepareUploadReports(reports).reports };
+  const redactor = createRedactor(env);
+  return { run, reports: prepareUploadReports(reports.map((r) => redactReport(r, redactor))).reports };
 }
 
 export function loadAllReports(target: string): AiTestReport[] {

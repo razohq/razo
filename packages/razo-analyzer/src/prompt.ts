@@ -1,4 +1,5 @@
 import { trimStepsTo } from './limits';
+import { createRedactor, redactReport, type Redactor } from './redact';
 import type { AiTestReport } from './types';
 
 export const SYSTEM_PROMPT = `You are a senior QA engineer analyzing end-to-end test failures.
@@ -32,12 +33,16 @@ Locator drift signals:
 Be concise. Answer in Markdown. Ground every claim in specific steps from
 the narration.`;
 
-/** Renders the failed reports into the user prompt. Pure and deterministic. */
-export function buildPrompt(reports: AiTestReport[]): string {
+/**
+ * Renders the failed reports into the user prompt, with secrets masked
+ * (see redact.ts). Deterministic for a given redactor; the default one reads
+ * the environment to mask the values of credential-like variables.
+ */
+export function buildPrompt(reports: AiTestReport[], redactor: Redactor = createRedactor()): string {
   return [
     `Analyze the following ${reports.length} failed test(s).`,
     '',
-    reports.map(renderReport).join('\n\n---\n\n'),
+    reports.map((r) => renderReport(redactReport(r, redactor))).join('\n\n---\n\n'),
   ].join('\n');
 }
 

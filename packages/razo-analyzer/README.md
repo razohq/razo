@@ -101,6 +101,26 @@ Against razo's demo failure (an export attempted without ever choosing a quality
 
 Each analysis is a single model call. With the default (Claude `claude-opus-4-8`, ~$5/M input, $25/M output tokens) a typical failed-test analysis uses a few thousand tokens — around $0.05–0.15 per run. Use `--model` to override; with `--provider openai` the cost is that model's pricing.
 
+## Secrets
+
+Both CLIs mask secrets before anything leaves the machine, in the prompt
+sent to the model and in the payload sent to the dashboard:
+
+- Known credential shapes anywhere in a step or error: `Authorization`
+  and `Cookie` headers, bearer tokens, JWTs, credentials in URLs, token-like
+  query parameters, private keys, and Anthropic, OpenAI, GitHub, AWS, Slack,
+  Stripe, GitLab and razo.ar tokens.
+- The values of environment variables whose names look like credentials
+  (`*_TOKEN`, `*_SECRET`, `*PASSWORD*`, `*_API_KEY`, …), 8 characters or longer.
+- What a test types into, or asserts on, a control whose name or selector
+  looks sensitive (password, secret, token, API key, OTP, PIN, CVV, card
+  number): `Type "hunter2" into field "Password"` is sent as
+  `Type "[REDACTED]" into field "Password"`.
+
+Each is replaced with `[REDACTED]`. The `razo-steps.json` files on disk are
+never modified. The masking is pattern-based: a secret with no recognizable
+shape, typed into a field with an ordinary name, still goes through.
+
 ## Size limits
 
 Both CLIs are safe on pathological suites, and never trim silently:

@@ -30,7 +30,8 @@
     "dist",
     "action.yml",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "THIRD-PARTY-NOTICES.md"
   ],
   "engines": {
     "node": ">=20"
