@@ -1,3 +1,6 @@
+import { execFile } from 'node:child_process';
+import { join } from 'node:path';
+import { promisify } from 'node:util';
 import { test, expect } from '@playwright/test';
 import { AI_STEP_ATTACHMENT, Input, MASKED, type StepEvent } from '../src';
 
@@ -63,4 +66,16 @@ test('sensitive: true masks even when the field is missing and the fill fails', 
   const failed = emittedEvents().find((e) => e.status === 'failed')!;
   expect(failed.sentence).toBe(`Type "${MASKED}" into field "Recovery key"`);
   expect(JSON.stringify(failed)).not.toContain(SECRET);
+});
+
+test('Playwright\'s own step under a masked fill does not carry the value either', async () => {
+  test.setTimeout(60_000);
+  const config = join(__dirname, 'fixtures/api-steps/playwright.config.ts');
+  const { stdout } = await promisify(execFile)('npx', ['playwright', 'test', '-c', config], { cwd: join(__dirname, '..') });
+  const { status, error, titles: all } = JSON.parse(stdout) as { status: string; error: string; titles: string[] };
+  expect(status, error).toBe('passed');
+  expect(all.some((t) => t.includes('hunter2-hunter2')), all.join('\n')).toBe(false);
+  expect(all).toContain(`Type "${MASKED}" into field "Password"`);
+  // An ordinary field keeps Playwright's fill, value and all.
+  expect(all.some((t) => t.startsWith('Fill "ana@example.com"')), all.join('\n')).toBe(true);
 });

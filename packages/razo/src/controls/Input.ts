@@ -30,7 +30,31 @@ export class Input extends Control {
   }
 
   async fill(value: string, options: FieldOptions = {}) {
-    await this.step('fill', { ...options, sensitive: await this.isSensitive(options), detail: value }, () => this.locator.fill(value));
+    const sensitive = await this.isSensitive(options);
+    await this.step('fill', { ...options, sensitive, detail: value }, () =>
+      (sensitive ? this.fillUntitled(value) : this.locator.fill(value)));
+  }
+
+  /**
+   * Fills without the value in any step title. Playwright names its fill step
+   * `Fill "<value>"`, so the value goes in through an evaluate (titled just
+   * "Evaluate"), after a fill('') that keeps the waiting, focus and clearing of
+   * a real fill. The native setter plus an input event is what frameworks that
+   * track the value (React) need to see the change. The trace still records
+   * the evaluate's argument, as it records every call's.
+   */
+  private async fillUntitled(value: string) {
+    await this.locator.fill('');
+    await this.locator.evaluate((el, v) => {
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+        const proto = el instanceof HTMLInputElement ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype;
+        Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(el, v);
+      } else {
+        el.textContent = v;
+      }
+      el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: v }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, value);
   }
 
   async clear(options: Pick<StepOptions, 'as'> = {}) {

@@ -129,10 +129,12 @@ await demoPassword.fill('demo', { sensitive: false }); // a password you want to
 ```
 
 Detection looks at the page without waiting, so a field that is not there yet
-is not detected; pass `sensitive: true` when it matters. Playwright's own
-`Fill "…"` step, nested under razo's sentence in the HTML report and in traces,
-still shows the value: that is Playwright's, and razo cannot change it. Keep
-traces of runs with real credentials private.
+is not detected; pass `sensitive: true` when it matters. A masked `fill` also
+keeps the value out of Playwright's own nested steps in the HTML report: instead
+of `Fill "hunter2"` they read `Fill ""` and `Evaluate`, because the value goes in
+through the native setter plus an `input` event. A trace still records the
+call's arguments and the page itself, so keep traces of runs with real
+credentials private.
 
 ## Auto `data-testid` (Vite plugin)
 
