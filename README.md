@@ -55,6 +55,10 @@ test('export a model', async ({ page }) => {
 
 Docs: [razo.ar/docs](https://razo.ar/docs)
 
+## Sponsor
+
+razo is MIT licensed and built in the open. If it saves your team time on red builds, you can [sponsor its development on GitHub](https://github.com/sponsors/razohq).
+
 ## Contributing
 
 PRs welcome. `npm ci && npm test` runs everything (typecheck, builds, package checks, the Playwright suites and a tarball consumption smoke test).
